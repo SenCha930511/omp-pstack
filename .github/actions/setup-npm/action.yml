@@ -19,9 +19,13 @@ runs:
       env:
         NPM_VERSION: ${{ inputs.npm-version }}
       # The version is pinned by this action's input, so this is not an ad-hoc install.
-      run: | # zizmor: ignore[adhoc-packages] zizmor: ignore[github-env]
+      run: npm install --global "npm@$NPM_VERSION" # zizmor: ignore[adhoc-packages]
+
+    - name: Expose npm on PATH
+      shell: bash
+      # Only the fixed global npm prefix directory is appended; no untrusted input reaches GITHUB_PATH.
+      run: | # zizmor: ignore[github-env]
         set -euo pipefail
-        npm install --global "npm@$NPM_VERSION"
         if [ "$RUNNER_OS" = "Windows" ]; then
           global_bin=$(npm prefix -g | tr -d '\r')
         else

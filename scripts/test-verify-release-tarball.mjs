@@ -18,7 +18,9 @@ function createTarballFixture(pkgJson) {
   fs.mkdirSync(out, { recursive: true });
   fs.writeFileSync(path.join(stage, "package.json"), `${JSON.stringify(pkgJson, null, 2)}\n`);
   const tgzName = `${pkgJson.name}-${pkgJson.version}.tgz`;
-  execFileSync("tar", ["-czf", path.join(out, tgzName), "-C", path.join(dir, "stage"), "package"]);
+  execFileSync("tar", ["-czf", `../dist/${tgzName}`, "package"], {
+    cwd: path.join(dir, "stage"),
+  });
   return { dir, out, tgzPath: path.join(out, tgzName) };
 }
 
