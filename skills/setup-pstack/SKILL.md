@@ -41,11 +41,15 @@ Write the agreed agent-to-model mapping with `task.agentModelOverrides` in `~/.o
 
 Tell the user the routing applies to new subagent spawns and that re-running this skill updates it in place.
 
-### 7. Offer a verification skill (optional)
+### 7. Hide this skill after setup
+
+Add `setup-pstack` to `skills.manualSkills` in `~/.omp/agent/config.yml`. Read the current array first and keep every entry already there; skip the write if `setup-pstack` is already listed. This removes the skill from the model catalog only, so `/skill:setup-pstack` and `skill://setup-pstack` keep working. Tell the user it takes effect in the next session. If the write is denied or fails, report it and finish the setup.
+
+### 8. Offer a verification skill (optional)
 
 Check whether the project has a way to drive the real app for proof (a `verify-*` skill, or an existing harness). If not, offer once: "want a project-local verification skill, so agents can drive the app the way a user does and prove changes work? I can generate one by following `../create-verification-skill/SKILL.md`." On yes, read and follow that file (invoke `/skill:create-verification-skill` only if it is registered). On no, move on without pushing.
 
-### 8. Offer a formal verification skill (optional)
+### 9. Offer a formal verification skill (optional)
 
 Check whether the project already has a formal verification skill (a project skill that runs a model checker, a proof, or another verifier against the code). If not, offer once: "want a formal verification skill, so agents can prove a key property of your code holds in every case in scope, not only the cases tests reach? I can generate one by following `../create-formal-verification-skill/SKILL.md`." On yes, read and follow that file (invoke `/skill:create-formal-verification-skill` only if it is registered). On no, move on without pushing.
 

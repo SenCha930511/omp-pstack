@@ -96,7 +96,9 @@ If `includeSkills` is non-empty, ask the user which they want:
 Explain the cost before editing. Clearing the allowlist also admits the user's
 other installed skills. By default `setup-pstack` is the only pstack skill in the
 model catalog; the other 57 stay hidden, so the prompt does not grow by 57
-entries. `manualSkills` can hide `setup-pstack` too.
+entries. After it writes the routing, `setup-pstack` adds itself to
+`skills.manualSkills`, so the catalog drops it from the next session while
+`/skill:setup-pstack` keeps working.
 
 Do not edit the file without explicit approval. Back it up first:
 

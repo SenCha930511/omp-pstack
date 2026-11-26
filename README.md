@@ -77,7 +77,8 @@ default empty allowlist loads them all.
 ## What's included
 
 - 58 skills under `skills/`, adapted from upstream, including `reframe`. They are
-  registered; 57 are hidden from the model catalog and `setup-pstack` stays visible.
+  registered; 57 are hidden from the model catalog and `setup-pstack` starts
+  visible, then hides itself after it writes the routing.
 - `agents/poteto-agent.md` and `agents/comment-sicko.md`. omp discovers them
   from the plugin's `agents/` directory; no role pack is needed. `poteto-agent`
   can spawn its own subagents; `comment-sicko` is read-only and cannot spawn.
