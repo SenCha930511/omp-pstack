@@ -3,7 +3,7 @@
     "repo": "cursor/plugins",
     "branch": "main",
     "path": "pstack",
-    "lastSyncedSha": "0b46ec399d55f2829e88822998f53b84944837d3",
+    "lastSyncedSha": "b1fbf4b60ac6813b4583ccc356850dafcf492665",
     "excludedSkills": [
       "make-bot-ui"
     ],
