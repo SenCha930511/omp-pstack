@@ -2,10 +2,30 @@
 
 ## 0.3.2 - 2026-11-27
 
-- The upstream sync computes the `pstack` range from `lastSyncedSha` with git, so a base that never touched `pstack/` no longer reports the full history.
-- The sync closes an open `[upstream-sync]` issue when the range is empty.
-- Added `npm run sync:ack -- --cursor <sha> [--pi-mimir <sha>]` and put the command in issue reports.
-- The README model routing examples use Claude and GPT model IDs.
+### Setup
+
+- `setup-pstack` now adds itself to `skills.manualSkills` after it writes the routing. The model catalog drops it from the next session, while `/skill:setup-pstack` and `skill://setup-pstack` keep working.
+- The install and upgrade commands in `README.md` and `AGENT-INSTALL.md` point at 0.3.2.
+
+### Upstream sync
+
+- The sync computes the `pstack` range from `lastSyncedSha` with `git log <base>..<head> -- pstack` and `git diff --name-status`, instead of walking a path-filtered GitHub API list until it finds the base. A base that never touched `pstack/` no longer reports the full history.
+- The upstream clone keeps full history on one branch (`--single-branch`, blobless, sparse), so any recorded base is reachable.
+- The sync no longer makes one GitHub API call per commit. It runs one range script and one diff.
+- `lastSyncedSha` resets to `9e278fe`, the last upstream commit under `pstack/`.
+- A missing or non-ancestor base now fails the workflow with an error that names `lastSyncedSha`, instead of silently reporting the full history.
+- When the range is empty, the sync closes an open `[upstream-sync]` issue with the synced SHA.
+
+### Manual porting
+
+- Added `npm run sync:ack -- --cursor <sha> [--pi-mimir <sha>]`. It validates the SHA, updates `lastSyncedSha` and optionally `piMimir.lastCheckedSha`, and preserves the rest of the config.
+- Issue-mode reports end with `### After porting` and the exact ack command, including `--pi-mimir` when a pi-mimir commit is present.
+
+### Docs and skills
+
+- The README model routing examples use Claude Opus 5.5, GPT-5.4, and Claude Sonnet 5.5 instead of provider-specific model IDs.
+- The `arena` skill judges model families generically and no longer names a provider.
+- Added regression tests for the range script, the ack command, and the issue report instruction.
 
 ## 0.3.1 - 2026-11-26
 
