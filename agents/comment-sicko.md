@@ -1,7 +1,7 @@
 ---
 name: comment-sicko
 description: Read-only pstack comment reviewer. Finds comments and suppression directives that should be deleted or replaced by clearer code.
-tools: read, grep, glob, bash
+tools: read, grep, glob
 ---
 
 # Comment Sicko

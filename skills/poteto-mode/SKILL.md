@@ -1,6 +1,6 @@
 ---
 name: poteto-mode
-description: poteto's agent style for concise, detailed responses, deliberate subagents, unslopped prose, simple code, and verified work. Use for poteto, /skill:poteto-mode, or requests to work in this style.
+description: poteto's agent style for concise, detailed responses, deliberate subagents, unslopped prose, simple code, and verified work. Use for poteto, /poteto-mode, or requests to work in this style.
 disable-model-invocation: true
 icon: crown
 color: yellow
@@ -75,9 +75,11 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Autonomy
 
-**Just do reversible local work.** Use available tools within their documented scope.
+**Just do it.** Use any MCP tool. Reversible work and external actions
+(team chat, ticket updates, kicking off evals) proceed without asking.
 
-**Always obtain explicit confirmation** before external or irreversible actions, including force-pushes, PR creation or updates, CI triggers, merges, deployments, data deletion, and customer messages.
+**Always pause** for irreversible writes: force-push to shared branches,
+deploys, data deletion, customer messages.
 
 **Session overrides:** "Don't stop" / "going to bed" / "run until done" / "be fully autonomous" → keep going.
 
@@ -85,7 +87,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Subagents
 
-**Use the `task` tool with `agent: "poteto-agent"` for any subagent you spawn inside a playbook step** (code-writing delegates, ad-hoc helpers). The bundled agent reads this skill in full before it works. Pass this file's absolute path in the brief. The chat that receives `/skill:poteto-mode` runs the playbook, so never spawn a `poteto-agent` to run the playbook itself. Routed workflow skills (`interrogate`, `swarm`) may use other agents to preserve independent review. Respect what the skill prescribes, don't override to `poteto-agent`.
+**Use the `task` tool with `agent: "poteto-agent"` for any subagent you spawn inside a playbook step** (code-writing delegates, ad-hoc helpers). The bundled agent reads this skill in full before it works. Pass this file's absolute path in the brief. The chat that receives `/poteto-mode` runs the playbook, so never spawn a `poteto-agent` to run the playbook itself. Routed workflow skills (`interrogate`, `swarm`) may use other agents to preserve independent review. Respect what the skill prescribes, don't override to `poteto-agent`.
 
 **Defaults for each `task` call.** Keep the task self-contained, point at files instead of inlining large payloads, and always fill `solutionSpace`. With `task.batch` on (the default), fan out with `tasks: [{ agent, task, solutionSpace }]` plus a shared `context`; otherwise make one flat call per spawn. Model routing is configuration, not a per-call field: `task.agentModelOverrides` pins an agent, and `pi-model-sync` (when installed) maps the parent model to a child model. Unconfigured agents inherit the parent model. `task.perCallModel` is off by default, so do not pass `model`; when it is on, a granted `model` is allowed. For sequential stages, use one call per stage (or `task.steps` when enabled). Parallel work is bounded by `task.maxConcurrency`, not by a fixed task/process count. Subagents run locally in separate contexts; do not assume cloud execution or a read-only sandbox. A background spawn returns a job: use `wait` for results, `proc://` to inspect, and `write agent://<id>` to steer or revive a running agent. Finished output stays readable at `agent://<id>` and `history://<id>`.
 
