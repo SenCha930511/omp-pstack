@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@oh-my-pi/pi-coding-agent";
 import { preferredAskTool } from "./interaction.js";
 
 const MODE_ENTRY = "pstack-mode";
@@ -9,25 +9,47 @@ function packageRoot(): string {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 }
 
+function isPotetoModeEnabled(data: unknown): boolean {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    !Array.isArray(data) &&
+    (data as { enabled?: unknown }).enabled === true
+  );
+}
+
 export default function (pi: ExtensionAPI) {
   let potetoMode = false;
 
-  pi.on("session_start", (_event, ctx) => {
-    potetoMode = false;
-    for (const entry of ctx.sessionManager.getBranch()) {
-      if (entry.type !== "custom") continue;
-      if (entry.customType === MODE_ENTRY)
-        potetoMode = Boolean((entry.data as { enabled?: boolean }).enabled);
-    }
-    if (ctx.hasUI)
-      ctx.ui.setStatus("pstack-mode", potetoMode ? "pstack: poteto mode" : undefined);
-  });
+  function applyPotetoMode(ctx: ExtensionContext, enabled: boolean): void {
+    potetoMode = enabled;
+    if (ctx.hasUI) ctx.ui.setStatus(MODE_ENTRY, enabled ? "pstack: poteto mode" : undefined);
+  }
 
-  pi.on("input", (event) => {
-    if (/^\/skill:poteto-mode(?:\s|$)/.test(event.text)) {
-      potetoMode = true;
-      pi.appendEntry(MODE_ENTRY, { enabled: true });
+  function restorePotetoMode(ctx: ExtensionContext): void {
+    let enabled = false;
+    for (const entry of ctx.sessionManager.getBranch()) {
+      if (entry.type === "reset_boundary") {
+        enabled = false;
+        continue;
+      }
+      if (entry.type === "custom" && entry.customType === MODE_ENTRY) {
+        enabled = isPotetoModeEnabled(entry.data);
+      }
     }
+    applyPotetoMode(ctx, enabled);
+  }
+
+  pi.on("session_start", (_event, ctx) => restorePotetoMode(ctx));
+  pi.on("session_switch", (_event, ctx) => restorePotetoMode(ctx));
+  pi.on("session_branch", (_event, ctx) => restorePotetoMode(ctx));
+  pi.on("session_tree", (_event, ctx) => restorePotetoMode(ctx));
+  pi.on("session_clear", (_event, ctx) => restorePotetoMode(ctx));
+
+  pi.on("input", (event, ctx) => {
+    if (!/^\/skill:poteto-mode(?:\s|$)/.test(event.text)) return;
+    pi.appendEntry(MODE_ENTRY, { enabled: true });
+    applyPotetoMode(ctx, true);
   });
 
   pi.on("before_agent_start", (event, ctx) => {
@@ -38,9 +60,9 @@ export default function (pi: ExtensionAPI) {
     }
     if (potetoMode)
       sections.push(
-        `Pstack Poteto Mode is enabled for this session. Follow its persisted workflow: track non-trivial work with the todo tool, select and read the matching playbook, delegate with the task tool when delegation helps, verify real behavior, and name only principles that changed a decision. The full skill is at ${path.join(packageRoot(), "skills/poteto-mode/SKILL.md")}.`,
+        `Pstack Poteto Mode is enabled for this session. Read the full skill at ${path.join(packageRoot(), "skills/poteto-mode/SKILL.md")} again before acting, then follow its persisted workflow: track non-trivial work with the todo tool, select and read the matching playbook, delegate with the task tool when delegation helps, verify real behavior, and name only principles that changed a decision.`,
       );
     if (sections.length === 0) return;
-    return { systemPrompt: [`${event.systemPrompt.join("\n\n")}\n\n${sections.join("\n\n")}`] };
+    return { systemPrompt: [...event.systemPrompt, ...sections] };
   });
 }
