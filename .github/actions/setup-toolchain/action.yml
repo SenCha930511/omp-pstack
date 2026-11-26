@@ -1,0 +1,57 @@
+name: Setup toolchain
+description: Install the pinned Node.js (.node-version), Bun (.bun-version), npm, and project devDependencies.
+
+inputs:
+  npm-cache:
+    description: Restore and save the npm cache. Release workflows disable it to avoid cache poisoning.
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version-file: .node-version
+        cache: ${{ inputs.npm-cache == 'true' && 'npm' || '' }}
+        cache-dependency-path: package-lock.json
+        package-manager-cache: ${{ inputs.npm-cache == 'true' }}
+
+    - name: Set up Bun
+      uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      with:
+        bun-version-file: .bun-version
+
+    - name: Set up npm
+      id: npm
+      uses: ./.github/actions/setup-npm
+
+    - name: Install dependencies
+      shell: bash
+      # Only fixed workspace binary directories are appended; no untrusted input reaches GITHUB_PATH.
+      run: | # zizmor: ignore[github-env]
+        set -euo pipefail
+        npm ci --no-audit --no-fund
+        printf '\n%s\n' "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
+
+    - name: Verify tool versions
+      shell: bash
+      env:
+        EXPECTED_NPM: ${{ steps.npm.outputs.version }}
+      run: |
+        set -euo pipefail
+        expected_omp=$(node -p 'require("./package-lock.json").packages["node_modules/@oh-my-pi/pi-coding-agent"].version')
+        expected_tsc=$(node -p 'require("./package-lock.json").packages["node_modules/typescript"].version')
+        expected_node=$(tr -d '[:space:]' < .node-version)
+        expected_bun=$(tr -d '[:space:]' < .bun-version)
+        actual_node=$(node --version | tr -d '\r')
+        actual_npm=$(npm --version | tr -d '\r')
+        actual_bun=$(bun --version | tr -d '\r')
+        actual_omp=$(omp --version | tr -d '\r')
+        actual_tsc=$(tsc --version | tr -d '\r')
+        printf '%s\n' "node $actual_node" "npm $actual_npm" "bun $actual_bun" "$actual_omp" "tsc $actual_tsc"
+        test "$actual_node" = "v$expected_node"
+        test "$actual_npm" = "$EXPECTED_NPM"
+        test "$actual_bun" = "$expected_bun"
+        test "$actual_omp" = "omp/$expected_omp"
+        test "$actual_tsc" = "Version $expected_tsc"

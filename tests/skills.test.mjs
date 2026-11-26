@@ -1,18 +1,21 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const skillsDir = join(root, "skills");
 const skillNames = readdirSync(skillsDir).filter((name) => statSync(join(skillsDir, name)).isDirectory());
+const agentsDir = join(root, "agents");
+const agentFiles = readdirSync(agentsDir).filter((name) => name.endsWith(".md"));
 
 test("every skill has name and description frontmatter", () => {
   for (const name of skillNames) {
     const text = readFileSync(join(skillsDir, name, "SKILL.md"), "utf8");
-    assert.match(text, /^---\n/, `${name}: missing frontmatter`);
-    assert.match(text, new RegExp(`\\nname:\\s*${name}\\n`), `${name}: wrong frontmatter name`);
-    assert.match(text, /\ndescription:\s*\S/, `${name}: missing description`);
+    assert.match(text, /^---\r?\n/, `${name}: missing frontmatter`);
+    assert.match(text, new RegExp(`\\r?\\nname:\\s*${name}\\r?\\n`), `${name}: wrong frontmatter name`);
+    assert.match(text, /\r?\ndescription:\s*\S/, `${name}: missing description`);
   }
 });
 
@@ -46,4 +49,26 @@ test("poteto-mode carries the omp header and path rule", () => {
   assert.match(text, /Poteto Mode is active for this session/);
   assert.match(text, /SKILL-INDEX\.md/);
   assert.match(text, /do not use `skill:\/\//i);
+});
+
+test("every bundled agent has matching name and description frontmatter", () => {
+  assert.ok(agentFiles.includes("poteto-agent.md"), "missing poteto-agent.md");
+  assert.ok(agentFiles.includes("comment-sicko.md"), "missing comment-sicko.md");
+  for (const file of agentFiles) {
+    const name = file.slice(0, -3);
+    const text = readFileSync(join(agentsDir, file), "utf8");
+    assert.match(text, /^---\r?\n/, `${file}: missing frontmatter`);
+    assert.match(text, new RegExp(`\\r?\\nname:\\s*${name}\\r?\\n`), `${file}: wrong frontmatter name`);
+    assert.match(text, /\r?\ndescription:\s*\S/, `${file}: missing description`);
+  }
+});
+
+test("package.json omp manifest paths exist", () => {
+  const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  assert.ok(Array.isArray(pkg.omp?.extensions) && pkg.omp.extensions.length > 0, "missing omp.extensions");
+  assert.ok(Array.isArray(pkg.omp?.skills) && pkg.omp.skills.length > 0, "missing omp.skills");
+  for (const rel of [...pkg.omp.extensions, ...pkg.omp.skills]) {
+    const target = join(root, rel);
+    assert.ok(existsSync(target), `missing omp manifest target: ${rel}`);
+  }
 });

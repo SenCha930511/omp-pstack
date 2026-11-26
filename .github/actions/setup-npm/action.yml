@@ -1,0 +1,30 @@
+name: Setup npm
+description: Install the pinned npm version and expose it on PATH.
+
+inputs:
+  npm-version:
+    description: npm version
+    default: "11.21.2"
+
+outputs:
+  version:
+    description: Installed npm version
+    value: ${{ inputs.npm-version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install npm
+      shell: bash
+      env:
+        NPM_VERSION: ${{ inputs.npm-version }}
+      # The version is pinned by this action's input, so this is not an ad-hoc install.
+      run: | # zizmor: ignore[adhoc-packages] zizmor: ignore[github-env]
+        set -euo pipefail
+        npm install --global "npm@$NPM_VERSION"
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          global_bin=$(npm prefix -g | tr -d '\r')
+        else
+          global_bin="$(npm prefix -g)/bin"
+        fi
+        printf '\n%s\n' "$global_bin" >> "$GITHUB_PATH"

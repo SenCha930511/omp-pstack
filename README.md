@@ -142,7 +142,11 @@ npm install
 npm run typecheck
 npm test
 npm run pack:check
+npm run check
 ```
 
-`npm test` checks skill frontmatter, the relative-path index, and stale
-pi-herdr references.
+`npm test` checks skill/agent frontmatter, the relative-path index, stale
+pi-herdr references, and extension behavior. `npm run check` runs all checks
+including version consistency, extension load-graph verification, release script
+tests, and clean tarball installation against `omp`. Use `npm run release:bump <X.Y.Z>`
+when preparing a new release version.
