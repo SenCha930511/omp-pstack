@@ -44,6 +44,22 @@ test("skills do not reference pi-herdr tooling", () => {
   }
 });
 
+test("skills do not reference Cursor-specific tooling", () => {
+  const forbidden = [
+    /~\/\.cursor\//,
+    /\bsubagent_type\b/,
+    /\bcloud_base_branch\b/,
+    /pstack-models\.mdc/,
+    /environment:\s*"cloud"/,
+  ];
+  for (const name of skillNames) {
+    const text = readFileSync(join(skillsDir, name, "SKILL.md"), "utf8");
+    for (const pattern of forbidden) {
+      assert.doesNotMatch(text, pattern, `${name}: Cursor-specific reference ${pattern}`);
+    }
+  }
+});
+
 test("poteto-mode carries the omp header and path rule", () => {
   const text = readFileSync(join(skillsDir, "poteto-mode", "SKILL.md"), "utf8");
   assert.match(text, /Poteto Mode is active for this session/);
