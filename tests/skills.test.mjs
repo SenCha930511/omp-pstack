@@ -99,7 +99,7 @@ test("skills do not reference Cursor-specific tooling", () => {
 
 test("poteto-mode autonomy matches Cursor", () => {
   const text = readFileSync(join(skillsDir, "poteto-mode", "SKILL.md"), "utf8");
-  const autonomy = text.match(/## Autonomy\n([\s\S]*?)\n## /)?.[1] ?? "";
+  const autonomy = text.match(/## Autonomy\r?\n([\s\S]*?)\r?\n## /)?.[1] ?? "";
   assert.match(autonomy, /Reversible work and external actions/);
   assert.match(autonomy, /Always pause\*\* for irreversible writes/);
   assert.doesNotMatch(autonomy, /PR creation or updates/);
@@ -120,11 +120,11 @@ test("how and arena use scout, interrogate uses task", () => {
   assert.match(how, /Spawn one `scout` subagent/);
 
   const arena = readFileSync(join(skillsDir, "arena", "SKILL.md"), "utf8");
-  const phaseC = arena.match(/## Phase C: Cross-judge\n([\s\S]*?)\n## /)?.[1] ?? "";
+  const phaseC = arena.match(/## Phase C: Cross-judge\r?\n([\s\S]*?)\r?\n## /)?.[1] ?? "";
   assert.match(phaseC, /`scout`/);
 
   const interrogate = readFileSync(join(skillsDir, "interrogate", "SKILL.md"), "utf8");
-  const fanOut = interrogate.match(/## Fan out\n([\s\S]*?)\n## /)?.[1] ?? "";
+  const fanOut = interrogate.match(/## Fan out\r?\n([\s\S]*?)\r?\n## /)?.[1] ?? "";
   assert.match(fanOut, /agent: "task"/);
   assert.doesNotMatch(fanOut, /poteto-agent/);
 });
