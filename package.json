@@ -62,10 +62,11 @@
     "test:extension": "bun test tests/extension.test.ts",
     "test:graph": "bun scripts/test-load-graph.ts",
     "test:release-scripts": "node --test scripts/test-check-release-versions.mjs scripts/test-bump-release.mjs scripts/test-verify-release-tarball.mjs",
+    "test:sync-script": "node --test scripts/test-sync-upstream.mjs",
     "test:packed": "node scripts/test-packed.mjs",
     "test": "npm run test:skills && npm run test:extension",
     "pack:check": "npm pack --dry-run",
-    "check": "npm run typecheck && npm run check:versions && npm run test:skills && npm run test:extension && npm run test:graph && npm run test:release-scripts && npm run test:packed",
+    "check": "npm run typecheck && npm run check:versions && npm run test:skills && npm run test:extension && npm run test:graph && npm run test:release-scripts && npm run test:sync-script && npm run test:packed",
     "prepublishOnly": "npm run check"
   }
 }

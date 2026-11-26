@@ -146,7 +146,17 @@ npm run check
 ```
 
 `npm test` checks skill/agent frontmatter, the relative-path index, stale
-pi-herdr references, and extension behavior. `npm run check` runs all checks
-including version consistency, extension load-graph verification, release script
-tests, and clean tarball installation against `omp`. Use `npm run release:bump <X.Y.Z>`
-when preparing a new release version.
+pi-herdr or Cursor references, and extension behavior. `npm run check` runs all
+checks including version consistency, extension load-graph verification, release
+and upstream-sync script tests, and clean tarball installation against `omp`. Use
+`npm run release:bump <X.Y.Z>` when preparing a new release version.
+
+### Upstream sync
+
+`.github/workflows/upstream-sync.yml` runs daily to track
+[`cursor/plugins/pstack`](https://github.com/cursor/plugins/tree/main/pstack)
+and [`casualjim/pi-mimir`](https://github.com/casualjim/pi-mimir) using the
+manifest in [`.github/upstream-sync.json`](.github/upstream-sync.json). Unadapted
+and new skills without Cursor-only syntax are synced automatically into a PR with
+an updated `SKILL-INDEX.md`; changes to adapted skills, blocked skills, or
+extension/agent files are flagged for manual porting.

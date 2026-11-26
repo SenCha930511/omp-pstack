@@ -1,0 +1,213 @@
+name: Upstream sync
+
+on:
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Check upstream and print summary without opening a PR or issue
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Fetch upstream commits and files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          up_dir="$RUNNER_TEMP/upstream"
+          mkdir -p "$up_dir"
+
+          cursor_repo=$(node -p 'require("./.github/upstream-sync.json").cursor.repo')
+          cursor_branch=$(node -p 'require("./.github/upstream-sync.json").cursor.branch')
+          cursor_path=$(node -p 'require("./.github/upstream-sync.json").cursor.path')
+          cursor_base=$(node -p 'require("./.github/upstream-sync.json").cursor.lastSyncedSha')
+
+          git clone --depth 1 --branch "$cursor_branch" --filter=blob:none --sparse \
+            "https://github.com/${cursor_repo}.git" "$up_dir/cursor-plugins"
+          git -C "$up_dir/cursor-plugins" sparse-checkout set "${cursor_path}/skills"
+          cursor_head=$(git -C "$up_dir/cursor-plugins" rev-parse HEAD)
+          printf '%s\n' "$cursor_head" > "$up_dir/cursor-sha.txt"
+
+          gh api "repos/${cursor_repo}/commits?sha=${cursor_branch}&path=${cursor_path}&per_page=100" \
+            --jq "[.[] | {sha: .sha, date: .commit.committer.date, subject: (.commit.message | split(\"\n\")[0])}]" \
+            > "$up_dir/cursor-commits-raw.json"
+
+          # shellcheck disable=SC2016 # Single-quoted JS template is intentional.
+          node -e '
+            const fs = require("node:fs");
+            const raw = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            const base = process.argv[2];
+            const newer = [];
+            for (const item of raw) {
+              if (item.sha === base) break;
+              newer.push(item);
+            }
+            fs.writeFileSync(process.argv[3], JSON.stringify(newer, null, 2));
+            for (const item of newer) console.log(item.sha);
+          ' "$up_dir/cursor-commits-raw.json" "$cursor_base" "$up_dir/cursor-commits.json" \
+            > "$up_dir/cursor-new-shas.txt"
+
+          : > "$up_dir/cursor-changed.txt"
+          while IFS= read -r sha; do
+            [ -z "$sha" ] && continue
+            gh api "repos/${cursor_repo}/commits/${sha}" \
+              --jq '.files[] | "\(.status)\t\(.filename)"' >> "$up_dir/cursor-changed.txt"
+          done < "$up_dir/cursor-new-shas.txt"
+
+          pi_repo=$(node -p 'require("./.github/upstream-sync.json").piMimir.repo')
+          pi_branch=$(node -p 'require("./.github/upstream-sync.json").piMimir.branch')
+          pi_base=$(node -p 'require("./.github/upstream-sync.json").piMimir.lastCheckedSha')
+          pi_base_date=$(gh api "repos/${pi_repo}/commits/${pi_base}" --jq '.commit.committer.date')
+
+          : > "$up_dir/pi-mimir-raw.jsonl"
+          while IFS= read -r watch_path; do
+            [ -z "$watch_path" ] && continue
+            gh api "repos/${pi_repo}/commits?sha=${pi_branch}&path=${watch_path}&per_page=20" \
+              --jq '.[] | {sha: .sha, date: .commit.committer.date, subject: (.commit.message | split("\n")[0])}' \
+              >> "$up_dir/pi-mimir-raw.jsonl"
+          done < <(node -e 'for (const p of require("./.github/upstream-sync.json").piMimir.watchPaths) console.log(p);')
+
+          # shellcheck disable=SC2016 # Single-quoted JS template is intentional.
+          node -e '
+            const fs = require("node:fs");
+            const lines = fs.readFileSync(process.argv[1], "utf8").split(/\r?\n/).filter(Boolean);
+            const baseSha = process.argv[2];
+            const baseDate = process.argv[3];
+            const seen = new Map();
+            for (const line of lines) {
+              const item = JSON.parse(line);
+              if (!seen.has(item.sha)) seen.set(item.sha, item);
+            }
+            const sorted = [...seen.values()].sort((a, b) => b.date.localeCompare(a.date));
+            const newer = sorted.filter((item) => item.sha !== baseSha && item.date > baseDate);
+            fs.writeFileSync(process.argv[4], JSON.stringify(newer, null, 2));
+            fs.writeFileSync(process.argv[5], (sorted[0]?.sha ?? baseSha) + "\n");
+          ' "$up_dir/pi-mimir-raw.jsonl" "$pi_base" "$pi_base_date" "$up_dir/pi-mimir-commits.json" "$up_dir/pi-mimir-sha.txt"
+
+      - name: Run upstream sync
+        env:
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          up_dir="$RUNNER_TEMP/upstream"
+          cursor_sha=$(tr -d '[:space:]' < "$up_dir/cursor-sha.txt")
+          pi_sha=$(tr -d '[:space:]' < "$up_dir/pi-mimir-sha.txt")
+          args=(
+            --cursor-dir "$up_dir/cursor-plugins"
+            --cursor-sha "$cursor_sha"
+            --cursor-changed-file "$up_dir/cursor-changed.txt"
+            --cursor-commits-file "$up_dir/cursor-commits.json"
+            --pi-mimir-sha "$pi_sha"
+            --pi-mimir-commits-file "$up_dir/pi-mimir-commits.json"
+            --report-output "$up_dir/report.md"
+            --summary-json "$up_dir/summary.json"
+          )
+          if [ "$DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          node scripts/sync-upstream.mjs "${args[@]}"
+          cat "$up_dir/report.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify synced repository
+        env:
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+          HOME: ${{ runner.temp }}/omp-home
+          USERPROFILE: ${{ runner.temp }}/omp-home
+        run: |
+          set -euo pipefail
+          mode=$(node -p 'JSON.parse(require("node:fs").readFileSync(process.env.RUNNER_TEMP + "/upstream/summary.json", "utf8")).mode')
+          if [ "$DRY_RUN" != "true" ] && [ "$mode" = "pr" ]; then
+            mkdir -p "$HOME"
+            npm run check
+          fi
+
+      - name: Create or update sync PR or issue
+        env:
+          GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_TOKEN || github.token }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run enabled; skipping PR/issue creation."
+            exit 0
+          fi
+
+          summary="$RUNNER_TEMP/upstream/summary.json"
+          report="$RUNNER_TEMP/upstream/report.md"
+          mode=$(node -p 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).mode' "$summary")
+          short_sha=$(node -p 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).shortSha' "$summary")
+
+          case "$mode" in
+            pr)
+              branch="chore/upstream-sync"
+              git checkout -B "$branch"
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add -A
+              if git diff --cached --quiet; then
+                echo "No git changes to commit."
+                exit 0
+              fi
+              title="chore(sync): sync upstream pstack to ${short_sha}"
+              git commit -m "$title"
+
+              auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+              git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth}" \
+                push --force origin "HEAD:refs/heads/${branch}"
+
+              existing_pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --state open --json number --jq '.[0].number // empty')
+              if [ -n "$existing_pr" ]; then
+                gh pr edit "$existing_pr" --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$report"
+              else
+                gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" --title "$title" --body-file "$report"
+              fi
+              ;;
+            issue)
+              title="[upstream-sync] Upstream updates need manual porting (${short_sha})"
+              existing_json=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 50 --json number,title \
+                --jq '[.[] | select(.title | startswith("[upstream-sync]"))][0] // empty')
+              if [ -n "$existing_json" ]; then
+                issue_num=$(printf '%s' "$existing_json" | node -pe 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).number')
+                old_title=$(printf '%s' "$existing_json" | node -pe 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).title')
+                gh issue edit "$issue_num" --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$report"
+                if [[ "$old_title" != *"$short_sha"* ]]; then
+                  gh issue comment "$issue_num" --repo "$GITHUB_REPOSITORY" --body "Detected new upstream changes at \`${short_sha}\`. Updated issue checklist above."
+                fi
+              else
+                gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$report"
+              fi
+              ;;
+            none)
+              echo "Already up to date with upstream."
+              ;;
+            *)
+              echo "Unexpected mode: $mode" >&2
+              exit 1
+              ;;
+          esac

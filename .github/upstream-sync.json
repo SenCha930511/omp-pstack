@@ -1,0 +1,36 @@
+{
+  "cursor": {
+    "repo": "cursor/plugins",
+    "branch": "main",
+    "path": "pstack",
+    "lastSyncedSha": "0b46ec399d55f2829e88822998f53b84944837d3",
+    "excludedSkills": [
+      "make-bot-ui"
+    ],
+    "adaptedSkills": [
+      "arena",
+      "automate-me",
+      "create-verification-skill",
+      "how",
+      "interrogate",
+      "maintain-verification-skill",
+      "no-comments",
+      "poteto-help",
+      "poteto-mode",
+      "recall",
+      "reflect",
+      "setup-pstack",
+      "show-me-your-work",
+      "swarm"
+    ]
+  },
+  "piMimir": {
+    "repo": "casualjim/pi-mimir",
+    "branch": "main",
+    "watchPaths": [
+      "packages/pi-pstack/extensions",
+      "packages/pi-pstack/agents"
+    ],
+    "lastCheckedSha": "4bb74426d0b6cf27c49c34d833591bb6fbd3e1df"
+  }
+}
