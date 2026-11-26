@@ -128,8 +128,8 @@ To pin an agent globally, add it to `task.agentModelOverrides` in
 ```yaml
 task:
   agentModelOverrides:
-    poteto-agent: nchc/GLM-5.3:max
-    comment-sicko: nchc/GLM-5.3:low
+    poteto-agent: anthropic/claude-opus-5.5
+    comment-sicko: openai/gpt-5.4-mini
 ```
 
 If you use [`pi-model-sync`](https://github.com/SenCha930511/pi-model-sync),
@@ -145,9 +145,9 @@ requires omp's per-call model selection:
 task:
   perCallModel: "on"
   perCallModelAllow:
-    - nchc/GLM-5.3
-    - nchc/Kimi-K3.1-Pro
-    - nchc/Voldemort-V4.1-Flash
+    - anthropic/claude-opus-5.5
+    - openai/gpt-5.4
+    - anthropic/claude-sonnet-5.5
 ```
 
 The models must also be granted through a configured chat role or an agent's
