@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 - 2026-11-26
+
+- Fixed review findings: registered-command guidance, sticky-mode help,
+  `interrogate` per-call model fallback, confirmation-guard wording, stale
+  `/poteto-mode` references, and cloud-execution advice.
+- Expanded skill tests to scan every markdown file under `skills/`.
+
 ## 0.1.0 - 2026-11-26
 
 - Initial omp-only fork of `@casualjim/pi-pstack` 0.1.32.

@@ -39,6 +39,10 @@ Other entry points:
 /skill:poteto-help        pick a skill or debug a run
 ```
 
+These commands require the skill to be registered in `skills.includeSkills`. On a
+setup that only registers `poteto-mode`, read the skill files through
+`skills/poteto-mode/SKILL-INDEX.md` instead.
+
 ## What's included
 
 - 57 skills under `skills/`, adapted from upstream. `skills/poteto-mode/SKILL-INDEX.md`

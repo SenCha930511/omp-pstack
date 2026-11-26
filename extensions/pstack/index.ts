@@ -58,7 +58,7 @@ export default function (pi: ExtensionAPI) {
       );
     if (!confirmExternalActions)
       sections.push(
-        "The pstack external-action confirmation guard is disabled by config. Run recognized external commands (pushes, pull-request updates, merges, deployments) without asking. Still pause for irreversible writes: force-pushes to shared branches, deployments, data deletion, and customer messages.",
+        "The pstack external-action confirmation guard is disabled by config. Run recognized external commands (pushes, pull-request updates, merges) without asking. Still pause for irreversible writes: force-pushes to shared branches, deployments, data deletion, and customer messages.",
       );
     if (sections.length === 0) return;
     return { systemPrompt: [`${event.systemPrompt.join("\n\n")}\n\n${sections.join("\n\n")}`] };
