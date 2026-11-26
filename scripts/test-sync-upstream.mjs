@@ -173,8 +173,17 @@ test("returns issue mode for pi-mimir or adapted-only updates and none when up t
     cursorSha: "dddddddddddddddddddddddddddddddddddddddd",
     cursorChangedFile: manualOnly.changedPath,
     piMimirCommitsFile: manualOnly.piCommitsPath,
+    reportOutput: path.join(manualOnly.dir, "issue-report.md"),
   });
   assert.equal(issueRes.summary.mode, "issue");
+
+  const issueReport = fs.readFileSync(path.join(manualOnly.dir, "issue-report.md"), "utf8");
+  assert.ok(issueReport.includes("### After porting"));
+  assert.ok(
+    issueReport.includes(
+      "npm run sync:ack -- --cursor dddddddddddddddddddddddddddddddddddddddd --pi-mimir cccccccccccccccccccccccccccccccccccccccc",
+    ),
+  );
 
   const noop = createFixture({
     localSkills: { tdd: { "SKILL.md": "same\n" } },
