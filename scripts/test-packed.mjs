@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { access, mkdir, mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -71,6 +71,26 @@ async function measureUnpackedSize(directory) {
   return total;
 }
 
+async function listFilesRecursive(directory, base) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name === ".DS_Store") continue;
+    const full = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...(await listFilesRecursive(full, base)));
+    else files.push(path.relative(base, full).replaceAll("\\", "/"));
+  }
+  return files;
+}
+
+async function expectedPackedFiles(root) {
+  const files = [];
+  for (const directory of ["extensions", "skills", "agents"]) {
+    files.push(...(await listFilesRecursive(path.join(root, directory), root)));
+  }
+  files.push("README.md", "LICENSE", "NOTICE.md", "package.json");
+  return files.sort();
+}
+
 const tarballArgIndex = process.argv.indexOf("--tarball");
 assert.ok(tarballArgIndex === -1 || Boolean(process.argv[tarballArgIndex + 1]), "--tarball requires a tarball path");
 const suppliedTarball = tarballArgIndex === -1 ? undefined : path.resolve(process.argv[tarballArgIndex + 1]);
@@ -105,6 +125,13 @@ try {
   }
 
   const fileSet = new Set(files);
+
+  const expected = await expectedPackedFiles(root);
+  assert.deepEqual(
+    [...fileSet].sort(),
+    expected,
+    "packed tarball contents do not match the package source tree",
+  );
   for (const required of REQUIRED_FILES) {
     assert.ok(fileSet.has(required), `packed tarball is missing required file: ${required}`);
   }
@@ -162,7 +189,100 @@ try {
     PI_CODING_AGENT_DIR: path.join(ompHome, "agent"),
   };
   const ompCommand = resolveOmpCommand(root);
-  const modelsProbe = resolveCommandProbe(ompCommand, ["models", "--no-extensions", "-e", installedExtensionDir, "--json"]);
+
+  const linkProbe = resolveCommandProbe(ompCommand, ["plugin", "link", installed]);
+  await execute(linkProbe.command, linkProbe.args, {
+    cwd: temporary,
+    env: ompEnv,
+    timeout: 120_000,
+    maxBuffer: 4 * 1024 * 1024,
+    windowsHide: true,
+    windowsVerbatimArguments: process.platform === "win32",
+  });
+
+  const listProbe = resolveCommandProbe(ompCommand, ["plugin", "list", "--json"]);
+  const listed = await execute(listProbe.command, listProbe.args, {
+    cwd: temporary,
+    env: ompEnv,
+    timeout: 120_000,
+    maxBuffer: 4 * 1024 * 1024,
+    windowsHide: true,
+    windowsVerbatimArguments: process.platform === "win32",
+  });
+  const plugins = JSON.parse(listed.stdout);
+  assert.ok(
+    Array.isArray(plugins.npm) && plugins.npm.some((plugin) => plugin.name === PACKAGE_NAME),
+    `omp plugin list did not register ${PACKAGE_NAME}: ${listed.stdout}`,
+  );
+
+  const discoveryScript = path.join(root, `.omp-pstack-discovery-${process.pid}.mjs`);
+  await writeFile(
+    discoveryScript,
+    [
+      'import { loadSkills } from "@oh-my-pi/pi-coding-agent/extensibility/skills";',
+      'import { discoverAgents } from "@oh-my-pi/pi-coding-agent/task";',
+      'import { discoverExtensionPaths, loadExtensions } from "@oh-my-pi/pi-coding-agent/extensibility/extensions";',
+      "const [projectDir, home] = process.argv.slice(2);",
+      "const skills = await loadSkills({ cwd: projectDir });",
+      "const agents = await discoverAgents(projectDir, home);",
+      "const extensionPaths = await discoverExtensionPaths([], projectDir, undefined, { ambient: true, includeAmbientHooks: false });",
+      "const loaded = await loadExtensions(extensionPaths, projectDir);",
+      "console.log(JSON.stringify({",
+      "  skills: skills.skills.map((skill) => skill.name).sort(),",
+      "  skillWarnings: skills.warnings,",
+      "  agents: agents.agents.map((agent) => ({ name: agent.name, spawns: agent.spawns ?? null, tools: agent.tools ?? null })),",
+      "  extensionPaths,",
+      "  extensionErrors: loaded.errors,",
+      "  extensionCount: loaded.extensions.length,",
+      "}));",
+    ].join("\n"),
+  );
+  let discovered;
+  try {
+    const discoveryProbe = resolveCommandProbe("bun", [discoveryScript, temporary, ompHome]);
+    const discovery = await execute(discoveryProbe.command, discoveryProbe.args, {
+      cwd: root,
+      env: ompEnv,
+      timeout: 120_000,
+      maxBuffer: 8 * 1024 * 1024,
+      windowsHide: true,
+      windowsVerbatimArguments: process.platform === "win32",
+    });
+    discovered = JSON.parse(discovery.stdout);
+  } finally {
+    await rm(discoveryScript, { force: true });
+  }
+
+  const expectedSkills = (await readdir(path.join(root, "skills"), { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  assert.deepEqual(discovered.skills, expectedSkills, "discovered skills do not match the source tree");
+  assert.ok(discovered.skills.includes("poteto-mode"), "discovery missed poteto-mode");
+  assert.ok(discovered.skills.includes("reframe"), "discovery missed reframe");
+
+  const potetoAgent = discovered.agents.find((agent) => agent.name === "poteto-agent");
+  const commentSicko = discovered.agents.find((agent) => agent.name === "comment-sicko");
+  assert.ok(potetoAgent, "discovery missed poteto-agent");
+  assert.equal(potetoAgent.spawns, "*", 'poteto-agent must declare spawns: "*"');
+  assert.ok(commentSicko, "discovery missed comment-sicko");
+  assert.equal(commentSicko.spawns, null, "comment-sicko must not declare spawns");
+  assert.ok(commentSicko.tools?.includes("glob"), "comment-sicko must include glob");
+  assert.ok(!commentSicko.tools?.includes("ls"), "comment-sicko must not include ls");
+
+  const discoveredExtension = discovered.extensionPaths.find(
+    (extensionPath) =>
+      extensionPath.includes(PACKAGE_NAME) && extensionPath.includes(path.join("extensions", "pstack")),
+  );
+  assert.ok(
+    discoveredExtension,
+    `discovery missed the pstack extension: ${JSON.stringify(discovered.extensionPaths)}`,
+  );
+  assert.deepEqual(discovered.extensionErrors, [], `extension load errors: ${JSON.stringify(discovered.extensionErrors)}`);
+  assert.ok(discovered.extensionCount > 0, "no extension loaded");
+  console.log(`OMP discovery: ${discovered.skills.length} skills, 2 pstack agents, ${discovered.extensionCount} extension: PASS`);
+
+  const modelsProbe = resolveCommandProbe(ompCommand, ["models", "--json"]);
   const catalog = await execute(modelsProbe.command, modelsProbe.args, {
     cwd: temporary,
     env: ompEnv,
