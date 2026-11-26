@@ -143,6 +143,22 @@ function messagesOf(result: unknown): Message[] {
   return (result as { messages: Message[] }).messages;
 }
 
+async function dispatchLikeHost(
+  host: ReturnType<typeof createMockHost>,
+  text: string,
+  ctx: unknown,
+): Promise<{ kind: "command" | "skill"; text: string }> {
+  const input = await host.emit("input", { text }, ctx);
+  const routed = input && typeof input === "object" && "text" in input ? (input as { text: string }).text : text;
+  if (routed.startsWith("/skill:")) return { kind: "skill", text: routed };
+  const commandName = routed.startsWith("/") ? routed.slice(1).split(/\s+/, 1)[0] : undefined;
+  if (commandName && host.commands.has(commandName)) {
+    await host.runCommand(commandName, routed.slice(commandName.length + 1).trim(), ctx);
+    return { kind: "command", text: routed };
+  }
+  return { kind: "skill", text: routed };
+}
+
 describe("interaction", () => {
   test("preferredAskTool detects active ask tool", () => {
     expect(preferredAskTool({ getActiveTools: () => ["read", "ask"] })).toBe("ask");
@@ -241,6 +257,21 @@ describe("pstackExtension", () => {
     expect(host.statusCalls).toEqual([]);
   });
 
+  test("one-shot input reaches the skill path, not the command fallback", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true });
+
+    const oneShot = await dispatchLikeHost(host, "/poteto-mode fix the bug", ctx);
+    expect(oneShot).toEqual({ kind: "skill", text: "/skill:poteto-mode fix the bug" });
+    expect(host.sent).toEqual([]);
+    expect(host.appended).toEqual([]);
+
+    const control = await dispatchLikeHost(host, "/poteto-mode sticky", ctx);
+    expect(control.kind).toBe("command");
+    expect(host.appended).toEqual([{ customType: "pstack-mode", data: { enabled: true } }]);
+  });
+
   test("before_agent_start returns a hidden context message", async () => {
     const host = createMockHost(["read", "ask"]);
     pstackExtension(host.api);
@@ -286,14 +317,24 @@ describe("pstackExtension", () => {
     await host.emit("session_start", {}, ctx);
 
     const existing = contextMessage();
+    const otherCustom: Message = {
+      role: "custom",
+      customType: "other-extension",
+      content: "keep",
+      display: false,
+      timestamp: 3,
+    };
     const user = userMessage();
-    const on = messagesOf(await host.emit("context", { messages: [existing, user] }, ctx));
-    expect(on).toEqual([existing, user]);
+    const on = messagesOf(await host.emit("context", { messages: [existing, otherCustom, user] }, ctx));
+    expect(on).toEqual([existing, otherCustom, user]);
     expect(on[0]).toBe(existing);
 
     const offCtx = host.makeCtx({ hasUI: true, entries: DISABLED });
     await host.emit("session_start", {}, offCtx);
-    expect(messagesOf(await host.emit("context", { messages: [existing, user] }, offCtx))).toEqual([user]);
+    expect(messagesOf(await host.emit("context", { messages: [existing, otherCustom, user] }, offCtx))).toEqual([
+      otherCustom,
+      user,
+    ]);
   });
 
   test("context inserts at the stable prefix and memoizes the message", async () => {
