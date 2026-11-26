@@ -18,9 +18,24 @@ no `subagent` tool registration.
 
 ## Install
 
+From the marketplace:
+
 ```sh
-omp plugin install omp-pstack
+omp plugin marketplace add SenCha930511/omp-marketplace
+omp plugin install omp-pstack@sencha930511
 ```
+
+The marketplace catalog lives at
+[`SenCha930511/omp-marketplace`](https://github.com/SenCha930511/omp-marketplace).
+Its `omp-pstack` entry points at the `v0.2.0` GitHub tag.
+
+Or install the published npm package directly:
+
+```sh
+omp plugin install npm:omp-pstack
+```
+
+To pin this version, use `omp plugin install npm:omp-pstack@0.2.0`.
 
 For local development:
 
