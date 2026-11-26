@@ -59,16 +59,6 @@ function createFixture({
     fs.writeFileSync(path.join(root, "skills", "poteto-mode", "SKILL.md"), "---\nname: poteto-mode\ndescription: poteto\n---\n");
   }
 
-  const indexSkills = Object.keys(localSkills)
-    .filter((name) => name !== "poteto-mode")
-    .sort()
-    .map((name) => `- ${name} → ../${name}/SKILL.md`)
-    .join("\n");
-  fs.writeFileSync(
-    path.join(root, "skills", "poteto-mode", "SKILL-INDEX.md"),
-    `# pstack skill paths\n\n${indexSkills}\n`,
-  );
-
   for (const [skillName, files] of Object.entries(upstreamSkills)) {
     for (const [rel, content] of Object.entries(files)) {
       const target = path.join(cursorDir, "pstack", "skills", skillName, rel);
@@ -92,7 +82,7 @@ after(() => {
   }
 });
 
-test("adds new clean skills, updates unadapted skills, rebuilds SKILL-INDEX, and advances SHA", () => {
+test("adds new clean skills, updates unadapted skills, and advances SHA", () => {
   const { root, cursorDir, changedPath, piCommitsPath, dir } = createFixture({
     localSkills: {
       tdd: { "SKILL.md": "old tdd\n" },
@@ -128,12 +118,10 @@ test("adds new clean skills, updates unadapted skills, rebuilds SKILL-INDEX, and
   assert.equal(summary.mode, "pr");
   assert.deepEqual(summary.addedSkills, ["reframe"]);
   assert.deepEqual(summary.updatedSkills, ["tdd"]);
-  assert.equal(summary.skillIndexChanged, true);
   assert.deepEqual(summary.manualAdaptedSkills, [{ name: "swarm", files: ["pstack/skills/swarm/SKILL.md"] }]);
   assert.equal(fs.existsSync(path.join(root, "skills", "make-bot-ui")), false);
   assert.equal(fs.readFileSync(path.join(root, "skills", "swarm", "SKILL.md"), "utf8"), "omp swarm\n");
   assert.equal(fs.readFileSync(path.join(root, "skills", "tdd", "SKILL.md"), "utf8"), "updated tdd\n");
-  assert.match(fs.readFileSync(path.join(root, "skills", "poteto-mode", "SKILL-INDEX.md"), "utf8"), /- reframe → \.\.\/reframe\/SKILL\.md/);
 
   const updatedConfig = JSON.parse(fs.readFileSync(path.join(root, ".github", "upstream-sync.json"), "utf8"));
   assert.equal(updatedConfig.cursor.lastSyncedSha, targetSha);
@@ -226,7 +214,6 @@ test("dry-run computes PR summary without modifying repository files", () => {
   assert.equal(summary.mode, "pr");
   assert.deepEqual(summary.addedSkills, ["reframe"]);
   assert.deepEqual(summary.updatedSkills, ["tdd"]);
-  assert.equal(summary.skillIndexChanged, true);
   assert.equal(fs.readFileSync(path.join(root, "skills", "tdd", "SKILL.md"), "utf8"), "old\n");
   assert.equal(fs.existsSync(path.join(root, "skills", "reframe")), false);
   const cfg = JSON.parse(fs.readFileSync(path.join(root, ".github", "upstream-sync.json"), "utf8"));

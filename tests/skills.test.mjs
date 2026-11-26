@@ -41,12 +41,6 @@ test("local Markdown links resolve to real files", () => {
   }
 });
 
-test("docs do not use skill URI syntax", () => {
-  for (const file of docFiles) {
-    assert.doesNotMatch(readFileSync(file, "utf8"), /skill:\/\//, `${file}: skill URI syntax`);
-  }
-});
-
 test("every skill has name and description frontmatter", () => {
   for (const name of skillNames) {
     const text = readFileSync(join(skillsDir, name, "SKILL.md"), "utf8");
@@ -56,12 +50,11 @@ test("every skill has name and description frontmatter", () => {
   }
 });
 
-test("the relative-path index covers every skill except poteto-mode", () => {
-  const index = readFileSync(join(skillsDir, "poteto-mode", "SKILL-INDEX.md"), "utf8");
+test("bundled skills are hidden from the model catalog", () => {
   for (const name of skillNames) {
-    if (name === "poteto-mode") continue;
-    assert.ok(index.includes(`../${name}/SKILL.md`), `${name}: missing from SKILL-INDEX.md`);
-    assert.ok(statSync(join(skillsDir, name, "SKILL.md")).isFile(), `${name}: missing SKILL.md`);
+    if (name === "setup-pstack") continue;
+    const text = readFileSync(join(skillsDir, name, "SKILL.md"), "utf8");
+    assert.match(text, /^disable-model-invocation: true$/m, `${name}: missing disable-model-invocation`);
   }
 });
 
@@ -141,12 +134,11 @@ test("worktree-cleanup and autopilot-full use omp session state", () => {
   assert.match(autopilot, /decision log/);
 });
 
-test("poteto-mode carries the omp header and relative path rule", () => {
+test("poteto-mode carries the omp header and hide-mode rule", () => {
   const text = readFileSync(join(skillsDir, "poteto-mode", "SKILL.md"), "utf8");
   assert.match(text, /Poteto Mode is active for this session/);
-  assert.match(text, /SKILL-INDEX\.md/);
-  assert.match(text, /\.\.\/<name>\/SKILL\.md/);
-  assert.doesNotMatch(text, /skill:\/\//);
+  assert.match(text, /skill:\/\/<name>/);
+  assert.doesNotMatch(text, /SKILL-INDEX/);
 });
 
 test("every bundled agent has matching name and description frontmatter", () => {

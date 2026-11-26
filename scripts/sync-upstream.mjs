@@ -140,27 +140,6 @@ export function scanForbiddenReferences(skillDir) {
   return matches;
 }
 
-export function rebuildSkillIndex(root, { dryRun = false, addedSkills = [] } = {}) {
-  const indexPath = path.join(root, "skills", "poteto-mode", "SKILL-INDEX.md");
-  const existing = fs.readFileSync(indexPath, "utf8");
-  const lines = existing.split(/\r?\n/);
-  const firstBulletIndex = lines.findIndex((line) => line.startsWith("- "));
-  if (firstBulletIndex === -1) {
-    throw new Error("skills/poteto-mode/SKILL-INDEX.md has no bullet list entries");
-  }
-  const header = lines.slice(0, firstBulletIndex).join("\n");
-  const skillSet = new Set(listDirectories(path.join(root, "skills")));
-  for (const added of addedSkills) skillSet.add(added);
-  skillSet.delete("poteto-mode");
-  const bullets = [...skillSet].sort().map((name) => `- ${name} → ../${name}/SKILL.md`);
-  const updated = `${header}\n${bullets.join("\n")}\n`;
-  const changed = updated !== existing;
-  if (changed && !dryRun) {
-    fs.writeFileSync(indexPath, updated, "utf8");
-  }
-  return changed;
-}
-
 function parseChangedFiles(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return [];
   const raw = fs.readFileSync(filePath, "utf8");
@@ -221,16 +200,13 @@ function buildReport(config, summary, cursorCommits) {
     lines.push("### Upstream Commits", "", formatCommitList(cursorCommits, cursor.repo), "");
   }
 
-  if (summary.addedSkills.length > 0 || summary.updatedSkills.length > 0 || summary.skillIndexChanged) {
+  if (summary.addedSkills.length > 0 || summary.updatedSkills.length > 0) {
     lines.push("### Auto-synced Changes", "");
     if (summary.addedSkills.length > 0) {
       lines.push(`- **Added skills**: ${summary.addedSkills.map((s) => `\`${s}\``).join(", ")}`);
     }
     if (summary.updatedSkills.length > 0) {
       lines.push(`- **Updated skills**: ${summary.updatedSkills.map((s) => `\`${s}\``).join(", ")}`);
-    }
-    if (summary.skillIndexChanged) {
-      lines.push("- **Updated**: `skills/poteto-mode/SKILL-INDEX.md`");
     }
     lines.push("");
   }
@@ -359,12 +335,7 @@ export function syncUpstream(options) {
     return !isPackagingPath(rel);
   });
 
-  const skillIndexChanged = rebuildSkillIndex(options.root, {
-    dryRun: options.dryRun,
-    addedSkills: options.dryRun ? addedSkills : [],
-  });
-
-  const hasAutoChanges = addedSkills.length > 0 || updatedSkills.length > 0 || skillIndexChanged;
+  const hasAutoChanges = addedSkills.length > 0 || updatedSkills.length > 0;
   const hasManualItems =
     manualAdaptedSkills.length > 0 ||
     blockedCursorSkills.length > 0 ||
@@ -380,7 +351,6 @@ export function syncUpstream(options) {
     shortSha: options.cursorSha.slice(0, 7),
     addedSkills,
     updatedSkills,
-    skillIndexChanged,
     manualAdaptedSkills,
     blockedCursorSkills,
     removedUpstreamSkills,

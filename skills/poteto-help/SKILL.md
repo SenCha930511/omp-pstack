@@ -45,7 +45,7 @@ If cost is the worry, say where the tokens go and how to spend fewer. pstack spe
 
 pstack installs into omp as `omp-pstack`.
 
-The skills use the Agent Skills format, and every workflow skill delegates through omp's `task` tool. Only `poteto-mode` is registered by default; read the other pstack skills as files using the paths in `poteto-mode/SKILL-INDEX.md`.
+The skills use the Agent Skills format, and every workflow skill delegates through omp's `task` tool. Every bundled skill is registered and hidden from the model catalog; invoke it with `/skill:<name>` or read `skill://<name>`. A non-empty `skills.includeSkills` allowlist filters skills out of the session, so include the pstack names or clear it.
 
 ## Start a task with `/poteto-mode`
 
@@ -66,7 +66,7 @@ The skills use the Agent Skills format, and every workflow skill delegates throu
 
 The default answer is `/poteto-mode`, which runs most of the others when its steps need them. Name a skill directly when the user wants more or less of something than the playbook gives. Read the skill before you recommend it, and give one example prompt.
 
-Only `poteto-mode` is registered by default. For every other skill, read the linked `SKILL.md`; `/skill:<name>` works only when that skill is in `skills.includeSkills`.
+Every bundled skill is registered. `/skill:<name>` works unless a `skills.includeSkills` allowlist excludes it.
 
 | The user wants to | Skill |
 |---|---|

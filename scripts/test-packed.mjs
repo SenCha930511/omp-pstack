@@ -11,6 +11,7 @@ import { resolveCommandProbe } from "./command-probe.mjs";
 const execute = promisify(execFile);
 const PACKAGE_NAME = "omp-pstack";
 const REQUIRED_FILES = [
+  "AGENT-INSTALL.md",
   "LICENSE",
   "NOTICE.md",
   "README.md",
@@ -19,7 +20,6 @@ const REQUIRED_FILES = [
   "extensions/pstack/index.ts",
   "extensions/pstack/interaction.ts",
   "package.json",
-  "skills/poteto-mode/SKILL-INDEX.md",
   "skills/poteto-mode/SKILL.md",
 ];
 const FORBIDDEN_EXACT = new Set([
@@ -87,7 +87,7 @@ async function expectedPackedFiles(root) {
   for (const directory of ["extensions", "skills", "agents"]) {
     files.push(...(await listFilesRecursive(path.join(root, directory), root)));
   }
-  files.push("README.md", "LICENSE", "NOTICE.md", "package.json");
+  files.push("AGENT-INSTALL.md", "README.md", "LICENSE", "NOTICE.md", "package.json");
   return files.sort();
 }
 

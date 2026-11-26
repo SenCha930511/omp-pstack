@@ -287,7 +287,7 @@ describe("pstackExtension", () => {
     expect(result?.message?.display).toBe(false);
     expect(result?.message?.content).toContain("Skill file:");
     expect(result?.message?.content).toContain("Skill directory:");
-    expect(result?.message?.content).toContain("SKILL-INDEX.md");
+    expect(result?.message?.content).toContain("skill://<name>");
     expect(result?.message?.content).toContain("# Poteto mode");
     expect(result?.message?.content).toContain("When you need user input, use the ask tool.");
   });
