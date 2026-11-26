@@ -1,5 +1,13 @@
 # omp-pstack
 
+[![npm version](https://img.shields.io/npm/v/omp-pstack.svg)](https://www.npmjs.com/package/omp-pstack)
+[![npm downloads](https://img.shields.io/npm/dm/omp-pstack.svg)](https://www.npmjs.com/package/omp-pstack)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A522-339933?logo=node.js&logoColor=white)](package.json)
+[![OMP plugin](https://img.shields.io/badge/OMP-plugin-7c3aed)](https://github.com/SenCha930511/omp-pstack)
+[![skills](https://img.shields.io/badge/skills-58-2ea44f)](skills/poteto-mode/SKILL-INDEX.md)
+[![GitHub stars](https://img.shields.io/github/stars/SenCha930511/omp-pstack)](https://github.com/SenCha930511/omp-pstack/stargazers)
+
 pstack skills, Poteto Mode, and the bundled `poteto-agent` / `comment-sicko`
 agents, adapted for **omp (oh-my-pi)**. This is an omp-only fork of
 [`@casualjim/pi-pstack`](https://github.com/casualjim/pi-mimir), which is a fork
