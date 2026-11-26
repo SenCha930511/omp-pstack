@@ -27,7 +27,7 @@ omp plugin install omp-pstack@sencha930511
 
 The marketplace catalog lives at
 [`SenCha930511/omp-marketplace`](https://github.com/SenCha930511/omp-marketplace).
-Its `omp-pstack` entry points at the `v0.2.0` GitHub tag.
+Its `omp-pstack` entry points at the `v0.3.0` GitHub tag.
 
 Or install the published npm package directly:
 
@@ -35,7 +35,7 @@ Or install the published npm package directly:
 omp plugin install npm:omp-pstack
 ```
 
-To pin this version, use `omp plugin install npm:omp-pstack@0.2.0`.
+To pin this version, use `omp plugin install npm:omp-pstack@0.3.0`.
 
 For local development:
 
@@ -46,13 +46,17 @@ omp plugin link /path/to/omp-pstack
 ## Quick start
 
 ```text
-/skill:poteto-mode implement the retry fix and verify it
+/poteto-mode implement the retry fix and verify it
 ```
 
-`/skill:poteto-mode` loads the full Poteto Mode skill and marks the session
-sticky. Every later turn keeps the workflow until the session ends. The skill
+`/poteto-mode <task>` loads the full Poteto Mode skill for one task. The skill
 matches the task to a playbook, copies its steps into the `todo` list, and
 delegates through omp's `task` tool.
+
+Use `/poteto-mode sticky` to keep the workflow on every later turn, and
+`/poteto-mode off` to stop it. `/poteto-mode status` shows the current state.
+`/skill:poteto-mode` remains omp's native one-shot skill command and does not
+enable sticky mode.
 
 Other entry points:
 
@@ -73,13 +77,15 @@ setup that only registers `poteto-mode`, read the skill files through
 - `agents/poteto-agent.md` and `agents/comment-sicko.md`. omp discovers them
   from the plugin's `agents/` directory; no role pack is needed. `poteto-agent`
   can spawn its own subagents; `comment-sicko` is read-only and cannot spawn.
-- A small extension that keeps Poteto Mode sticky across turns and session
-  transitions.
+- A small extension that implements `/poteto-mode` one-shot,
+  `/poteto-mode sticky`, and `/poteto-mode off`. Sticky content is injected as a
+  hidden `custom_message`; off filters it.
 
 Poteto Mode is scoped to the session that enabled it. Switching sessions,
-branching, or navigating the session tree restores the mode from that branch's
-`pstack-mode` entries. `/clear` writes a reset boundary, so the mode stays off
-until you invoke `/skill:poteto-mode` again.
+branching, or navigating the session tree restores sticky state from that
+branch's `pstack-mode` entries. `/clear` writes a reset boundary, so sticky
+stays off until you run `/poteto-mode sticky` again. One-shot
+`/poteto-mode <task>` affects one message only.
 
 ## omp adaptations
 
@@ -91,12 +97,16 @@ until you invoke `/skill:poteto-mode` again.
 | `set_tasks` | `todo` |
 | per-call `role` | per-call `model` when `task.perCallModel` is on |
 | pi-herdr role pack | omp's conventional `agents/` discovery |
-| `/poteto-mode` extension command | `/skill:poteto-mode` (the extension marks it sticky) |
+| `/poteto-mode` extension command | `/poteto-mode <task>` one-shot, `/poteto-mode sticky`, `/poteto-mode off`, `/poteto-mode status` |
+| `/skill:poteto-mode` | omp native one-shot; does not enable sticky |
 
 Only `poteto-mode` is registered by default when your `skills.includeSkills`
 allowlist contains just that skill. The other pstack skills, `reframe` included,
 are read as files: `skills/poteto-mode/SKILL-INDEX.md` gives every relative path,
 so the model does not need to use skill URI syntax and fail.
+
+Prompt-level autonomy matches Cursor. Host-level approvals are controlled
+separately by `tools.approvalMode`.
 
 ## Model routing
 
