@@ -41,7 +41,6 @@ walk(path.join(root, "extensions", "pstack", "index.ts"));
 
 const files = [...seen].map((file) => path.relative(root, file).replaceAll("\\", "/")).sort();
 assert.deepEqual(files, [
-  "extensions/pstack/config.ts",
   "extensions/pstack/index.ts",
   "extensions/pstack/interaction.ts",
 ]);

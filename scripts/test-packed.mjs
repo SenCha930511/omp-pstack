@@ -16,7 +16,6 @@ const REQUIRED_FILES = [
   "README.md",
   "agents/comment-sicko.md",
   "agents/poteto-agent.md",
-  "extensions/pstack/config.ts",
   "extensions/pstack/index.ts",
   "extensions/pstack/interaction.ts",
   "package.json",
@@ -130,7 +129,6 @@ try {
 
   const installed = path.join(install, "node_modules", PACKAGE_NAME);
   await access(path.join(installed, "extensions", "pstack", "index.ts"));
-  await access(path.join(installed, "extensions", "pstack", "config.ts"));
   await access(path.join(installed, "extensions", "pstack", "interaction.ts"));
   await access(path.join(installed, "skills", "poteto-mode", "SKILL.md"));
   await access(path.join(installed, "agents", "poteto-agent.md"));
