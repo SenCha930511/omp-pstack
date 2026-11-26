@@ -14,7 +14,7 @@ This skill orchestrates three others: an inline mining pass (see step 1), the Ag
 
 ### 0. Check for an existing skill
 
-Look recursively for a `*-mode/SKILL.md` matching the user's handle in the active host's project and user skill roots (`.pi/skills/` and `~/.pi/agent/skills/` under pi, `.omp/skills/` and `~/.omp/agent/skills/` under omp). Mode skills can live in a personal category directory under that root (`<root>/<handle>/`), not only at the top level. If one exists, confirm intent with `a user question` (unless they already said "update my skill" or similar):
+Look recursively for a `*-mode/SKILL.md` matching the user's handle in the active host's project and user skill roots (`.pi/skills/` and `~/.pi/agent/skills/` under pi, `.omp/skills/` and `~/.omp/agent/skills/` under omp). Mode skills can live in a personal category directory under that root (`<root>/<handle>/`), not only at the top level. If one exists, confirm intent with the `ask` tool (unless they already said "update my skill" or similar):
 
 - Update the existing skill (default for repeat runs)
 - Start fresh (rare; ask why before doing it)
@@ -26,7 +26,7 @@ Update mode changes the rest of the flow:
 
 ### 1. Mine their history
 
-Locate prior sessions for the current working directory with the `recall` tool before fanning out. Read only paths it returns. Never glob the host's global session directory, because that crosses project boundaries and may read unrelated private chats.
+Locate prior sessions for the current working directory with the `eval` tool's built-in `archive` prelude (`archive.search`, `archive.sessions`, `archive.transcript`) before fanning out. Read only the paths it returns. Never glob the host's global session directory, because that crosses project boundaries and may read unrelated private chats.
 
 Survey recent agent conversations within that scope for recurring patterns. Run multiple parallel subagents across slices of history (e.g. last 2-4 weeks, split into 3 slices so each has enough material). Pick each subagent's `thinking` level for the job, per the Subagents section of the **poteto-mode** skill. Each slice mining subagent reads transcripts from the workspace-scoped path the parent provides, looks for the signals below, and returns a short structured list of patterns it saw with evidence pointers. Default signals worth hunting:
 
@@ -91,7 +91,7 @@ Work in a worktree off main. Commit and open a PR so the user can review it. Don
 
 ## Evaluation
 
-A `-mode` skill is subjective output. A the Agent Skills standard-style test/iterate benchmark loop isn't useful here. Vibe-check with the user: does it read like them? Did it miss anything? Then ship.
+An `-mode` skill is subjective output. An Agent Skills standard-style test/iterate benchmark loop isn't useful here. Vibe-check with the user: does it read like them? Did it miss anything? Then ship.
 
 Run a description-optimization loop only if the skill's trigger accuracy turns out to be a problem in practice.
 

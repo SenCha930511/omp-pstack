@@ -13,6 +13,8 @@
       "create-verification-skill",
       "how",
       "interrogate",
+      "ketchup",
+      "ketchup-video",
       "maintain-verification-skill",
       "no-comments",
       "poteto-help",
@@ -21,7 +23,8 @@
       "reflect",
       "setup-pstack",
       "show-me-your-work",
-      "swarm"
+      "swarm",
+      "teach"
     ]
   },
   "piMimir": {

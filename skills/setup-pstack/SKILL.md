@@ -24,14 +24,14 @@ Ask for a budget: `large` (highest thinking level the model supports), `medium` 
 - `poteto-agent` (implementation delegate)
 - `comment-sicko` (read-only comment reviewer)
 - `task` (generic worker)
-- `explore` (read-only investigator)
+- scout (read-only investigator)
 - `reviewer` (review specialist)
 
-To inherit the parent model, leave the agent out of the mapping; omp has no `inherit-parent` value. For panel skills (`arena`, `swarm`, `interrogate`), ask whether to enable per-call model selection: `task.perCallModel: "on"` plus the chosen models in `task.perCallModelAllow`. Without it, every seat uses the agent's configured model.
+To inherit the parent model, leave the agent out of the mapping; omp has no special inherit value. For panel skills (`arena`, `swarm`, `interrogate`), ask whether to enable per-call model selection: `task.perCallModel: "on"` plus the chosen models in `task.perCallModelAllow`. Without it, every seat uses the agent's configured model.
 
 ### 4. Validate
 
-Every model written must be in the detected set. If a chosen model is not available, stop and ask again.
+Every model written must be in the detected set, including every model listed in `task.perCallModelAllow`. Those models must also be granted through a configured chat role or an agent frontmatter `model`, and confirmed available with `/models`. If a chosen model is not available, stop and ask again.
 
 ### 5. Write the routing
 
@@ -48,3 +48,5 @@ Check whether the project has a way to drive the real app for proof (a `verify-*
 ### 8. Offer a formal verification skill (optional)
 
 Check whether the project already has a formal verification skill (a project skill that runs a model checker, a proof, or another verifier against the code). If not, offer once: "want a formal verification skill, so agents can prove a key property of your code holds in every case in scope, not only the cases tests reach? I can generate one by following `../create-formal-verification-skill/SKILL.md`." On yes, read and follow that file (invoke `/skill:create-formal-verification-skill` only if it is registered). On no, move on without pushing.
+
+When developing or testing pstack itself, do not rewrite the user's `~/.omp/agent/config.yml`.
