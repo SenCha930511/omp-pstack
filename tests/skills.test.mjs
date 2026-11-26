@@ -133,3 +133,32 @@ test("package.json omp manifest paths exist", () => {
     assert.ok(existsSync(target), `missing omp manifest target: ${rel}`);
   }
 });
+
+test("agents use only supported omp frontmatter fields", () => {
+  for (const file of agentFiles) {
+    const text = readFileSync(join(agentsDir, file), "utf8");
+    for (const field of ["system-prompt:", "spawning:", "auto-exit:"]) {
+      assert.doesNotMatch(text, new RegExp(`\\r?\\n${field}`), `${file}: unsupported frontmatter field ${field}`);
+    }
+  }
+
+  const poteto = readFileSync(join(agentsDir, "poteto-agent.md"), "utf8");
+  assert.match(poteto, /\r?\nspawns:\s*"\*"/);
+
+  const sicko = readFileSync(join(agentsDir, "comment-sicko.md"), "utf8");
+  assert.doesNotMatch(sicko, /\r?\nspawns:/);
+  const toolsLine = sicko.match(/\r?\ntools:\s*(.+)\r?\n/);
+  assert.ok(toolsLine, "comment-sicko: missing tools");
+  assert.doesNotMatch(toolsLine[1], /\bls\b/);
+  assert.match(toolsLine[1], /\bglob\b/);
+});
+
+test("skills do not keep stale porting paths", () => {
+  const stale = ["agent-transcripts/", "packages/pi-pstack", "inherit-parent", "explore (read-only"];
+  for (const file of skillMarkdown) {
+    const text = readFileSync(file, "utf8");
+    for (const marker of stale) {
+      assert.ok(!text.includes(marker), `${file}: stale porting text ${marker}`);
+    }
+  }
+});

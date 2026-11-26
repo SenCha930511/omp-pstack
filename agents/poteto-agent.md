@@ -1,9 +1,7 @@
 ---
 name: poteto-agent
 description: pstack implementation delegate. Use for delegates, not as the runner for `/skill:poteto-mode` itself. Spawn a fresh `poteto-agent` for each new task, and resume one only in the strict cases that poteto-mode's Subagents section names. Reads the bundled poteto-mode skill in full before any work, including its Principles index. Substituting a generic agent skips that read and drifts.
-system-prompt: append
-spawning: true
-auto-exit: true
+spawns: "*"
 ---
 
 # Poteto subagent

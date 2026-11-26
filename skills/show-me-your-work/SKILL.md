@@ -55,7 +55,7 @@ Commit it only when the work is ambitious enough that a reviewer needs the trail
 
 ## Audit the log against the transcript
 
-At the end of the run, before handing back, check the log told the truth. Read `$PI_SESSION_FILE` for this run. For an earlier same-project session, use the `recall` tool; do not glob the host's global session directory. Walk this run's rows against what actually happened. Each stretch of them begins at one of this run's `start` rows, or at the first row if this run created the log, and ends at the next `start` row of another run:
+At the end of the run, before handing back, check the log told the truth. Read `$PI_SESSION_FILE` for this run. For a subagent's trail, use `read history://<agentId>`. For an earlier same-project session, use the `eval` tool's built-in `archive` prelude; do not glob the host's global session directory. Walk this run's rows against what actually happened. Each stretch of them begins at one of this run's `start` rows, or at the first row if this run created the log, and ends at the next `start` row of another run:
 
 - Check that every row maps to a real decision or action.
 - Check that each row's evidence resolves and shows what the row claims.
