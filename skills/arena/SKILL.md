@@ -25,7 +25,7 @@ If a candidate produces no output, proceed with N-1 and note the dropout.
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, spawn one readonly judge from the configured panel models; with no pool configured, use a model from a family other than the parent's. A seat left on the parent model never judges. If no entry from another family runs, skip the judge, pick the base alone in Phase D, and say so.
+After all Phase B candidates complete, spawn one read-only `scout` judge from the configured panel models; with no pool configured, use a model from a family other than the parent's. A seat left on the parent model never judges. If no entry from another family runs, skip the judge, pick the base alone in Phase D, and say so.
 
 ## Phase D: Pick a base
 

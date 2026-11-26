@@ -97,11 +97,48 @@ test("skills do not reference Cursor-specific tooling", () => {
   }
 });
 
-test("skills do not advertise the removed /poteto-mode command", () => {
-  for (const file of skillMarkdown) {
-    const text = readFileSync(file, "utf8");
-    assert.doesNotMatch(text, /(?<!skill:)(?<![\w.\/])\/poteto-mode(?=[\s`.,;:]|$)/, `${file}: stale /poteto-mode command`);
-  }
+test("poteto-mode autonomy matches Cursor", () => {
+  const text = readFileSync(join(skillsDir, "poteto-mode", "SKILL.md"), "utf8");
+  const autonomy = text.match(/## Autonomy\n([\s\S]*?)\n## /)?.[1] ?? "";
+  assert.match(autonomy, /Reversible work and external actions/);
+  assert.match(autonomy, /Always pause\*\* for irreversible writes/);
+  assert.doesNotMatch(autonomy, /PR creation or updates/);
+  assert.doesNotMatch(autonomy, /CI triggers/);
+  assert.doesNotMatch(autonomy, /\bmerges\b/);
+});
+
+test("poteto-help documents the sticky commands and reframe", () => {
+  const text = readFileSync(join(skillsDir, "poteto-help", "SKILL.md"), "utf8");
+  assert.match(text, /\[`reframe`\]\(\.\.\/reframe\/SKILL\.md\)/);
+  assert.match(text, /\/poteto-mode sticky/);
+  assert.match(text, /\/poteto-mode off/);
+  assert.match(text, /\/poteto-mode status/);
+});
+
+test("how and arena use scout, interrogate uses task", () => {
+  const how = readFileSync(join(skillsDir, "how", "SKILL.md"), "utf8");
+  assert.match(how, /Spawn one `scout` subagent/);
+
+  const arena = readFileSync(join(skillsDir, "arena", "SKILL.md"), "utf8");
+  const phaseC = arena.match(/## Phase C: Cross-judge\n([\s\S]*?)\n## /)?.[1] ?? "";
+  assert.match(phaseC, /`scout`/);
+
+  const interrogate = readFileSync(join(skillsDir, "interrogate", "SKILL.md"), "utf8");
+  const fanOut = interrogate.match(/## Fan out\n([\s\S]*?)\n## /)?.[1] ?? "";
+  assert.match(fanOut, /agent: "task"/);
+  assert.doesNotMatch(fanOut, /poteto-agent/);
+});
+
+test("worktree-cleanup and autopilot-full use omp session state", () => {
+  const worktree = readFileSync(join(skillsDir, "poteto-mode", "playbooks", "worktree-cleanup.md"), "utf8");
+  assert.doesNotMatch(worktree, /sidebar/);
+  assert.match(worktree, /session-pins\.json/);
+  assert.match(worktree, /archive\.grep/);
+
+  const autopilot = readFileSync(join(skillsDir, "poteto-mode", "playbooks", "autopilot-full.md"), "utf8");
+  assert.doesNotMatch(autopilot, /VM dies/);
+  assert.doesNotMatch(autopilot, /root agent's store/);
+  assert.match(autopilot, /decision log/);
 });
 
 test("poteto-mode carries the omp header and relative path rule", () => {
@@ -149,8 +186,9 @@ test("agents use only supported omp frontmatter fields", () => {
   assert.doesNotMatch(sicko, /\r?\nspawns:/);
   const toolsLine = sicko.match(/\r?\ntools:\s*(.+)\r?\n/);
   assert.ok(toolsLine, "comment-sicko: missing tools");
-  assert.doesNotMatch(toolsLine[1], /\bls\b/);
-  assert.match(toolsLine[1], /\bglob\b/);
+  const tools = toolsLine[1].split(",").map((tool) => tool.trim());
+  assert.deepEqual(tools, ["read", "grep", "glob"]);
+  assert.doesNotMatch(toolsLine[1], /\b(bash|task)\b/);
 });
 
 test("skills do not keep stale porting paths", () => {

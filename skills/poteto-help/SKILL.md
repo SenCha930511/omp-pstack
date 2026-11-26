@@ -1,6 +1,6 @@
 ---
 name: poteto-help
-description: Guides users through pstack setup, /skill:poteto-mode, and picking the skill, playbook, or principle for a task. Ask for poteto-help with a question.
+description: Guides users through pstack setup, /poteto-mode, and picking the skill, playbook, or principle for a task. Ask for poteto-help with a question.
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Answer the user's question about pstack, hand them a prompt they can send, and link the file the answer came from. For a help question, don't start the work. The user asked how, and a pstack run spends real tokens, so let them send the prompt.
 
-A message that asks for work, such as "use pstack to fix this bug", is not a help question. Read [`poteto-mode`](../poteto-mode/SKILL.md), do the work under it, and mention once that sticky mode keeps it on.
+A message that asks for work, such as "use pstack to fix this bug", is not a help question. Read [`poteto-mode`](../poteto-mode/SKILL.md), do the work under it, and mention once that `/poteto-mode sticky` keeps it on.
 
 This file maps questions to the skills that hold the answers. Those files own the details. Read the file you route to before you quote it, and trust it when it disagrees with this map. The links here point into the installed package, which the user may not be able to open, so give the user the file's public copy: `https://github.com/SenCha930511/omp-pstack/blob/main/` followed by its repo-relative path.
 
@@ -17,7 +17,7 @@ This file maps questions to the skills that hold the answers. Those files own th
 Infer the need from the message and the conversation. A named situation, such as "which skill reviews a PR?", goes straight to its section. If the need is still unclear, ask one multiple-choice question with these options, then answer only the section they pick:
 
 - Get set up
-- Start a task with `/skill:poteto-mode`
+- Start a task with `/poteto-mode`
 - Pick a skill for a situation
 - Fix a run that went wrong
 - Make pstack my own
@@ -37,35 +37,43 @@ When role routing is unconfigured and it matters, ask whether the user wants to 
 
 1. Install the plugin into omp (`omp plugin install omp-pstack`; locally `omp plugin link /path/to/omp-pstack`).
 2. Optionally run [`/skill:setup-pstack`](../setup-pstack/SKILL.md). It asks for a reasoning budget, maps a model to each pstack agent through `task.agentModelOverrides` (or `pi-model-sync`), and offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
-3. Start a real task with `/skill:poteto-mode`, a goal, and a check that can pass or fail.
+3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
 
 Installing changes nothing until the user invokes a skill. The [README](../../README.md) has the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
 
-If cost is the worry, say where the tokens go and how to spend fewer. pstack spends extra tokens on subagents and review panels. Configure cheaper models per agent through `task.agentModelOverrides` (or `pi-model-sync`); an unconfigured agent runs on the chat's model. A shorter panel list runs fewer subagents, one for each entry. Save `/skill:poteto-mode` for work that needs rigor.
+If cost is the worry, say where the tokens go and how to spend fewer. pstack spends extra tokens on subagents and review panels. Configure cheaper models per agent through `task.agentModelOverrides` (or `pi-model-sync`); an unconfigured agent runs on the chat's model. A shorter panel list runs fewer subagents, one for each entry. Save `/poteto-mode` for work that needs rigor.
 
 pstack installs into omp as `omp-pstack`.
 
 The skills use the Agent Skills format, and every workflow skill delegates through omp's `task` tool. Only `poteto-mode` is registered by default; read the other pstack skills as files using the paths in `poteto-mode/SKILL-INDEX.md`.
 
-## Start a task with `/skill:poteto-mode`
+## Start a task with `/poteto-mode`
 
-`/skill:poteto-mode` matches the task to a playbook, copies the playbook's steps into the todo list, and runs the other skills as the steps need them. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one.
+`/poteto-mode <task>` matches the task to a playbook, copies the playbook's steps into the todo list, and runs the other skills as the steps need them. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one.
 
-`/skill:poteto-mode` marks the session sticky. Every later turn keeps the workflow until the session ends. Saying "new task" makes the mode match a fresh playbook without ending the session. Start each task with `/skill:poteto-mode` if you want a clean playbook selection.
+`/poteto-mode <task>` is one-shot. It affects this message only. `/poteto-mode sticky` keeps the workflow on every later turn until the session ends, and `/poteto-mode off` stops it. Saying "new task" makes the mode match a fresh playbook without ending the session. `/skill:poteto-mode` is omp's native one-shot skill command and does not enable sticky mode.
 
-`/skill:poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. To get the same style from a subagent of your own, spawn it with `agent: "poteto-agent"`.
+```text
+/poteto-mode <task>   one-shot
+/poteto-mode sticky   keep Poteto Mode on across turns
+/poteto-mode off      stop sticky mode
+/poteto-mode status   show sticky state
+```
+
+`/poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. To get the same style from a subagent of your own, spawn it with `agent: "poteto-agent"`.
 
 ## Pick a skill
 
-The default answer is `/skill:poteto-mode`, which runs most of the others when its steps need them. Name a skill directly when the user wants more or less of something than the playbook gives. Read the skill before you recommend it, and give one example prompt.
+The default answer is `/poteto-mode`, which runs most of the others when its steps need them. Name a skill directly when the user wants more or less of something than the playbook gives. Read the skill before you recommend it, and give one example prompt.
 
 Only `poteto-mode` is registered by default. For every other skill, read the linked `SKILL.md`; `/skill:<name>` works only when that skill is in `skills.includeSkills`.
 
 | The user wants to | Skill |
 |---|---|
-| Do any non-trivial task with rigor | [`/skill:poteto-mode`](../poteto-mode/SKILL.md) |
+| Do any non-trivial task with rigor | [`/poteto-mode`](../poteto-mode/SKILL.md) |
 | Check that the agent understood their goal and the problem before it starts | [`in-your-own-words`](../in-your-own-words/SKILL.md) |
 | Get a prompt rewritten deeper, not bigger, before sending it: what a top professional would add, their raw material and methods, and an outside check. It returns the prompt and doesn't do the task | [`sharpen`](../sharpen/SKILL.md) |
+| Learn the expert words for what they're building, with sources checked, and get the description rewritten with them | [`reframe`](../reframe/SKILL.md) |
 | Know how code works now, or where new code should live | [`how`](../how/SKILL.md) |
 | Know why code is shaped this way, or where a number came from | [`why`](../why/SKILL.md) |
 | Understand a change or subsystem, explained plainly | [`teach`](../teach/SKILL.md) |
@@ -113,7 +121,7 @@ Not in pstack:
 
 ## Playbooks and principles
 
-Playbooks are step lists inside `/skill:poteto-mode`, not skills, so they have no slash command. Inside `/skill:poteto-mode`, describing the task picks one, and these phrases name one directly:
+Playbooks are step lists inside `/poteto-mode`, not skills, so they have no slash command. Inside `/poteto-mode`, describing the task picks one, and these phrases name one directly:
 
 - "babysit this pr" or "check on pr 123" runs Babysit. It drives the PR to merge-ready and stops there. It doesn't merge unless the user asks to merge, land, or ship.
 - "land the stack" runs Shipping.
@@ -124,19 +132,19 @@ Playbooks are step lists inside `/skill:poteto-mode`, not skills, so they have n
 
 The Playbooks section of [`poteto-mode`](../poteto-mode/SKILL.md) lists every playbook.
 
-pstack has no planning skill. For work that spans phases or stacked PRs, asking `/skill:poteto-mode` for a plan runs the [Multi-phase plan playbook](../poteto-mode/playbooks/multi-phase-plan.md), which writes the plan and doesn't implement it. For a design question, the Prototype playbook or the **architect** skill settles it in code first.
+pstack has no planning skill. For work that spans phases or stacked PRs, asking `/poteto-mode` for a plan runs the [Multi-phase plan playbook](../poteto-mode/playbooks/multi-phase-plan.md), which writes the plan and doesn't implement it. For a design question, the Prototype playbook or the **architect** skill settles it in code first.
 
-Principles are one-rule skills that `/skill:poteto-mode` reads and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Reading `../principle-<name>/SKILL.md` loads one on demand.
+Principles are one-rule skills that `/poteto-mode` reads and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Reading `../principle-<name>/SKILL.md` loads one on demand.
 
 ## Fix a run that went wrong
 
 | Symptom | Fix |
 |---|---|
-| The mode stopped applying | The session may have restarted. Start the task with `/skill:poteto-mode` again; within a session, say "new task" to switch playbooks. |
+| The mode stopped applying | One-shot affects one message only. Start the task with `/poteto-mode <task>` again, or run `/poteto-mode sticky` to keep it across turns. Within a session, say "new task" to switch playbooks. |
 | A question got treated as the next step of the last task | Say "new task", or say the turn doesn't need the mode. |
 | A new model choice had no effect | Per-agent routing applies to new subagent spawns. Check `task.agentModelOverrides` (or the `pi-model-sync` preset) took effect. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |
-| A skill didn't load on its own | Skills load when the user types them or when `/skill:poteto-mode` runs them, and it doesn't run every skill. |
+| A skill didn't load on its own | Skills load when the user types them or when `/poteto-mode` runs them, and it doesn't run every skill. |
 | Parallel agents overwrote each other | Give each agent its own worktree; omp subagents run locally, so they share the machine. |
 | An overnight run moved but finished nothing | `/loop` needs a check that can pass or fail, not a duration. |
 | The reply claims success from a green build | Ask for the real command, flow, stored value, or profile. That's the prove-it-works principle. |
@@ -145,9 +153,9 @@ For a run that drifts, [`references/prompting.md`](references/prompting.md) has 
 
 ## Make pstack my own
 
-- [`automate-me`](../automate-me/SKILL.md) drafts a personal mode skill from the user's own history, to use alongside `/skill:poteto-mode`.
+- [`automate-me`](../automate-me/SKILL.md) drafts a personal mode skill from the user's own history, to use alongside `/poteto-mode`.
 - [`reflect`](../reflect/SKILL.md) after a session turns its lessons into skill edits the user approves.
-- `/skill:poteto-mode write a skill for <workflow>` runs the authoring playbook. The eval playbook tests a skill change blind.
+- `/poteto-mode write a skill for <workflow>` runs the authoring playbook. The eval playbook tests a skill change blind.
 - Fix a misbehaving skill in its own PR, not inside the feature work where it went wrong.
 
 
