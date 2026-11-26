@@ -2,7 +2,7 @@
 
 Only `poteto-mode` is registered as a skill on this setup. Read every other
 pstack skill as a file, resolving these paths against this file's directory.
-Do not call `skill://<name>` for them; it returns `Unknown skill`.
+Skill URI syntax returns `Unknown skill` for them, so use the file paths.
 
 Playbooks are inside the `poteto-mode` skill: `playbooks/<title>.md`.
 
