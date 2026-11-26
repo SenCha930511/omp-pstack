@@ -5,7 +5,8 @@ import type { ExtensionAPI, ExtensionContext } from "@oh-my-pi/pi-coding-agent";
 import { preferredAskTool } from "./interaction.js";
 
 const MODE_ENTRY = "pstack-mode";
-const CONTEXT_TYPE = "pstack-mode-context";
+const CONTEXT_TYPE = "pstack-mode-context-v2";
+const LEGACY_CONTEXT_TYPES = new Set(["pstack-mode-context"]);
 const SKILL_FILE = path.join(packageRoot(), "skills/poteto-mode/SKILL.md");
 const STATUS_TEXT = "pstack: poteto mode";
 const USAGE = [
@@ -41,7 +42,10 @@ function isPotetoModeEnabled(data: unknown): boolean {
 }
 
 function isContextMessage(message: { role: string; customType?: string }): boolean {
-  return message.role === "custom" && message.customType === CONTEXT_TYPE;
+  return (
+    message.role === "custom" &&
+    (message.customType === CONTEXT_TYPE || LEGACY_CONTEXT_TYPES.has(message.customType ?? ""))
+  );
 }
 
 export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
@@ -74,7 +78,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
       `Skill file: ${skillFile}`,
       `Skill directory: ${skillDir}`,
       "Resolve relative paths in this skill against the skill directory.",
-      "Other pstack skills are registered and hidden: invoke them with /skill:<name> or read skill://<name>.",
+      "Other pstack skills are registered. Invoke them with /skill:<name> or read skill://<name>; all but setup-pstack are hidden from the model catalog.",
     ];
     if (ctx.hasUI) {
       const ask = preferredAskTool(pi);
@@ -240,14 +244,17 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   });
 
   pi.on("context", (event, ctx) => {
-    if (!potetoMode) {
+    const body = readSkillBody();
+    if (!potetoMode || body === undefined) {
       return { messages: event.messages.filter((message) => !isContextMessage(message)) };
     }
-    const body = readSkillBody();
-    if (body === undefined) return;
-    if (event.messages.some(isContextMessage)) return { messages: event.messages };
-    const messages = [...event.messages];
-    messages.splice(messages[0]?.role === "compactionSummary" ? 1 : 0, 0, contextMessage(buildContextPayload(ctx, body)));
+    const content = buildContextPayload(ctx, body);
+    const current = event.messages.find(
+      (message) => isContextMessage(message) && "content" in message && message.content === content,
+    );
+    const messages = event.messages.filter((message) => !isContextMessage(message) || message === current);
+    if (current) return { messages };
+    messages.splice(messages[0]?.role === "compactionSummary" ? 1 : 0, 0, contextMessage(content));
     return { messages };
   });
 }

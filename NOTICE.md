@@ -34,7 +34,7 @@ changes are also released under the MIT License.
   `tools.approvalMode`.
 - `how` and `arena` use `scout`; `interrogate` uses `task`. `comment-sicko`
   keeps explicit read-only tools (`read`, `grep`, `glob`).
-- Skills are registered and hidden from the model catalog; `/skill:<name>` and `skill://<name>` both resolve them.
+- Skills are registered; all but `setup-pstack` are hidden from the model catalog, and `/skill:<name>` and `skill://<name>` both resolve them.
 - The extension was reduced to omp-only code paths.
 
 ## Names

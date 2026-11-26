@@ -2,7 +2,7 @@
 
 ## 0.3.1 - 2026-11-26
 
-- Switched bundled skills to hide mode: every skill is registered and hidden from the model catalog, so `/skill:<name>` and `skill://<name>` both resolve it.
+- Switched bundled skills to hide mode: every skill is registered, all but `setup-pstack` are hidden from the model catalog, and `/skill:<name>` and `skill://<name>` both resolve them.
 - Removed `SKILL-INDEX.md` and the read-as-file requirement; `poteto-mode` and `poteto-help` point at skill names again.
 - The sticky payload names `/skill:<name>` and `skill://<name>` instead of package file paths.
 - A non-empty `skills.includeSkills` allowlist filters pstack skills out of the session; clear it or add the names.

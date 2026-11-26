@@ -77,7 +77,7 @@ default empty allowlist loads them all.
 ## What's included
 
 - 58 skills under `skills/`, adapted from upstream, including `reframe`. They are
-  registered and hidden from the model catalog.
+  registered; 57 are hidden from the model catalog and `setup-pstack` stays visible.
 - `agents/poteto-agent.md` and `agents/comment-sicko.md`. omp discovers them
   from the plugin's `agents/` directory; no role pack is needed. `poteto-agent`
   can spawn its own subagents; `comment-sicko` is read-only and cannot spawn.
@@ -104,10 +104,11 @@ stays off until you run `/poteto-mode sticky` again. One-shot
 | `/poteto-mode` extension command | `/poteto-mode <task>` one-shot, `/poteto-mode sticky`, `/poteto-mode off`, `/poteto-mode status` |
 | `/skill:poteto-mode` | omp native one-shot; does not enable sticky |
 
-Every bundled skill is registered and hidden from the model catalog, so
-`/skill:<name>` and `skill://<name>` both resolve it. A non-empty
-`skills.includeSkills` allowlist removes skills from the session entirely; include
-the pstack names or clear it. The default empty allowlist needs no setup.
+Every bundled skill is registered. All but `setup-pstack` are hidden from the
+model catalog, so `/skill:<name>` and `skill://<name>` both resolve them. A
+non-empty `skills.includeSkills` allowlist removes skills from the session;
+include the pstack names or clear it. `skills.ignoredSkills` and
+`disabledExtensions` can remove one too. The default empty allowlist needs no setup.
 
 Prompt-level autonomy matches Cursor. Host-level approvals are controlled
 separately by `tools.approvalMode`.
