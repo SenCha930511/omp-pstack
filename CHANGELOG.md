@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 - 2026-11-26
+
+- Ported the upstream `reframe` skill and the PR #2 sync changes.
+- Replaced skill URI syntax with relative file paths across bundled docs and added local-link and URI checks.
+- Aligned agent frontmatter with omp: `poteto-agent` can spawn subagents, and `comment-sicko` uses `glob` and cannot spawn.
+- Moved session history lookups to the eval `archive` prelude and `history://`.
+- Added fallbacks for ketchup, ketchup-video, and teach when image or visualization tools are unavailable.
+- Synced Poteto Mode across session switch, branch, tree, and clear, validated entry data, and preserved systemPrompt segments.
+- Added strict test typechecking plus full tarball and real omp discovery verification.
+
 ## 0.1.1 - 2026-11-26
 
 - Fixed review findings: registered-command guidance, sticky-mode help,
