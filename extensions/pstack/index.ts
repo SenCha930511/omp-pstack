@@ -248,8 +248,11 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   });
 
   pi.on("context", (event, ctx) => {
+    if (!potetoMode) {
+      return { messages: event.messages.filter((message) => !isContextMessage(message)) };
+    }
     const body = readSkillBody();
-    if (!potetoMode || body === undefined) {
+    if (body === undefined) {
       return { messages: event.messages.filter((message) => !isContextMessage(message)) };
     }
     const content = buildContextPayload(ctx, body);
