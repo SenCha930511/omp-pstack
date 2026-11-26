@@ -109,6 +109,10 @@ function modeEntry(enabled: boolean): Entry {
 }
 
 function contextEntry(id = "ctx"): Entry {
+  return { type: "custom_message", id, customType: "pstack-mode-context-v2", content: "current", display: false };
+}
+
+function legacyContextEntry(id = "legacy"): Entry {
   return { type: "custom_message", id, customType: "pstack-mode-context", content: "old", display: false };
 }
 
@@ -119,7 +123,7 @@ const DISABLED: Entry[] = [modeEntry(false)];
 function contextMessage(overrides: Partial<Message> = {}): Message {
   return {
     role: "custom",
-    customType: "pstack-mode-context",
+    customType: "pstack-mode-context-v2",
     content: "old",
     display: false,
     timestamp: 1,
@@ -283,13 +287,24 @@ describe("pstackExtension", () => {
     );
 
     expect(result?.systemPrompt).toBeUndefined();
-    expect(result?.message?.customType).toBe("pstack-mode-context");
+    expect(result?.message?.customType).toBe("pstack-mode-context-v2");
     expect(result?.message?.display).toBe(false);
     expect(result?.message?.content).toContain("Skill file:");
     expect(result?.message?.content).toContain("Skill directory:");
     expect(result?.message?.content).toContain("skill://<name>");
     expect(result?.message?.content).toContain("# Poteto mode");
     expect(result?.message?.content).toContain("When you need user input, use the ask tool.");
+  });
+
+  test("before_agent_start replaces a legacy context entry", async () => {
+    const host = createMockHost(["read"]);
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true, entries: [legacyContextEntry(), modeEntry(true)] });
+    await host.emit("session_start", {}, ctx);
+
+    const result = injected(await host.emit("before_agent_start", {}, ctx));
+    expect(result?.message?.customType).toBe("pstack-mode-context-v2");
+    expect(result?.message?.content).not.toContain("SKILL-INDEX");
   });
 
   test("before_agent_start omits the ask hint without UI or the ask tool", async () => {
@@ -310,13 +325,20 @@ describe("pstackExtension", () => {
     );
   });
 
-  test("context preserves an existing message and filters only its own type", async () => {
+  test("context replaces stale messages and keeps foreign custom messages", async () => {
     const host = createMockHost();
     pstackExtension(host.api);
     const ctx = host.makeCtx({ hasUI: true, entries: ENABLED });
     await host.emit("session_start", {}, ctx);
 
-    const existing = contextMessage();
+    const stale = contextMessage({ content: "old" });
+    const legacy: Message = {
+      role: "custom",
+      customType: "pstack-mode-context",
+      content: "old",
+      display: false,
+      timestamp: 2,
+    };
     const otherCustom: Message = {
       role: "custom",
       customType: "other-extension",
@@ -325,13 +347,16 @@ describe("pstackExtension", () => {
       timestamp: 3,
     };
     const user = userMessage();
-    const on = messagesOf(await host.emit("context", { messages: [existing, otherCustom, user] }, ctx));
-    expect(on).toEqual([existing, otherCustom, user]);
-    expect(on[0]).toBe(existing);
+    const on = messagesOf(await host.emit("context", { messages: [legacy, stale, otherCustom, user] }, ctx));
+    expect(on).toHaveLength(3);
+    expect(on[0]?.customType).toBe("pstack-mode-context-v2");
+    expect(on[0]?.content).not.toBe("old");
+    expect(on[1]).toBe(otherCustom);
+    expect(on[2]).toBe(user);
 
     const offCtx = host.makeCtx({ hasUI: true, entries: DISABLED });
     await host.emit("session_start", {}, offCtx);
-    expect(messagesOf(await host.emit("context", { messages: [existing, otherCustom, user] }, offCtx))).toEqual([
+    expect(messagesOf(await host.emit("context", { messages: [legacy, otherCustom, user] }, offCtx))).toEqual([
       otherCustom,
       user,
     ]);

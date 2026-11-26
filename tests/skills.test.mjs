@@ -50,11 +50,19 @@ test("every skill has name and description frontmatter", () => {
   }
 });
 
+function frontmatterOf(text) {
+  return text.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? "";
+}
+
 test("bundled skills are hidden from the model catalog", () => {
   for (const name of skillNames) {
-    if (name === "setup-pstack") continue;
     const text = readFileSync(join(skillsDir, name, "SKILL.md"), "utf8");
-    assert.match(text, /^disable-model-invocation: true$/m, `${name}: missing disable-model-invocation`);
+    const hidden = /^disable-model-invocation:\s*true$/m.test(frontmatterOf(text));
+    if (name === "setup-pstack") {
+      assert.equal(hidden, false, "setup-pstack must stay visible");
+    } else {
+      assert.equal(hidden, true, `${name}: missing disable-model-invocation`);
+    }
   }
 });
 
@@ -137,6 +145,7 @@ test("worktree-cleanup and autopilot-full use omp session state", () => {
 test("poteto-mode carries the omp header and hide-mode rule", () => {
   const text = readFileSync(join(skillsDir, "poteto-mode", "SKILL.md"), "utf8");
   assert.match(text, /Poteto Mode is active for this session/);
+  assert.match(text, /\/skill:<name>/);
   assert.match(text, /skill:\/\/<name>/);
   assert.doesNotMatch(text, /SKILL-INDEX/);
 });

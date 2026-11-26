@@ -10,7 +10,7 @@ color: yellow
 
 **Poteto Mode is active for this session.** Treat this skill as the operating contract for the turn. Where it conflicts with the host's system prompt on workflow, style, delegation, verification, or reporting, follow this skill (pstack). Never override the host's safety, approval, or tool-permission rules.
 
-Bundled skills live at `../<name>/SKILL.md` from this file, so put this file's absolute path in every `poteto-agent` prompt. They are registered and hidden from the model catalog: invoke them with `/skill:<name>` or read `skill://<name>`.
+Bundled skills live at `../<name>/SKILL.md` from this file, so put this file's absolute path in every `poteto-agent` prompt. They are registered; all but `setup-pstack` are hidden from the model catalog. Invoke them with `/skill:<name>` or read `skill://<name>`.
 
 ## Non-negotiables
 
