@@ -251,6 +251,16 @@ function buildReport(config, summary, cursorCommits) {
     }
   }
 
+  if (summary.mode === "issue") {
+    const piMimirArg = summary.piMimirCommits[0]?.sha ? ` --pi-mimir ${summary.piMimirCommits[0].sha}` : "";
+    lines.push(
+      "### After porting",
+      "",
+      `Run \`npm run sync:ack -- --cursor ${summary.cursorSha}${piMimirArg}\` and close this issue.`,
+      "",
+    );
+  }
+
   if (summary.mode === "pr") {
     lines.push(
       "### Notes",
