@@ -67,15 +67,15 @@ npm:
 omp plugin install npm:omp-pstack@0.3.1 --force
 ```
 
-Start a new session after upgrading. A resumed session keeps its stored sticky
-payload for one turn; the extension replaces it on the next turn.
+On the first request after resuming, the extension replaces a stored payload
+that differs from the current one.
 
 ## 4. Check the skill configuration
 
 Read the user's config:
 
 ```sh
-rg -n -A40 '^skills:' ~/.omp/agent/config.yml
+rg -n -A40 '^(skills|disabledExtensions):' ~/.omp/agent/config.yml
 ```
 
 Four keys can keep a skill out of the session. Check all of them:
@@ -142,13 +142,13 @@ stops it.
 | `Unknown skill: architect` | `includeSkills`, `ignoredSkills`, or `disabledExtensions` | check all four keys in step 4 |
 | `/skill:architect` missing | skill not loaded, or commands disabled | check step 4 and `enableSkillCommands` |
 | `omp plugin list` shows 0.2.0 | stale install | use step 3 |
-| A resumed session's reply mentions `SKILL-INDEX.md` | sticky payload stored by an older build | the next turn replaces it; start a new session to apply it immediately |
+| A resumed session's reply mentions `SKILL-INDEX.md` | sticky payload stored by an older build | the first request after resuming replaces it in the effective context; the journal keeps the old entry |
 | `architect` appears in the model's skill catalog | missing `disable-model-invocation` | report a bug; do not edit the skill |
 
 ## Rollback
 
 ```sh
-omp plugin install npm:omp-pstack@0.3.0 --force
+omp plugin install npm:omp-pstack@0.2.0 --force
 ```
 
 Restore the config backup if you changed it.
