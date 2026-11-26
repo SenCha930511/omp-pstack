@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 - 2026-11-27
+
+- The upstream sync computes the `pstack` range from `lastSyncedSha` with git, so a base that never touched `pstack/` no longer reports the full history.
+- The sync closes an open `[upstream-sync]` issue when the range is empty.
+- Added `npm run sync:ack -- --cursor <sha> [--pi-mimir <sha>]` and put the command in issue reports.
+- The README model routing examples use Claude and GPT model IDs.
+
 ## 0.3.1 - 2026-11-26
 
 - Switched bundled skills to hide mode: every skill is registered, all but `setup-pstack` are hidden from the model catalog, and `/skill:<name>` and `skill://<name>` both resolve them.
