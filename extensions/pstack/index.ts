@@ -1,0 +1,91 @@
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
+import { confirmUser, preferredAskTool } from "./interaction.js";
+import { confirmExternalActionsEnabled, resolvePstackConfigFile } from "./config.js";
+
+const MODE_ENTRY = "pstack-mode";
+
+function packageRoot(): string {
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+}
+
+function knownExternalWrite(command: string): string | undefined {
+  const patterns: Array<[RegExp, string]> = [
+    [/\bgit\s+push\b/, "git push"],
+    [/\bgh\s+pr\s+(create|edit|merge|close)\b/, "GitHub pull-request mutation"],
+    [/\bgt\s+(submit|merge|create)\b/, "Graphite mutation"],
+    [/\b(terraform|tofu)\s+(apply|destroy)\b/, "infrastructure mutation"],
+    [/\bkubectl\s+(apply|delete|rollout)\b/, "Kubernetes mutation"],
+    [/\b(vercel|flyctl|railway)\s+(deploy|promote)\b/, "deployment"],
+    [/\brm\s+(-[A-Za-z]*r|--recursive)/, "recursive deletion"],
+  ];
+  return patterns.find(([pattern]) => pattern.test(command))?.[1];
+}
+
+export default function (pi: ExtensionAPI) {
+  const confirmExternalActions = confirmExternalActionsEnabled(resolvePstackConfigFile());
+
+  let potetoMode = false;
+
+  pi.on("session_start", (_event, ctx) => {
+    potetoMode = false;
+    for (const entry of ctx.sessionManager.getBranch()) {
+      if (entry.type !== "custom") continue;
+      if (entry.customType === MODE_ENTRY)
+        potetoMode = Boolean((entry.data as { enabled?: boolean }).enabled);
+    }
+    if (ctx.hasUI)
+      ctx.ui.setStatus("pstack-mode", potetoMode ? "pstack: poteto mode" : undefined);
+  });
+
+  pi.on("input", (event) => {
+    if (/^\/skill:poteto-mode(?:\s|$)/.test(event.text)) {
+      potetoMode = true;
+      pi.appendEntry(MODE_ENTRY, { enabled: true });
+    }
+  });
+
+  pi.on("before_agent_start", (event, ctx) => {
+    const sections: string[] = [];
+    if (ctx.hasUI) {
+      const ask = preferredAskTool(pi);
+      if (ask) sections.push(`When you need user input, use the ${ask} tool.`);
+    }
+    if (potetoMode)
+      sections.push(
+        `Pstack Poteto Mode is enabled for this session. Follow its persisted workflow: track non-trivial work with the todo tool, select and read the matching playbook, delegate with the task tool when delegation helps, verify real behavior, and name only principles that changed a decision. The full skill is at ${path.join(packageRoot(), "skills/poteto-mode/SKILL.md")}.`,
+      );
+    if (!confirmExternalActions)
+      sections.push(
+        "The pstack external-action confirmation guard is disabled by config. Run recognized external commands (pushes, pull-request updates, merges, deployments) without asking. Still pause for irreversible writes: force-pushes to shared branches, deployments, data deletion, and customer messages.",
+      );
+    if (sections.length === 0) return;
+    return { systemPrompt: [`${event.systemPrompt.join("\n\n")}\n\n${sections.join("\n\n")}`] };
+  });
+
+  if (confirmExternalActions)
+    pi.on("tool_call", async (event, ctx) => {
+      if (event.toolName !== "bash") return;
+      const input = event.input as { command?: string };
+      const operation = input.command ? knownExternalWrite(input.command) : undefined;
+      if (!operation) return;
+      if (!ctx.hasUI)
+        return {
+          block: true,
+          reason: `${operation} requires explicit user confirmation; a non-interactive host cannot request it.`,
+        };
+      let approved: boolean | undefined;
+      try {
+        approved = await confirmUser(
+          ctx,
+          "Confirm external or irreversible action",
+          `Allow ${operation}?`,
+          input.command,
+        );
+      } catch (error) {
+        return { block: true, reason: `Cannot confirm ${operation}: ${error instanceof Error ? error.message : String(error)}` };
+      }
+      if (!approved) return { block: true, reason: `User declined ${operation}.` };
+    });
+}

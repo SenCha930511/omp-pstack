@@ -1,0 +1,61 @@
+{
+  "name": "omp-pstack",
+  "version": "0.1.0",
+  "description": "pstack skills, Poteto Mode, and bundled agents for omp (oh-my-pi). omp-only fork of @casualjim/pi-pstack.",
+  "license": "MIT",
+  "author": "SenCha930511",
+  "contributors": [
+    "Lauren Tan",
+    "casualjim"
+  ],
+  "keywords": [
+    "omp",
+    "oh-my-pi",
+    "pi-package",
+    "skills",
+    "pstack",
+    "poteto",
+    "subagent"
+  ],
+  "type": "module",
+  "files": [
+    "extensions/",
+    "skills/",
+    "agents/",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SenCha930511/omp-pstack.git"
+  },
+  "homepage": "https://github.com/SenCha930511/omp-pstack#readme",
+  "bugs": {
+    "url": "https://github.com/SenCha930511/omp-pstack/issues"
+  },
+  "omp": {
+    "extensions": [
+      "./extensions/pstack"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "devDependencies": {
+    "@oh-my-pi/pi-coding-agent": "^19.2.0",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "pack:check": "npm pack --dry-run"
+  }
+}
