@@ -45,8 +45,8 @@ setup that only registers `poteto-mode`, read the skill files through
 
 ## What's included
 
-- 57 skills under `skills/`, adapted from upstream. `skills/poteto-mode/SKILL-INDEX.md`
-  lists every bundled skill and its relative path.
+- 58 skills under `skills/`, adapted from upstream, including `reframe`.
+  `skills/poteto-mode/SKILL-INDEX.md` lists every bundled skill and its relative path.
 - `agents/poteto-agent.md` and `agents/comment-sicko.md`. omp discovers them
   from the plugin's `agents/` directory; no role pack is needed.
 - A small extension that keeps Poteto Mode sticky across turns.
@@ -64,9 +64,9 @@ setup that only registers `poteto-mode`, read the skill files through
 | `/poteto-mode` extension command | `/skill:poteto-mode` (the extension marks it sticky) |
 
 Only `poteto-mode` is registered by default when your `skills.includeSkills`
-allowlist contains just that skill. The other pstack skills are read as files:
-`skills/poteto-mode/SKILL-INDEX.md` gives every relative path, so the model does
-not need to try `skill://<name>` and fail.
+allowlist contains just that skill. The other pstack skills, `reframe` included,
+are read as files: `skills/poteto-mode/SKILL-INDEX.md` gives every relative path,
+so the model does not need to use skill URI syntax and fail.
 
 ## Model routing
 

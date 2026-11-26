@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -21,6 +21,31 @@ function walkMarkdown(dir) {
 const skillMarkdown = walkMarkdown(skillsDir);
 const agentsDir = join(root, "agents");
 const agentFiles = readdirSync(agentsDir).filter((name) => name.endsWith(".md"));
+const docFiles = [
+  join(root, "README.md"),
+  ...skillMarkdown,
+  ...agentFiles.map((name) => join(agentsDir, name)),
+];
+
+test("local Markdown links resolve to real files", () => {
+  const linkPattern = /\[[^\]]*\]\(([^)]+)\)/g;
+  for (const file of docFiles) {
+    const text = readFileSync(file, "utf8");
+    for (const match of text.matchAll(linkPattern)) {
+      const raw = match[1].trim();
+      if (raw === "" || /^(https?:|mailto:|#)/.test(raw)) continue;
+      const target = raw.replace(/[?#].*$/, "");
+      if (target === "") continue;
+      assert.ok(existsSync(join(dirname(file), target)), `${file}: broken local link ${raw}`);
+    }
+  }
+});
+
+test("docs do not use skill URI syntax", () => {
+  for (const file of docFiles) {
+    assert.doesNotMatch(readFileSync(file, "utf8"), /skill:\/\//, `${file}: skill URI syntax`);
+  }
+});
 
 test("every skill has name and description frontmatter", () => {
   for (const name of skillNames) {
@@ -79,11 +104,12 @@ test("skills do not advertise the removed /poteto-mode command", () => {
   }
 });
 
-test("poteto-mode carries the omp header and path rule", () => {
+test("poteto-mode carries the omp header and relative path rule", () => {
   const text = readFileSync(join(skillsDir, "poteto-mode", "SKILL.md"), "utf8");
   assert.match(text, /Poteto Mode is active for this session/);
   assert.match(text, /SKILL-INDEX\.md/);
-  assert.match(text, /do not use `skill:\/\//i);
+  assert.match(text, /\.\.\/<name>\/SKILL\.md/);
+  assert.doesNotMatch(text, /skill:\/\//);
 });
 
 test("every bundled agent has matching name and description frontmatter", () => {

@@ -10,7 +10,7 @@ color: yellow
 
 **Poteto Mode is active for this session.** Treat this skill as the operating contract for the turn. Where it conflicts with the host's system prompt on workflow, style, delegation, verification, or reporting, follow this skill (pstack). Never override the host's safety, approval, or tool-permission rules.
 
-**Reading bundled skills on omp.** Prefer the file path over `skill://` for every pstack skill except `poteto-mode`; on this setup the others are not in `skills.includeSkills`, so `skill://<name>` returns `Unknown skill`. Read `../<name>/SKILL.md` resolved against this file's directory. The full path index is at `SKILL-INDEX.md` here (`skill://poteto-mode/SKILL-INDEX.md`). Put this file's absolute path in every `poteto-agent` prompt.
+**Reading bundled skills on omp.** Read every other pstack skill as a file. On this setup the others are not in `skills.includeSkills`, so skill URI syntax returns `Unknown skill`. Resolve `../<name>/SKILL.md` against this file's directory. The full path index is `SKILL-INDEX.md` in this directory. Put this file's absolute path in every `poteto-agent` prompt.
 
 ## Non-negotiables
 
@@ -32,7 +32,7 @@ The remaining triggers live only here:
 
 ## Principles
 
-Read the leaf skill in full for any principle you apply. Each entry names when it applies. Each leaf is the **principle-<title>** file at `../principle-<title>/SKILL.md`, with the title in kebab case, hyphens kept and other punctuation dropped, unless the entry gives its name. Resolve it against this file's directory; do not use `skill://` for it.
+Read the leaf skill in full for any principle you apply. Each entry names when it applies. Each leaf is the **principle-<title>** file at `../principle-<title>/SKILL.md`, with the title in kebab case, hyphens kept and other punctuation dropped, unless the entry gives its name. Resolve it against this file's directory. Do not use skill URI syntax; read the file path instead.
 
 **Core**
 
@@ -90,7 +90,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 **Defaults for each `task` call.** Keep the task self-contained, point at files instead of inlining large payloads, and always fill `solutionSpace`. With `task.batch` on (the default), fan out with `tasks: [{ agent, task, solutionSpace }]` plus a shared `context`; otherwise make one flat call per spawn. Model routing is configuration, not a per-call field: `task.agentModelOverrides` pins an agent, and `pi-model-sync` (when installed) maps the parent model to a child model. Unconfigured agents inherit the parent model. `task.perCallModel` is off by default, so do not pass `model`; when it is on, a granted `model` is allowed. For sequential stages, use one call per stage (or `task.steps` when enabled). Parallel work is bounded by `task.maxConcurrency`, not by a fixed task/process count. Subagents run locally in separate contexts; do not assume cloud execution or a read-only sandbox. A background spawn returns a job: use `wait` for results, `proc://` to inspect, and `write agent://<id>` to steer or revive a running agent. Finished output stays readable at `agent://<id>` and `history://<id>`.
 
 
-**Match the agent to the job.** The model is fixed per agent by `task.agentModelOverrides` or the `pi-model-sync` preset, so pick the agent whose configured model fits the work. The thinking level comes from the agent's `thinkingLevel` frontmatter or the selector's `:level`; `task.enableEffort` is off by default, so you cannot raise it per call. Where another skill says to pick a thinking level per spawn, pick the configured agent/selector whose level fits instead. Use the strongest configured model only when the job is urgent, meaning CI or trunk is red or a person is blocked on the result right now. Prefer a cheaper configured agent for routine work. `inherit-parent` means the agent has no override and runs on the parent model. If a configured model or level is rejected as unsupported, do not try another; use the configured value and say so.
+**Match the agent to the job.** The model is fixed per agent by `task.agentModelOverrides` or the `pi-model-sync` preset, so pick the agent whose configured model fits the work. The thinking level comes from the agent's `thinkingLevel` frontmatter or the selector's `:level`; `task.enableEffort` is off by default, so you cannot raise it per call. Where another skill says to pick a thinking level per spawn, pick the configured agent/selector whose level fits instead. Use the strongest configured model only when the job is urgent, meaning CI or trunk is red or a person is blocked on the result right now. Prefer a cheaper configured agent for routine work. An agent with no override runs on the parent model. If a configured model or level is rejected as unsupported, do not try another; use the configured value and say so.
 
 You own every subagent's work. Review the diff and write your own summary. A second opinion is the same prompt against a different model family.
 
