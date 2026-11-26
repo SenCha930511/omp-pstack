@@ -2,7 +2,7 @@
 
 Swap in the real paths, skills, and done checks. Informal wording works.
 
-These prompts assume the named skill is registered. Only `poteto-mode` is registered by default; for any other skill, read its `SKILL.md` via `../<name>/SKILL.md` (or add it to `skills.includeSkills`) and use `/skill:<name>`.
+These prompts assume the named skill is registered. Every bundled skill is registered by default; if you set `skills.includeSkills`, include the pstack skills or clear the allowlist.
 
 ## Understand
 

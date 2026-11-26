@@ -23,9 +23,6 @@ changes are also released under the MIT License.
 - Task tracking uses omp's `todo` tool instead of `set_tasks`.
 - Panel skills (`swarm`, `arena`, `interrogate`) use omp's per-call `model`
   with `task.perCallModel: "on"` and `task.perCallModelAllow`.
-- `skills/poteto-mode/SKILL-INDEX.md` lists relative paths for every bundled
-  skill so they can be read as files when they are not registered with the
-  host.
 - The pi-herdr-agents role-pack registration was removed. omp discovers the
   bundled agents from `agents/`.
 - `/poteto-mode` provides one-shot `<task>`, `sticky`, `off`, and `status`.
@@ -37,7 +34,7 @@ changes are also released under the MIT License.
   `tools.approvalMode`.
 - `how` and `arena` use `scout`; `interrogate` uses `task`. `comment-sicko`
   keeps explicit read-only tools (`read`, `grep`, `glob`).
-- Relative skill paths and `SKILL-INDEX.md` are unchanged.
+- Skills are registered and hidden from the model catalog; `/skill:<name>` and `skill://<name>` both resolve them.
 - The extension was reduced to omp-only code paths.
 
 ## Names

@@ -5,7 +5,7 @@
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A522-339933?logo=node.js&logoColor=white)](package.json)
 [![OMP plugin](https://img.shields.io/badge/OMP-plugin-7c3aed)](https://github.com/SenCha930511/omp-pstack)
-[![skills](https://img.shields.io/badge/skills-58-2ea44f)](skills/poteto-mode/SKILL-INDEX.md)
+[![skills](https://img.shields.io/badge/skills-58-2ea44f)](skills/)
 [![GitHub stars](https://img.shields.io/github/stars/SenCha930511/omp-pstack)](https://github.com/SenCha930511/omp-pstack/stargazers)
 
 pstack skills, Poteto Mode, and the bundled `poteto-agent` / `comment-sicko`
@@ -27,7 +27,7 @@ omp plugin install omp-pstack@sencha930511
 
 The marketplace catalog lives at
 [`SenCha930511/omp-marketplace`](https://github.com/SenCha930511/omp-marketplace).
-Its `omp-pstack` entry points at the `v0.3.0` GitHub tag.
+Its `omp-pstack` entry points at the `v0.3.1` GitHub tag.
 
 Or install the published npm package directly:
 
@@ -35,13 +35,17 @@ Or install the published npm package directly:
 omp plugin install npm:omp-pstack
 ```
 
-To pin this version, use `omp plugin install npm:omp-pstack@0.3.0`.
+To pin this version, use `omp plugin install npm:omp-pstack@0.3.1`.
 
 For local development:
 
 ```sh
 omp plugin link /path/to/omp-pstack
 ```
+
+If you are an agent installing this for a user, follow
+[AGENT-INSTALL.md](AGENT-INSTALL.md). It covers the host check, the
+`skills.includeSkills` allowlist, and verification.
 
 ## Quick start
 
@@ -66,14 +70,14 @@ Other entry points:
 /skill:poteto-help        pick a skill or debug a run
 ```
 
-These commands require the skill to be registered in `skills.includeSkills`. On a
-setup that only registers `poteto-mode`, read the skill files through
-`skills/poteto-mode/SKILL-INDEX.md` instead.
+Every bundled skill is registered. A non-empty `skills.includeSkills` allowlist
+filters skills out of the session, so include the pstack names or clear it. The
+default empty allowlist loads them all.
 
 ## What's included
 
-- 58 skills under `skills/`, adapted from upstream, including `reframe`.
-  `skills/poteto-mode/SKILL-INDEX.md` lists every bundled skill and its relative path.
+- 58 skills under `skills/`, adapted from upstream, including `reframe`. They are
+  registered and hidden from the model catalog.
 - `agents/poteto-agent.md` and `agents/comment-sicko.md`. omp discovers them
   from the plugin's `agents/` directory; no role pack is needed. `poteto-agent`
   can spawn its own subagents; `comment-sicko` is read-only and cannot spawn.
@@ -100,10 +104,10 @@ stays off until you run `/poteto-mode sticky` again. One-shot
 | `/poteto-mode` extension command | `/poteto-mode <task>` one-shot, `/poteto-mode sticky`, `/poteto-mode off`, `/poteto-mode status` |
 | `/skill:poteto-mode` | omp native one-shot; does not enable sticky |
 
-Only `poteto-mode` is registered by default when your `skills.includeSkills`
-allowlist contains just that skill. The other pstack skills, `reframe` included,
-are read as files: `skills/poteto-mode/SKILL-INDEX.md` gives every relative path,
-so the model does not need to use skill URI syntax and fail.
+Every bundled skill is registered and hidden from the model catalog, so
+`/skill:<name>` and `skill://<name>` both resolve it. A non-empty
+`skills.includeSkills` allowlist removes skills from the session entirely; include
+the pstack names or clear it. The default empty allowlist needs no setup.
 
 Prompt-level autonomy matches Cursor. Host-level approvals are controlled
 separately by `tools.approvalMode`.
@@ -173,7 +177,7 @@ npm run pack:check
 npm run check
 ```
 
-`npm test` checks skill and agent frontmatter, the relative-path index, local
+`npm test` checks skill and agent frontmatter, local
 Markdown links, stale pi-herdr or Cursor references, unsupported agent fields,
 and extension behavior. `npm run typecheck` checks both the extension sources
 and the test sources. `npm run check` runs all checks including version
@@ -187,6 +191,6 @@ tests, and clean tarball installation against `omp`. Use
 [`cursor/plugins/pstack`](https://github.com/cursor/plugins/tree/main/pstack)
 and [`casualjim/pi-mimir`](https://github.com/casualjim/pi-mimir) using the
 manifest in [`.github/upstream-sync.json`](.github/upstream-sync.json). Unadapted
-and new skills without Cursor-only syntax are synced automatically into a PR with
-an updated `SKILL-INDEX.md`; changes to adapted skills, blocked skills, or
-extension/agent files are flagged for manual porting.
+and new skills without Cursor-only syntax are synced automatically into a PR;
+changes to adapted skills, blocked skills, or extension/agent files are flagged
+for manual porting.

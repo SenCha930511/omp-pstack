@@ -10,7 +10,7 @@ color: yellow
 
 **Poteto Mode is active for this session.** Treat this skill as the operating contract for the turn. Where it conflicts with the host's system prompt on workflow, style, delegation, verification, or reporting, follow this skill (pstack). Never override the host's safety, approval, or tool-permission rules.
 
-**Reading bundled skills on omp.** Read every other pstack skill as a file. On this setup the others are not in `skills.includeSkills`, so skill URI syntax returns `Unknown skill`. Resolve `../<name>/SKILL.md` against this file's directory. The full path index is `SKILL-INDEX.md` in this directory. Put this file's absolute path in every `poteto-agent` prompt.
+Bundled skills live at `../<name>/SKILL.md` from this file, so put this file's absolute path in every `poteto-agent` prompt. They are registered and hidden from the model catalog: invoke them with `/skill:<name>` or read `skill://<name>`.
 
 ## Non-negotiables
 
@@ -32,7 +32,7 @@ The remaining triggers live only here:
 
 ## Principles
 
-Read the leaf skill in full for any principle you apply. Each entry names when it applies. Each leaf is the **principle-<title>** file at `../principle-<title>/SKILL.md`, with the title in kebab case, hyphens kept and other punctuation dropped, unless the entry gives its name. Resolve it against this file's directory. Do not use skill URI syntax; read the file path instead.
+Read the leaf skill in full for any principle you apply. Each entry names when it applies. Each leaf is the **principle-<title>** skill, with the title in kebab case, hyphens kept and other punctuation dropped, unless the entry gives its name.
 
 **Core**
 

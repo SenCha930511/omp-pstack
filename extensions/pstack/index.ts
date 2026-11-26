@@ -47,7 +47,6 @@ function isContextMessage(message: { role: string; customType?: string }): boole
 export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   const skillFile = options.skillFile ?? SKILL_FILE;
   const skillDir = path.dirname(skillFile);
-  const skillIndex = path.join(skillDir, "SKILL-INDEX.md");
   let potetoMode = false;
   let cachedSkill: { mtimeMs: number; body: string } | undefined;
   let cachedContext: { content: string; message: ContextMessage } | undefined;
@@ -74,9 +73,8 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
       "[PSTACK POTETO MODE]",
       `Skill file: ${skillFile}`,
       `Skill directory: ${skillDir}`,
-      `Skill index: ${skillIndex}`,
       "Resolve relative paths in this skill against the skill directory.",
-      `Other pstack skills are read as files: ${path.join(packageRoot(), "skills")}/<name>/SKILL.md.`,
+      "Other pstack skills are registered and hidden: invoke them with /skill:<name> or read skill://<name>.",
     ];
     if (ctx.hasUI) {
       const ask = preferredAskTool(pi);
