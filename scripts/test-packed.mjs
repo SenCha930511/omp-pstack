@@ -27,6 +27,7 @@ const FORBIDDEN_EXACT = new Set([
   ".node-version",
   "package-lock.json",
   "tsconfig.json",
+  "tsconfig.test.json",
 ]);
 
 function isForbiddenPath(file) {
