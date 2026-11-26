@@ -138,6 +138,10 @@ jobs:
           report="$RUNNER_TEMP/upstream/report.md"
           mode=$(node -p 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).mode' "$summary")
           short_sha=$(node -p 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).shortSha' "$summary")
+          sync_issue_json() {
+            gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 50 --json number,title \
+              --jq '[.[] | select(.title | startswith("[upstream-sync]"))][0] // empty'
+          }
 
           case "$mode" in
             pr)
@@ -166,8 +170,7 @@ jobs:
               ;;
             issue)
               title="[upstream-sync] Upstream updates need manual porting (${short_sha})"
-              existing_json=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 50 --json number,title \
-                --jq '[.[] | select(.title | startswith("[upstream-sync]"))][0] // empty')
+              existing_json=$(sync_issue_json)
               if [ -n "$existing_json" ]; then
                 issue_num=$(printf '%s' "$existing_json" | node -pe 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).number')
                 old_title=$(printf '%s' "$existing_json" | node -pe 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).title')
@@ -180,7 +183,14 @@ jobs:
               fi
               ;;
             none)
-              echo "Already up to date with upstream."
+              existing_json=$(sync_issue_json)
+              if [ -n "$existing_json" ]; then
+                issue_num=$(printf '%s' "$existing_json" | node -pe 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).number')
+                gh issue close "$issue_num" --repo "$GITHUB_REPOSITORY" \
+                  --comment "Upstream pstack is up to date at \`${short_sha}\`. Closing this tracking issue."
+              else
+                echo "Already up to date with upstream."
+              fi
               ;;
             *)
               echo "Unexpected mode: $mode" >&2
