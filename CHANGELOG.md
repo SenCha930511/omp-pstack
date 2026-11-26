@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 - 2026-11-26
+
+- Added `/poteto-mode` command: one-shot `<task>`, `sticky`, `off`, `status`.
+- Sticky mode injects the full Poteto Mode skill as a hidden `custom_message`; off filters it.
+- `/skill:poteto-mode` remains a native one-shot and no longer enables sticky.
+- Autonomy aligned with Cursor: PR creation/updates, CI triggers, and merges no longer require prompt-level confirmation.
+- `how` and `arena` use `scout`; `interrogate` uses `task`.
+- `comment-sicko` remains read-only with explicit read-only tools.
+- `worktree-cleanup` uses session pins and `archive.grep`; `autopilot-full` uses parent-session language and a decision log.
+- `poteto-help` includes `reframe`.
+- Relative skill paths and `SKILL-INDEX.md` are unchanged.
+
 ## 0.2.0 - 2026-11-26
 
 - Ported the upstream `reframe` skill and the PR #2 sync changes.

@@ -28,8 +28,16 @@ changes are also released under the MIT License.
   host.
 - The pi-herdr-agents role-pack registration was removed. omp discovers the
   bundled agents from `agents/`.
-- The broken `/poteto-mode` extension command was removed. Use
-  `/skill:poteto-mode`; the extension marks it sticky.
+- `/poteto-mode` provides one-shot `<task>`, `sticky`, `off`, and `status`.
+  `/skill:poteto-mode` remains omp's native one-shot and does not enable sticky.
+- Sticky mode injects the full skill as a hidden `custom_message`; `off`
+  filters it.
+- Autonomy matches Cursor: PR creation and updates, CI triggers, and merges do
+  not need prompt-level confirmation. Host approvals are controlled by
+  `tools.approvalMode`.
+- `how` and `arena` use `scout`; `interrogate` uses `task`. `comment-sicko`
+  keeps explicit read-only tools (`read`, `grep`, `glob`).
+- Relative skill paths and `SKILL-INDEX.md` are unchanged.
 - The extension was reduced to omp-only code paths.
 
 ## Names
