@@ -7,6 +7,18 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const skillsDir = join(root, "skills");
 const skillNames = readdirSync(skillsDir).filter((name) => statSync(join(skillsDir, name)).isDirectory());
+
+function walkMarkdown(dir) {
+  const files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...walkMarkdown(full));
+    else if (entry.name.endsWith(".md")) files.push(full);
+  }
+  return files;
+}
+
+const skillMarkdown = walkMarkdown(skillsDir);
 const agentsDir = join(root, "agents");
 const agentFiles = readdirSync(agentsDir).filter((name) => name.endsWith(".md"));
 
@@ -36,10 +48,10 @@ test("skills do not reference pi-herdr tooling", () => {
     /herdr-agents/,
     /`set_tasks`/,
   ];
-  for (const name of skillNames) {
-    const text = readFileSync(join(skillsDir, name, "SKILL.md"), "utf8");
+  for (const file of skillMarkdown) {
+    const text = readFileSync(file, "utf8");
     for (const pattern of forbidden) {
-      assert.doesNotMatch(text, pattern, `${name}: stale reference ${pattern}`);
+      assert.doesNotMatch(text, pattern, `${file}: stale reference ${pattern}`);
     }
   }
 });
@@ -52,11 +64,18 @@ test("skills do not reference Cursor-specific tooling", () => {
     /pstack-models\.mdc/,
     /environment:\s*"cloud"/,
   ];
-  for (const name of skillNames) {
-    const text = readFileSync(join(skillsDir, name, "SKILL.md"), "utf8");
+  for (const file of skillMarkdown) {
+    const text = readFileSync(file, "utf8");
     for (const pattern of forbidden) {
-      assert.doesNotMatch(text, pattern, `${name}: Cursor-specific reference ${pattern}`);
+      assert.doesNotMatch(text, pattern, `${file}: Cursor-specific reference ${pattern}`);
     }
+  }
+});
+
+test("skills do not advertise the removed /poteto-mode command", () => {
+  for (const file of skillMarkdown) {
+    const text = readFileSync(file, "utf8");
+    assert.doesNotMatch(text, /(?<!skill:)(?<![\w.\/])\/poteto-mode(?=[\s`.,;:]|$)/, `${file}: stale /poteto-mode command`);
   }
 });
 

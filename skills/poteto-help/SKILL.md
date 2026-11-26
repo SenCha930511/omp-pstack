@@ -51,16 +51,15 @@ The skills use the Agent Skills format, and every workflow skill delegates throu
 
 `/skill:poteto-mode` matches the task to a playbook, copies the playbook's steps into the todo list, and runs the other skills as the steps need them. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one. the guide has examples.
 
-Whether `/skill:poteto-mode` stays on depends on how the user starts it:
+`/skill:poteto-mode` marks the session sticky. Every later turn keeps the workflow until the session ends. Saying "new task" makes the mode match a fresh playbook without ending the session. Start each task with `/skill:poteto-mode` if you want a clean playbook selection.
 
-- Enter on `/skill:poteto-mode` attaches the skill to one message. It fades as the chat moves on.
-- Saying "new task" keeps the mode attached to the new task only. Start each task with `/skill:poteto-mode`.
-
-Mid-chat, "new task" makes the mode match a fresh playbook. `/skill:poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. To get the same style from a subagent of your own, spawn it with `agent: "poteto-agent"`.
+`/skill:poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. To get the same style from a subagent of your own, spawn it with `agent: "poteto-agent"`.
 
 ## Pick a skill
 
 The default answer is `/skill:poteto-mode`, which runs most of the others when its steps need them. Name a skill directly when the user wants more or less of something than the playbook gives. Read the skill before you recommend it, and give one example prompt.
+
+Only `poteto-mode` is registered by default. For every other skill, read the linked `SKILL.md`; `/skill:<name>` works only when that skill is in `skills.includeSkills`.
 
 | The user wants to | Skill |
 |---|---|
@@ -76,7 +75,7 @@ The default answer is `/skill:poteto-mode`, which runs most of the others when i
 | Know what a small diff could break outside itself | [`/blast-radius`](../blast-radius/SKILL.md) |
 | Settle types and module shape before code that crosses a function boundary | [`/architect`](../architect/SKILL.md) |
 | Get several attempts at one brief, merged into the best one | [`/arena`](../arena/SKILL.md) |
-| Run parallel checks over slices, or race workers, as cloud agents | [`/swarm`](../swarm/SKILL.md) |
+| Run parallel checks over slices, or race workers, in separate worktrees | [`/swarm`](../swarm/SKILL.md) |
 | Have different models review a diff and try to break it | [`/interrogate`](../interrogate/SKILL.md) |
 | Fix a bug test-first when a cheap local test exists | [`/tdd`](../tdd/SKILL.md) |
 | Apply TypeScript rules to `.ts` or `.tsx` work | [`/typescript-best-practices`](../typescript-best-practices/SKILL.md) |
@@ -96,7 +95,7 @@ The default answer is `/skill:poteto-mode`, which runs most of the others when i
 | Turn their own working habits into a personal mode skill | [`/automate-me`](../automate-me/SKILL.md) |
 | Turn what a finished task taught into skill edits | [`/reflect`](../reflect/SKILL.md) |
 | Stop agents from repeating the same mistakes in this repo | [`/correct`](../correct/SKILL.md) |
-| Find their way around pstack | `/poteto-help` |
+| Find their way around pstack | `/skill:poteto-help` |
 
 If a skill directory next to this one is missing from the table, read its frontmatter and route by its description. The `principle-*` directories are covered under principles below.
 
@@ -133,12 +132,12 @@ Principles are one-rule skills that `/skill:poteto-mode` reads and cites in its 
 
 | Symptom | Fix |
 |---|---|
-| The mode stopped applying after a few turns | Say "new task" to reattach it, or start each task with `/skill:poteto-mode`. |
+| The mode stopped applying | The session may have restarted. Start the task with `/skill:poteto-mode` again; within a session, say "new task" to switch playbooks. |
 | A question got treated as the next step of the last task | Say "new task", or say the turn doesn't need the mode. |
 | A new model choice had no effect | Per-agent routing applies to new subagent spawns. Check `task.agentModelOverrides` (or the `pi-model-sync` preset) took effect. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |
 | A skill didn't load on its own | Skills load when the user types them or when `/skill:poteto-mode` runs them, and it doesn't run every skill. |
-| Parallel agents overwrote each other | Give each agent its own worktree, or run them as cloud agents, which each get their own machine. |
+| Parallel agents overwrote each other | Give each agent its own worktree; omp subagents run locally, so they share the machine. |
 | An overnight run moved but finished nothing | `/loop` needs a check that can pass or fail, not a duration. |
 | The reply claims success from a green build | Ask for the real command, flow, stored value, or profile. That's the prove-it-works principle. |
 
