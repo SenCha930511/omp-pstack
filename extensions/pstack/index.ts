@@ -5,8 +5,7 @@ import type { ExtensionAPI, ExtensionContext } from "@oh-my-pi/pi-coding-agent";
 import { preferredAskTool } from "./interaction.js";
 
 const MODE_ENTRY = "pstack-mode";
-const CONTEXT_TYPE = "pstack-mode-context-v2";
-const LEGACY_CONTEXT_TYPES = new Set(["pstack-mode-context"]);
+const CONTEXT_TYPE = "pstack-mode-context";
 const SKILL_FILE = path.join(packageRoot(), "skills/poteto-mode/SKILL.md");
 const STATUS_TEXT = "pstack: poteto mode";
 const USAGE = [
@@ -42,10 +41,7 @@ function isPotetoModeEnabled(data: unknown): boolean {
 }
 
 function isContextMessage(message: { role: string; customType?: string }): boolean {
-  return (
-    message.role === "custom" &&
-    (message.customType === CONTEXT_TYPE || LEGACY_CONTEXT_TYPES.has(message.customType ?? ""))
-  );
+  return message.role === "custom" && message.customType === CONTEXT_TYPE;
 }
 
 export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
@@ -88,7 +84,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     return lines.join("\n");
   }
 
-  function hasContextMessage(ctx: ExtensionContext): boolean {
+  function hasContextMessage(ctx: ExtensionContext, content: string): boolean {
     const branch = ctx.sessionManager.getBranch();
     let start = 0;
     for (let index = branch.length - 1; index >= 0; index -= 1) {
@@ -108,7 +104,14 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     }
     for (let index = start; index < branch.length; index += 1) {
       const entry = branch[index];
-      if (entry?.type === "custom_message" && entry.customType === CONTEXT_TYPE) return true;
+      if (
+        entry?.type === "custom_message" &&
+        entry.customType === CONTEXT_TYPE &&
+        "content" in entry &&
+        entry.content === content
+      ) {
+        return true;
+      }
     }
     return false;
   }
@@ -233,11 +236,12 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     if (!potetoMode) return;
     const body = readSkillBody();
     if (body === undefined) return;
-    if (hasContextMessage(ctx)) return;
+    const content = buildContextPayload(ctx, body);
+    if (hasContextMessage(ctx, content)) return;
     return {
       message: {
         customType: CONTEXT_TYPE,
-        content: buildContextPayload(ctx, body),
+        content,
         display: false,
       },
     };

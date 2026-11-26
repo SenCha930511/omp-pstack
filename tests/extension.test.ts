@@ -108,14 +108,6 @@ function modeEntry(enabled: boolean): Entry {
   return { type: "custom", customType: "pstack-mode", data: { enabled } };
 }
 
-function contextEntry(id = "ctx"): Entry {
-  return { type: "custom_message", id, customType: "pstack-mode-context-v2", content: "current", display: false };
-}
-
-function legacyContextEntry(id = "legacy"): Entry {
-  return { type: "custom_message", id, customType: "pstack-mode-context", content: "old", display: false };
-}
-
 const RESET: Entry = { type: "reset_boundary" };
 const ENABLED: Entry[] = [modeEntry(true)];
 const DISABLED: Entry[] = [modeEntry(false)];
@@ -123,7 +115,7 @@ const DISABLED: Entry[] = [modeEntry(false)];
 function contextMessage(overrides: Partial<Message> = {}): Message {
   return {
     role: "custom",
-    customType: "pstack-mode-context-v2",
+    customType: "pstack-mode-context",
     content: "old",
     display: false,
     timestamp: 1,
@@ -287,7 +279,7 @@ describe("pstackExtension", () => {
     );
 
     expect(result?.systemPrompt).toBeUndefined();
-    expect(result?.message?.customType).toBe("pstack-mode-context-v2");
+    expect(result?.message?.customType).toBe("pstack-mode-context");
     expect(result?.message?.display).toBe(false);
     expect(result?.message?.content).toContain("Skill file:");
     expect(result?.message?.content).toContain("Skill directory:");
@@ -296,14 +288,21 @@ describe("pstackExtension", () => {
     expect(result?.message?.content).toContain("When you need user input, use the ask tool.");
   });
 
-  test("before_agent_start replaces a legacy context entry", async () => {
+  test("before_agent_start replaces a stale context entry", async () => {
     const host = createMockHost(["read"]);
     pstackExtension(host.api);
-    const ctx = host.makeCtx({ hasUI: true, entries: [legacyContextEntry(), modeEntry(true)] });
+    const ctx = host.makeCtx({
+      hasUI: true,
+      entries: [
+        { type: "custom_message", id: "ctx", customType: "pstack-mode-context", content: "stale", display: false },
+        modeEntry(true),
+      ],
+    });
     await host.emit("session_start", {}, ctx);
 
     const result = injected(await host.emit("before_agent_start", {}, ctx));
-    expect(result?.message?.customType).toBe("pstack-mode-context-v2");
+    expect(result?.message?.customType).toBe("pstack-mode-context");
+    expect(result?.message?.content).not.toBe("stale");
     expect(result?.message?.content).not.toContain("SKILL-INDEX");
   });
 
@@ -332,13 +331,6 @@ describe("pstackExtension", () => {
     await host.emit("session_start", {}, ctx);
 
     const stale = contextMessage({ content: "old" });
-    const legacy: Message = {
-      role: "custom",
-      customType: "pstack-mode-context",
-      content: "old",
-      display: false,
-      timestamp: 2,
-    };
     const otherCustom: Message = {
       role: "custom",
       customType: "other-extension",
@@ -347,16 +339,16 @@ describe("pstackExtension", () => {
       timestamp: 3,
     };
     const user = userMessage();
-    const on = messagesOf(await host.emit("context", { messages: [legacy, stale, otherCustom, user] }, ctx));
+    const on = messagesOf(await host.emit("context", { messages: [stale, otherCustom, user] }, ctx));
     expect(on).toHaveLength(3);
-    expect(on[0]?.customType).toBe("pstack-mode-context-v2");
+    expect(on[0]?.customType).toBe("pstack-mode-context");
     expect(on[0]?.content).not.toBe("old");
     expect(on[1]).toBe(otherCustom);
     expect(on[2]).toBe(user);
 
     const offCtx = host.makeCtx({ hasUI: true, entries: DISABLED });
     await host.emit("session_start", {}, offCtx);
-    expect(messagesOf(await host.emit("context", { messages: [legacy, otherCustom, user] }, offCtx))).toEqual([
+    expect(messagesOf(await host.emit("context", { messages: [stale, otherCustom, user] }, offCtx))).toEqual([
       otherCustom,
       user,
     ]);
@@ -385,12 +377,26 @@ describe("pstackExtension", () => {
     expect(third[2]).toBe(user);
   });
 
-  test("compaction keeps an existing context message in the effective section", async () => {
+  test("compaction keeps a current context message in the effective section", async () => {
     const host = createMockHost();
     pstackExtension(host.api);
+    const fresh = host.makeCtx({ hasUI: true, entries: ENABLED });
+    await host.emit("session_start", {}, fresh);
+    const prepared = injected(await host.emit("before_agent_start", {}, fresh));
+
     const ctx = host.makeCtx({
       hasUI: true,
-      entries: [contextEntry(), modeEntry(true), { type: "compaction", id: "c", firstKeptEntryId: "ctx" }],
+      entries: [
+        {
+          type: "custom_message",
+          id: "ctx",
+          customType: "pstack-mode-context",
+          content: prepared?.message?.content,
+          display: false,
+        },
+        modeEntry(true),
+        { type: "compaction", id: "c", firstKeptEntryId: "ctx" },
+      ],
     });
     await host.emit("session_start", {}, ctx);
 
