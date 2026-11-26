@@ -31,7 +31,7 @@ omp plugin install omp-pstack@sencha930511
 npm:
 
 ```sh
-omp plugin install npm:omp-pstack@0.3.1
+omp plugin install npm:omp-pstack@0.3.2
 ```
 
 Local checkout:
@@ -46,7 +46,7 @@ Verify:
 omp plugin list
 ```
 
-`omp-pstack` must be listed at 0.3.1 or newer.
+`omp-pstack` must be listed at 0.3.2 or newer.
 
 ## 3. Upgrade an existing install
 
@@ -64,7 +64,7 @@ omp plugin upgrade omp-pstack@sencha930511
 npm:
 
 ```sh
-omp plugin install npm:omp-pstack@0.3.1 --force
+omp plugin install npm:omp-pstack@0.3.2 --force
 ```
 
 On the first request after resuming, the extension replaces a stored payload

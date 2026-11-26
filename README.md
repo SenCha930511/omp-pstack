@@ -27,7 +27,7 @@ omp plugin install omp-pstack@sencha930511
 
 The marketplace catalog lives at
 [`SenCha930511/omp-marketplace`](https://github.com/SenCha930511/omp-marketplace).
-Its `omp-pstack` entry points at the `v0.3.1` GitHub tag.
+Its `omp-pstack` entry points at the `v0.3.2` GitHub tag.
 
 Or install the published npm package directly:
 
@@ -35,7 +35,7 @@ Or install the published npm package directly:
 omp plugin install npm:omp-pstack
 ```
 
-To pin this version, use `omp plugin install npm:omp-pstack@0.3.1`.
+To pin this version, use `omp plugin install npm:omp-pstack@0.3.2`.
 
 For local development:
 
