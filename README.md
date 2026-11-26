@@ -49,8 +49,7 @@ setup that only registers `poteto-mode`, read the skill files through
   lists every bundled skill and its relative path.
 - `agents/poteto-agent.md` and `agents/comment-sicko.md`. omp discovers them
   from the plugin's `agents/` directory; no role pack is needed.
-- A small extension that keeps Poteto Mode sticky across turns and guards
-  recognizable external writes.
+- A small extension that keeps Poteto Mode sticky across turns.
 
 ## omp adaptations
 
@@ -110,21 +109,6 @@ frontmatter `model`. Do not put an agent used by a panel in
 `task.agentModelOverrides`; a per-call `model` and an override conflict.
 
 Without per-call selection, every seat uses the agent's configured model.
-
-## Safety
-
-The extension asks before recognizable external or irreversible shell commands:
-`git push`, GitHub pull-request mutations, Graphite mutations, Terraform or
-Kubernetes mutations, deployments, and recursive deletions. In non-interactive
-sessions it blocks them instead.
-
-To disable the guard, create `~/.omp/agent/pstack/config.json`:
-
-```json
-{ "confirmExternalActions": false }
-```
-
-Restart omp after changing it. A missing or malformed file keeps the guard on.
 
 ## Attribution
 
