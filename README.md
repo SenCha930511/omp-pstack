@@ -48,8 +48,15 @@ setup that only registers `poteto-mode`, read the skill files through
 - 58 skills under `skills/`, adapted from upstream, including `reframe`.
   `skills/poteto-mode/SKILL-INDEX.md` lists every bundled skill and its relative path.
 - `agents/poteto-agent.md` and `agents/comment-sicko.md`. omp discovers them
-  from the plugin's `agents/` directory; no role pack is needed.
-- A small extension that keeps Poteto Mode sticky across turns.
+  from the plugin's `agents/` directory; no role pack is needed. `poteto-agent`
+  can spawn its own subagents; `comment-sicko` is read-only and cannot spawn.
+- A small extension that keeps Poteto Mode sticky across turns and session
+  transitions.
+
+Poteto Mode is scoped to the session that enabled it. Switching sessions,
+branching, or navigating the session tree restores the mode from that branch's
+`pstack-mode` entries. `/clear` writes a reset boundary, so the mode stays off
+until you invoke `/skill:poteto-mode` again.
 
 ## omp adaptations
 
@@ -133,10 +140,12 @@ npm run pack:check
 npm run check
 ```
 
-`npm test` checks skill/agent frontmatter, the relative-path index, stale
-pi-herdr or Cursor references, and extension behavior. `npm run check` runs all
-checks including version consistency, extension load-graph verification, release
-and upstream-sync script tests, and clean tarball installation against `omp`. Use
+`npm test` checks skill and agent frontmatter, the relative-path index, local
+Markdown links, stale pi-herdr or Cursor references, unsupported agent fields,
+and extension behavior. `npm run typecheck` checks both the extension sources
+and the test sources. `npm run check` runs all checks including version
+consistency, extension load-graph verification, release and upstream-sync script
+tests, and clean tarball installation against `omp`. Use
 `npm run release:bump <X.Y.Z>` when preparing a new release version.
 
 ### Upstream sync
