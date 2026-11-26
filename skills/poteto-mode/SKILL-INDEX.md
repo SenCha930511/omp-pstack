@@ -51,6 +51,7 @@ Playbooks are inside the `poteto-mode` skill: `playbooks/<title>.md`.
 - principle-type-system-discipline → ../principle-type-system-discipline/SKILL.md
 - recall → ../recall/SKILL.md
 - reflect → ../reflect/SKILL.md
+- reframe → ../reframe/SKILL.md
 - setup-pstack → ../setup-pstack/SKILL.md
 - sharpen → ../sharpen/SKILL.md
 - show-me-your-work → ../show-me-your-work/SKILL.md
