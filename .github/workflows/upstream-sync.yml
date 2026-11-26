@@ -48,37 +48,13 @@ jobs:
           cursor_path=$(node -p 'require("./.github/upstream-sync.json").cursor.path')
           cursor_base=$(node -p 'require("./.github/upstream-sync.json").cursor.lastSyncedSha')
 
-          git clone --depth 1 --branch "$cursor_branch" --filter=blob:none --sparse \
+          git clone --branch "$cursor_branch" --single-branch --filter=blob:none --sparse \
             "https://github.com/${cursor_repo}.git" "$up_dir/cursor-plugins"
           git -C "$up_dir/cursor-plugins" sparse-checkout set "${cursor_path}/skills"
           cursor_head=$(git -C "$up_dir/cursor-plugins" rev-parse HEAD)
           printf '%s\n' "$cursor_head" > "$up_dir/cursor-sha.txt"
 
-          gh api "repos/${cursor_repo}/commits?sha=${cursor_branch}&path=${cursor_path}&per_page=100" \
-            --jq "[.[] | {sha: .sha, date: .commit.committer.date, subject: (.commit.message | split(\"\n\")[0])}]" \
-            > "$up_dir/cursor-commits-raw.json"
-
-          # shellcheck disable=SC2016 # Single-quoted JS template is intentional.
-          node -e '
-            const fs = require("node:fs");
-            const raw = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-            const base = process.argv[2];
-            const newer = [];
-            for (const item of raw) {
-              if (item.sha === base) break;
-              newer.push(item);
-            }
-            fs.writeFileSync(process.argv[3], JSON.stringify(newer, null, 2));
-            for (const item of newer) console.log(item.sha);
-          ' "$up_dir/cursor-commits-raw.json" "$cursor_base" "$up_dir/cursor-commits.json" \
-            > "$up_dir/cursor-new-shas.txt"
-
-          : > "$up_dir/cursor-changed.txt"
-          while IFS= read -r sha; do
-            [ -z "$sha" ] && continue
-            gh api "repos/${cursor_repo}/commits/${sha}" \
-              --jq '.files[] | "\(.status)\t\(.filename)"' >> "$up_dir/cursor-changed.txt"
-          done < "$up_dir/cursor-new-shas.txt"
+          node scripts/upstream-range.mjs --repo-dir "$up_dir/cursor-plugins" --base "$cursor_base" --head "$cursor_head" --path "$cursor_path" --commits-output "$up_dir/cursor-commits.json" --changed-output "$up_dir/cursor-changed.txt"
 
           pi_repo=$(node -p 'require("./.github/upstream-sync.json").piMimir.repo')
           pi_branch=$(node -p 'require("./.github/upstream-sync.json").piMimir.branch')
