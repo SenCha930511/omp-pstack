@@ -17,7 +17,10 @@ const FLAGS = {
 };
 
 function git(repoDir, args) {
-  return execFileSync("git", ["-C", repoDir, ...args], { encoding: "utf8" });
+  return execFileSync("git", ["-C", repoDir, ...args], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
 }
 
 function parseCommitLine(line) {
@@ -31,22 +34,37 @@ function parseCommitLine(line) {
 }
 
 export function collectRange({ repoDir, base, head, path: rangePath }) {
-  const commits = [];
-  const log = git(repoDir, ["log", "--format=%H%x09%cI%x09%s", head, "--", rangePath]);
-  for (const line of log.split(/\r?\n/)) {
-    if (!line) continue;
-    const commit = parseCommitLine(line);
-    if (commit.sha === base) break;
-    commits.push(commit);
+  try {
+    git(repoDir, ["cat-file", "-e", `${base}^{commit}`]);
+  } catch {
+    throw new Error(
+      `base commit ${base} is not in the upstream clone; reset lastSyncedSha in .github/upstream-sync.json`,
+    );
   }
 
-  const changedFiles = [];
-  for (const commit of commits) {
-    const diff = git(repoDir, ["diff", "--name-status", `${commit.sha}^`, commit.sha, "--", rangePath]);
-    for (const line of diff.split(/\r?\n/)) {
-      if (line && !changedFiles.includes(line)) changedFiles.push(line);
-    }
+  try {
+    git(repoDir, ["merge-base", "--is-ancestor", base, head]);
+  } catch {
+    throw new Error(
+      `base commit ${base} is not an ancestor of ${head}; reset lastSyncedSha in .github/upstream-sync.json`,
+    );
   }
+
+  const commits = [];
+  const log = git(repoDir, ["log", "--format=%H%x09%cI%x09%s", `${base}..${head}`, "--", rangePath]);
+  for (const line of log.split(/\r?\n/)) {
+    if (line) commits.push(parseCommitLine(line));
+  }
+
+  const changedFiles = git(repoDir, [
+    "diff",
+    "--name-status",
+    `${base}..${head}`,
+    "--",
+    rangePath,
+  ])
+    .split(/\r?\n/)
+    .filter(Boolean);
 
   return { commits, changedFiles };
 }
