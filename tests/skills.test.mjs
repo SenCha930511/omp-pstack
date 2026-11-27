@@ -231,7 +231,7 @@ test("bundled runtime scripts keep executable bits on POSIX", { skip: process.pl
   }
 });
 
-test("worktree-audit.sh handles title-first headers, shared session dir, ancestor cwd, and missing rg/jq/node", { skip: process.platform === "win32" }, () => {
+test("worktree-audit.sh handles title-first headers, shared session dir, additionalDirectories, and missing rg/jq/node", { skip: process.platform === "win32" }, () => {
   const dir = mkdtempSync(join(tmpdir(), "omp-pstack-wt-audit-"));
   const cleanBins = [];
   try {
@@ -256,7 +256,7 @@ test("worktree-audit.sh handles title-first headers, shared session dir, ancesto
     const realWt = git(["rev-parse", "--show-toplevel"], wt);
     const titleSlot = (title) =>
       `${JSON.stringify({
-        type: "session_title",
+        type: "title",
         v: 1,
         title,
         updatedAt: "2026-11-27T00:00:00.000Z",
@@ -345,15 +345,26 @@ test("worktree-audit.sh handles title-first headers, shared session dir, ancesto
       ancestorSession,
       `${titleSlot("workspace")}${JSON.stringify({ type: "session", version: 3, id: "ancestor", cwd: realDir })}\n{"tool":"bash","cwd":"${realWt}/src"}\n`,
     );
-    const ancestorOutput = runAudit(noRgPath);
-    const ancestorRow = ancestorOutput.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
-    assert.equal(ancestorRow?.split("\t")[7], "verify-recent-chat", `ancestor cwd session should be scanned: ${ancestorRow}`);
+    const bareAncestorRow = runAudit(noRgPath).split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.equal(bareAncestorRow?.split("\t")[6], "-", `broad parent cwd session must stay excluded: ${bareAncestorRow}`);
+    assert.equal(bareAncestorRow?.split("\t")[7], "safe", `broad parent cwd session must stay excluded: ${bareAncestorRow}`);
+    const bareAncestorNoTools = runAudit(noToolsPath).split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.equal(bareAncestorNoTools?.split("\t")[7], "safe");
 
-    const ancestorNoTools = runAudit(noToolsPath);
-    assert.equal(
-      ancestorNoTools.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`))?.split("\t")[7],
-      "verify-recent-chat",
+    writeFileSync(
+      ancestorSession,
+      `${titleSlot("workspace-added")}${JSON.stringify({
+        type: "session",
+        version: 3,
+        id: "ancestor",
+        cwd: realDir,
+        additionalDirectories: [realRepo],
+      })}\n{"tool":"bash","cwd":"${realWt}/src"}\n`,
     );
+    const addedDirRow = runAudit(noRgPath).split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.equal(addedDirRow?.split("\t")[7], "verify-recent-chat", `additionalDirectories repo session must be scanned: ${addedDirRow}`);
+    const addedDirNoTools = runAudit(noToolsPath).split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.equal(addedDirNoTools?.split("\t")[7], "verify-recent-chat");
 
     rmSync(ancestorSession);
     writeFileSync(

@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { ackUpstream } from "./sync-ack.mjs";
 import { syncUpstream } from "./sync-upstream.mjs";
+
+const SYNC_ACK_SCRIPT = fileURLToPath(new URL("./sync-ack.mjs", import.meta.url));
 
 const TEMP_DIRS = [];
 
@@ -523,7 +526,6 @@ test("multiple blocked skills stay tracked after partial --adapt-only and missin
   assert.ok(first.report.includes("--adapt-only --adapt <skill>"));
   assert.ok(first.report.includes(`npm run sync:ack -- --cursor ${sha} --adapt blocked-a --adapt blocked-b`));
 
-  // Port blocked-a locally and record it with --adapt-only; blocked-b is still unported.
   fs.mkdirSync(path.join(root, "skills", "blocked-a"), { recursive: true });
   fs.writeFileSync(path.join(root, "skills", "blocked-a", "SKILL.md"), "---\nname: blocked-a\ndescription: a\n---\n");
   ackUpstream({ root, adapt: ["blocked-a"], adaptOnly: true });
@@ -543,7 +545,6 @@ test("multiple blocked skills stay tracked after partial --adapt-only and missin
     { name: "blocked-a", files: ["pstack/skills/blocked-a/SKILL.md"] },
   ]);
 
-  // If a skill in adaptedSkills is missing locally, do not silently skip it.
   fs.rmSync(path.join(root, "skills", "swarm"), { recursive: true, force: true });
   const missingAdapted = syncUpstream({
     root,
@@ -614,9 +615,47 @@ test("surfaces --pi-mimir-error-file without failing sync or advancing piMimir.l
   assert.equal(summary.cursorShaAdvanced, true);
   assert.match(summary.piMimirError ?? "", /piMimir\.lastCheckedSha/);
   assert.ok(report.includes("range check failed"));
-  assert.ok(report.includes(`--cursor ${cursorHeadSha} --pi-mimir ${piHeadSha}`));
+  assert.equal(report.includes(`--pi-mimir ${piHeadSha}`), false);
 
   const cfg = JSON.parse(fs.readFileSync(path.join(root, ".github", "upstream-sync.json"), "utf8"));
   assert.equal(cfg.cursor.lastSyncedSha, cursorHeadSha);
   assert.equal(cfg.piMimir.lastCheckedSha, "2222222222222222222222222222222222222222");
+
+  const mixed = createFixture({
+    localSkills: {
+      tdd: { "SKILL.md": "old\n" },
+      swarm: { "SKILL.md": "local swarm\n" },
+    },
+    upstreamSkills: {
+      tdd: { "SKILL.md": "new\n" },
+      swarm: { "SKILL.md": "upstream swarm\n" },
+    },
+    changedFiles: [
+      "M\tpstack/skills/tdd/SKILL.md",
+      "M\tpstack/skills/swarm/SKILL.md",
+    ],
+  });
+  const mixedErrorPath = path.join(mixed.dir, "pi-error.txt");
+  fs.writeFileSync(mixedErrorPath, "base commit 2222222 is not an ancestor; reset piMimir.lastCheckedSha\n");
+
+  const mixedResult = syncUpstream({
+    root: mixed.root,
+    cursorDir: mixed.cursorDir,
+    cursorSha: cursorHeadSha,
+    cursorChangedFile: mixed.changedPath,
+    piMimirSha: piHeadSha,
+    piMimirCommitsFile: mixed.piCommitsPath,
+    piMimirErrorFile: mixedErrorPath,
+  });
+  const ackMatch = mixedResult.report.match(/`(npm run sync:ack -- ([^`]+))`/);
+  assert.ok(ackMatch, `expected ack command in report:\n${mixedResult.report}`);
+  const ackArgs = ackMatch[2].trim().split(/\s+/);
+  const ackRun = spawnSync(process.execPath, [SYNC_ACK_SCRIPT, "--root", mixed.root, ...ackArgs], {
+    encoding: "utf8",
+  });
+  assert.equal(ackRun.status, 0, ackRun.stderr);
+
+  const mixedCfg = JSON.parse(fs.readFileSync(path.join(mixed.root, ".github", "upstream-sync.json"), "utf8"));
+  assert.equal(mixedCfg.cursor.lastSyncedSha, cursorHeadSha);
+  assert.equal(mixedCfg.piMimir.lastCheckedSha, "2222222222222222222222222222222222222222");
 });

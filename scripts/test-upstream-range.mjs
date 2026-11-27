@@ -175,6 +175,26 @@ test("collectRange reports the configured --base-label on missing or non-ancesto
         path: "pstack",
         baseLabel: "piMimir.lastCheckedSha",
       }),
-    /reset piMimir\.lastCheckedSha in \.github\/upstream-sync\.json/,
+    /is not in the upstream clone; reset piMimir\.lastCheckedSha in \.github\/upstream-sync\.json/,
+  );
+
+  const originalBranch = git(dir, ["rev-parse", "--abbrev-ref", "HEAD"]);
+  git(dir, ["checkout", "-q", "--orphan", "diverged"]);
+  fs.writeFileSync(path.join(dir, "other.txt"), "diverged\n");
+  git(dir, ["add", "-A"]);
+  git(dir, ["commit", "-q", "-m", "diverged commit"]);
+  const divergedSha = git(dir, ["rev-parse", "HEAD"]);
+  git(dir, ["checkout", "-q", originalBranch]);
+
+  assert.throws(
+    () =>
+      collectRange({
+        repoDir: dir,
+        base: divergedSha,
+        head,
+        path: "pstack",
+        baseLabel: "piMimir.lastCheckedSha",
+      }),
+    /is not an ancestor of .*; reset piMimir\.lastCheckedSha in \.github\/upstream-sync\.json/,
   );
 });

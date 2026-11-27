@@ -75,12 +75,14 @@ fi
 [ -s "$prs" ] || echo "[]" > "$prs"
 
 # OMP exposes PI_SESSION_FILE, whose directory may be a per-project bucket or a
-# shared --session-dir. Recent OMP versions write a fixed-width session_title
-# slot on line 1 followed by the session header on line 2 (older sessions have
-# the session header on line 1). Scan the first lines of each candidate
-# transcript for its SessionHeader and verify that cwd or additionalDirectories
-# points at a repo worktree (or an ancestor workspace containing one). Foreign
-# sibling projects stay excluded for privacy under shared --session-dir.
+# shared --session-dir. Recent OMP versions write a fixed-width title slot
+# ({"type":"title",...}) on line 1 followed by the session header on line 2
+# (older sessions have the session header on line 1). Scan the first lines of
+# each candidate transcript for its SessionHeader and restrict matches strictly
+# to transcripts whose cwd or additionalDirectories is inside a repo worktree,
+# matching upstream Cursor's per-repo isolation. Foreign sibling projects and
+# shared parent directories (such as $HOME or workspace folders) stay excluded
+# for privacy unless explicitly listed in additionalDirectories.
 extract_session_dirs() {
 	local tf="$1"
 	if command -v jq >/dev/null 2>&1; then
@@ -184,10 +186,6 @@ transcript_belongs_to_repo() {
 		[ "$resolved" != "/" ] && resolved="${resolved%/}"
 		for r in "${repo_roots[@]}"; do
 			if [ "$d" = "$r" ] || [[ "$d" == "$r/"* ]] || [ "$resolved" = "$r" ] || [[ "$resolved" == "$r/"* ]]; then
-				return 0
-			fi
-			if { [ -n "$d" ] && [ "$d" != "/" ] && [[ "$r" == "$d/"* ]]; } \
-				|| { [ -n "$resolved" ] && [ "$resolved" != "/" ] && [[ "$r" == "$resolved/"* ]]; }; then
 				return 0
 			fi
 		done

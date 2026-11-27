@@ -56,7 +56,7 @@ const DEFAULT_SKILL_COMMANDS: SlashCommand[] = [
 
 function createMockHost(
   activeTools: string[] = [],
-  options: { omitSendMessage?: boolean; commands?: SlashCommand[] } = {},
+  options: { omitSendMessage?: boolean; omitGetCommands?: boolean; commands?: SlashCommand[] } = {},
 ) {
   const registeredCommands = options.commands ?? DEFAULT_SKILL_COMMANDS;
   const handlers = new Map<string, EventHandler[]>();
@@ -80,9 +80,6 @@ function createMockHost(
     getActiveTools() {
       return activeTools;
     },
-    getCommands() {
-      return registeredCommands;
-    },
     registerCommand(name: string, commandOptions: Command) {
       commands.set(name, commandOptions);
     },
@@ -91,6 +88,10 @@ function createMockHost(
       sent.push({ content, options: sendOptions });
     },
   };
+
+  if (!options.omitGetCommands) {
+    api.getCommands = () => registeredCommands;
+  }
 
   if (!options.omitSendMessage) {
     api.sendMessage = (message: Record<string, unknown>, sendOptions?: unknown) => {
@@ -815,6 +816,18 @@ function stripOmpMultiBlankLines(text: string): string {
 
   test("falls back to the skill-prompt command handler when /skill:poteto-mode is not registered", async () => {
     const host = createMockHost([], { commands: [] });
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true });
+
+    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toBeUndefined();
+    const dispatched = await dispatchLikeHost(host, "/poteto-mode fix the bug", ctx);
+    expect(dispatched.kind).toBe("command");
+    expect(host.sentCustom).toHaveLength(1);
+    expect(host.sentCustom[0]?.message.customType).toBe(SKILL_PROMPT_MESSAGE_TYPE);
+  });
+
+  test("falls back to the skill-prompt command handler when getCommands is unavailable", async () => {
+    const host = createMockHost([], { omitGetCommands: true });
     pstackExtension(host.api);
     const ctx = host.makeCtx({ hasUI: true });
 
