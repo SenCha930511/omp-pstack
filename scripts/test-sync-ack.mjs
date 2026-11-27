@@ -91,3 +91,15 @@ test("CLI writes the config and exits 0", () => {
   assert.equal(config.cursor.lastSyncedSha, NEW_CURSOR_SHA);
   assert.equal(config.piMimir.lastCheckedSha, NEW_PI_MIMIR_SHA);
 });
+
+test("records --adapt skills deduplicated and sorted", () => {
+  const root = createRoot();
+  const result = spawnSync(
+    process.execPath,
+    [SCRIPT_PATH, "--root", root, "--cursor", NEW_CURSOR_SHA, "--adapt", "zeta", "--adapt", "alpha", "--adapt", "zeta"],
+    { encoding: "utf8" },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const config = readConfig(root);
+  assert.deepEqual(config.cursor.adaptedSkills, ["alpha", "zeta"]);
+});

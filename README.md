@@ -183,7 +183,7 @@ npm run check
 ```
 
 `npm test` checks skill and agent frontmatter, local
-Markdown links, stale pi-herdr or Cursor references, unsupported agent fields,
+Markdown links, stale Cursor references, unsupported agent fields,
 and extension behavior. `npm run typecheck` checks both the extension sources
 and the test sources. `npm run check` runs all checks including version
 consistency, extension load-graph verification, release and upstream-sync script

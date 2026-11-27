@@ -27,8 +27,13 @@ repo="${1:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 cd "$repo" || exit 1
 git rev-parse --git-dir >/dev/null 2>&1 || { echo "error: not a git repo: $repo" >&2; exit 1; }
 
-# Main worktree is the first entry; everything else is a candidate.
-main_wt=$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')
+# Main worktree is the first entry; collect all repo worktree roots up front for
+# strict per-repo transcript filtering.
+main_wt=$(git worktree list --porcelain | awk '/^worktree /{print substr($0, 10); exit}')
+repo_roots=()
+while IFS= read -r r; do
+	[ -n "$r" ] && repo_roots+=("${r%/}")
+done < <(git worktree list --porcelain | awk '/^worktree /{print substr($0, 10)}')
 
 if [ -z "$base" ]; then
 	for cand in "$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)" origin/main origin/master; do
@@ -69,30 +74,68 @@ elif raw=$(gh pr list --author "@me" --state all --limit 1000 \
 fi
 [ -s "$prs" ] || echo "[]" > "$prs"
 
-# PI_SESSION_FILE points into the current workspace's per-project session directory
-# (e.g. ~/.omp/agent/sessions/--<encoded-cwd>--/<session>.jsonl). Scan sibling
-# transcripts in that directory without crossing into other projects.
+# OMP exposes PI_SESSION_FILE, whose directory may be a per-project bucket or a
+# shared --session-dir. Verify each candidate transcript's SessionHeader against
+# this repo's worktrees before searching bodies; without jq, inspect only $session_file.
+transcript_belongs_to_repo() {
+	local tf="$1"
+	[ "$tf" = "$session_file" ] && return 0
+	command -v jq >/dev/null 2>&1 || return 1
+	local dirs d resolved r
+	dirs=$(head -n 1 "$tf" 2>/dev/null | jq -r '
+		select(.type == "session")
+		| [(.cwd // empty), ((.additionalDirectories // [])[]?)]
+		| .[]
+	' 2>/dev/null) || return 1
+	[ -n "$dirs" ] || return 1
+	while IFS= read -r d; do
+		[ -n "$d" ] || continue
+		resolved="$d"
+		if [ -d "$d" ]; then
+			resolved=$(cd "$d" 2>/dev/null && pwd -P) || resolved="$d"
+		fi
+		d="${d%/}"
+		resolved="${resolved%/}"
+		for r in "${repo_roots[@]}"; do
+			if [ "$d" = "$r" ] || [[ "$d" == "$r/"* ]] || [ "$resolved" = "$r" ] || [[ "$resolved" == "$r/"* ]]; then
+				return 0
+			fi
+		done
+	done <<< "$dirs"
+	return 1
+}
+
 session_file="${PI_SESSION_FILE:-}"
-sessions_dir=""
-if [ -n "$session_file" ]; then
-	cand_dir=$(dirname "$session_file")
-	[ -d "$cand_dir" ] && sessions_dir="$cand_dir"
+repo_transcripts=()
+if [ -n "$session_file" ] && [ -f "$session_file" ]; then
+	sessions_dir=$(dirname "$session_file")
+	if command -v jq >/dev/null 2>&1 && [ -d "$sessions_dir" ]; then
+		while IFS= read -r tf; do
+			[ -n "$tf" ] || continue
+			if transcript_belongs_to_repo "$tf"; then
+				repo_transcripts+=("$tf")
+			fi
+		done < <(find "$sessions_dir" -type f -name '*.jsonl' 2>/dev/null)
+	else
+		repo_transcripts+=("$session_file")
+	fi
 fi
 now=$(date +%s)
 
 find_matching_transcripts() {
 	local wt="$1"
+	[ "${#repo_transcripts[@]}" -gt 0 ] || return 0
 	if command -v rg >/dev/null 2>&1; then
-		rg -l -F -g '*.jsonl' -e "${wt}/" -e "${wt}\"" "$sessions_dir" 2>/dev/null
+		rg -l -F -e "${wt}/" -e "${wt}\"" -- "${repo_transcripts[@]}" 2>/dev/null
 	else
-		grep -r -l -F --include='*.jsonl' -e "${wt}/" -e "${wt}\"" "$sessions_dir" 2>/dev/null
+		grep -l -F -e "${wt}/" -e "${wt}\"" -- "${repo_transcripts[@]}" 2>/dev/null
 	fi
 }
 
 echo "# base: $base"
 printf "SIZE\tAGE\tMERGED\tDIRTY\tREMOTE\tPR\tLAST_CHAT\tBUCKET\tWORKTREE\n"
 
-git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt; do
+git worktree list --porcelain | awk '/^worktree /{print substr($0, 10)}' | while IFS= read -r wt; do
 	[ "$wt" = "$main_wt" ] && continue
 
 	size=$(du -sh "$wt" 2>/dev/null | awk '{print $1}')
@@ -126,7 +169,7 @@ git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt;
 	# Most recent chat whose transcript operated in this worktree. Match path
 	# followed by "/" or a quote so glint-482 does not match glint-482-r37.
 	last="-"; last_ts=0
-	if [ -n "$sessions_dir" ]; then
+	if [ "${#repo_transcripts[@]}" -gt 0 ]; then
 		while IFS= read -r tf; do
 			[ -n "$tf" ] || continue
 			ts=$(stat "${stat_fmt[@]}" "$tf" 2>/dev/null | awk '{print $1}')

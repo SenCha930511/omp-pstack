@@ -41,7 +41,8 @@ When enabling per-call model selection for panels, write `task.perCallModel: "on
 
 ```yaml
 modelRoles:
-  fast: openai/gpt-5.4-mini
+  slow: anthropic/claude-opus-5.5
+  smol: openai/gpt-5.4-mini
 task:
   perCallModel: "on"
   perCallModelAllow:
