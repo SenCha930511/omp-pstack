@@ -1,11 +1,13 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ExtensionAPI, ExtensionContext } from "@oh-my-pi/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext, InputEvent, SkillPromptDetails } from "@oh-my-pi/pi-coding-agent";
 import { preferredAskTool } from "./interaction.js";
 
 const MODE_ENTRY = "pstack-mode";
 const CONTEXT_TYPE = "pstack-mode-context";
+const SKILL_NAME = "poteto-mode";
+const SKILL_PROMPT_TYPE = "skill-prompt";
 const SKILL_FILE = path.join(packageRoot(), "skills/poteto-mode/SKILL.md");
 const STATUS_TEXT = "pstack: poteto mode";
 const USAGE = [
@@ -14,6 +16,8 @@ const USAGE = [
   "/poteto-mode off             stop sticky mode",
   "/poteto-mode status          show sticky state",
 ].join("\n");
+
+type AttachedImages = NonNullable<InputEvent["images"]>;
 
 type ContextMessage = {
   role: "custom";
@@ -74,6 +78,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   let potetoMode = false;
   let cachedSkill: { mtimeMs: number; body: string } | undefined;
   let cachedContext: { content: string; message: ContextMessage } | undefined;
+  let pendingOneShotImages: { task: string; images: AttachedImages } | undefined;
 
   function notify(ctx: ExtensionContext, message: string, type?: "info" | "warning" | "error"): void {
     if (ctx.hasUI) ctx.ui.notify(message, type);
@@ -159,6 +164,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   }
 
   function restorePotetoMode(ctx: ExtensionContext): void {
+    pendingOneShotImages = undefined;
     if (isSubagent(ctx)) {
       potetoMode = false;
       return;
@@ -201,35 +207,75 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     notify(ctx, "Poteto Mode sticky disabled for this session.");
   }
 
-  function findSkillCommandName(): string | undefined {
-    if (typeof pi.getCommands !== "function") return "skill:poteto-mode";
-    const targetPath = path.resolve(skillFile);
-    const commands = pi.getCommands();
-    const byPath = commands.find(
-      (cmd) => cmd.source === "skill" && cmd.path !== undefined && path.resolve(cmd.path) === targetPath,
-    );
-    if (byPath) return byPath.name;
-    const byName = commands.find((cmd) => cmd.source === "skill" && cmd.name === "skill:poteto-mode");
-    return byName?.name;
+  function buildOneShotSkillPrompt(body: string, task: string): { text: string; details: SkillPromptDetails } {
+    const trimmedBody = body.replace(/\r\n?/g, "\n").trim();
+    const trimmedTask = task.trim();
+    const text = [
+      `[IMPORTANT: User invoked the "${SKILL_NAME}" skill; follow its instructions. Full skill below.]`,
+      "",
+      trimmedBody,
+      "",
+      "---",
+      "",
+      `[Skill directory: ${skillDir}]`,
+      "Resolve relative paths in this skill (e.g. `scripts/foo.js`, `templates/config.yaml`) against this absolute directory; read referenced assets and templates; run scripts with the terminal tool when skill instructions call for it.",
+      `User: ${trimmedTask}`,
+    ].join("\n");
+    return {
+      text,
+      details: {
+        name: SKILL_NAME,
+        path: skillFile,
+        args: trimmedTask,
+        lineCount: trimmedBody ? trimmedBody.split("\n").length : 0,
+      },
+    };
   }
 
-  async function sendPlainTask(ctx: ExtensionContext, task: string): Promise<void> {
+  async function sendPlainTask(ctx: ExtensionContext, task: string, images?: AttachedImages): Promise<void> {
+    const content = images && images.length > 0 ? [{ type: "text" as const, text: task }, ...images] : task;
     try {
-      await pi.sendUserMessage(task);
+      await pi.sendUserMessage(content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       notify(ctx, `Task was not sent: ${message}`, "error");
     }
   }
 
-  async function sendOneShotFallback(ctx: ExtensionContext, task: string): Promise<void> {
+  async function sendOneShotSkill(ctx: ExtensionContext, task: string, images?: AttachedImages): Promise<void> {
     const body = readSkillBody();
     if (body === undefined) {
       notify(ctx, `pstack skill file not found at ${skillFile}`, "error");
       return;
     }
+    const built = buildOneShotSkillPrompt(body, task);
+    const content =
+      images && images.length > 0 ? [{ type: "text" as const, text: built.text }, ...images] : built.text;
+    // In print/json modes, print-mode.ts calls session.waitForIdle() immediately after
+    // prompt() returns without tracking extension sendMessage promises; awaiting
+    // sendUserMessage avoids racing teardown while still delivering the exact prompt body.
+    const useSkillPromptMessage =
+      typeof pi.sendMessage === "function" && ctx.mode !== "print" && ctx.mode !== "json";
+    if (useSkillPromptMessage) {
+      try {
+        pi.sendMessage(
+          {
+            customType: SKILL_PROMPT_TYPE,
+            content,
+            display: true,
+            attribution: "user",
+            details: built.details,
+          },
+          { triggerTurn: true },
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        notify(ctx, `Task was not sent: ${message}`, "error");
+      }
+      return;
+    }
     try {
-      await pi.sendUserMessage(`[Skill directory: ${skillDir}]\n\n${body}\n\nTask:\n${task}`);
+      await pi.sendUserMessage(content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       notify(ctx, `Task was not sent: ${message}`, "error");
@@ -250,6 +296,11 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
         .map((value) => ({ value, label: value })),
     handler: async (args, ctx) => {
       const parsed = parsePotetoCommand(args);
+      const images =
+        parsed.kind === "one-shot" && pendingOneShotImages?.task === parsed.task
+          ? pendingOneShotImages.images
+          : undefined;
+      pendingOneShotImages = undefined;
       if (parsed.kind === "sticky") {
         if (!enableMode(ctx)) return;
         if (parsed.task) await sendPlainTask(ctx, parsed.task);
@@ -269,15 +320,16 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
         return;
       }
       if (potetoMode) {
-        await sendPlainTask(ctx, parsed.task);
+        await sendPlainTask(ctx, parsed.task, images);
         return;
       }
-      await sendOneShotFallback(ctx, parsed.task);
+      await sendOneShotSkill(ctx, parsed.task, images);
     },
   });
 
   pi.on("input", (event, ctx) => {
     if (isSubagent(ctx)) return;
+    pendingOneShotImages = undefined;
     const match = /^\s*\/poteto-mode(?:\s+([\s\S]*))?$/.exec(event.text);
     if (!match) return;
     const parsed = parsePotetoCommand(match[1] ?? "");
@@ -294,9 +346,8 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     if (potetoMode) {
       return { text: parsed.task };
     }
-    const skillCommand = findSkillCommandName();
-    if (skillCommand) {
-      return { text: `/${skillCommand} ${parsed.task}` };
+    if (event.images && event.images.length > 0) {
+      pendingOneShotImages = { task: parsed.task, images: [...event.images] };
     }
     return event.text !== event.text.trimStart() ? { text: event.text.trim() } : undefined;
   });
