@@ -208,7 +208,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   }
 
   function findSkillCommandName(): string | undefined {
-    if (typeof pi.getCommands !== "function") return "skill:poteto-mode";
+    if (typeof pi.getCommands !== "function") return undefined;
     const targetPath = path.resolve(skillFile);
     const commands = pi.getCommands();
     const byPath = commands.find(

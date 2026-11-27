@@ -319,6 +319,7 @@ function buildReport(config, summary, cursorCommits) {
         `**\`${piRepo}\` range check failed (review manually; \`piMimir.lastCheckedSha\` was not advanced):**`,
         "",
         `- Error${headNote}: \`${summary.piMimirError}\``,
+        "- Do not pass `--pi-mimir` until the range error is resolved and verified manually.",
         "",
       );
     }
@@ -329,15 +330,24 @@ function buildReport(config, summary, cursorCommits) {
       summary.blockedCursorSkills.length > 0
         ? summary.blockedCursorSkills.map((item) => ` --adapt ${item.name}`).join("")
         : "";
-    const piMimirTargetSha = summary.piMimirCommits[0]?.sha ?? (summary.piMimirError ? summary.piMimirSha : undefined);
+    const piMimirTargetSha = summary.piMimirCommits[0]?.sha;
     const piMimirArg = piMimirTargetSha ? ` --pi-mimir ${piMimirTargetSha}` : "";
+    const hasAckableManualItems = hasManualCursorItems || summary.piMimirCommits.length > 0;
     const suffix = summary.mode === "issue" ? " and close this issue." : " after porting all manual items above.";
-    lines.push(
-      "### After porting",
-      "",
-      `Run \`npm run sync:ack -- --cursor ${summary.cursorSha}${piMimirArg}${adaptFlags}\`${suffix}`,
-      "",
-    );
+    lines.push("### After porting", "");
+    if (hasAckableManualItems) {
+      lines.push(`Run \`npm run sync:ack -- --cursor ${summary.cursorSha}${piMimirArg}${adaptFlags}\`${suffix}`);
+      if (summary.piMimirError) {
+        lines.push(
+          "Note: `--pi-mimir` was omitted because the `pi-mimir` range check failed; update `piMimir.lastCheckedSha` separately after verifying the range.",
+        );
+      }
+    } else {
+      lines.push(
+        `Resolve the \`pi-mimir\` range error manually, inspect any missed commits, and then run \`npm run sync:ack -- --cursor ${summary.cursorSha} --pi-mimir <verified-sha>\`${summary.mode === "issue" ? " and close this issue." : "."}`,
+      );
+    }
+    lines.push("");
   }
 
   if (summary.mode === "pr") {
