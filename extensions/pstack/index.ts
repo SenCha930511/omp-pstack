@@ -215,7 +215,9 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
       (cmd) => cmd.source === "skill" && cmd.path !== undefined && path.resolve(cmd.path) === targetPath,
     );
     if (byPath) return byPath.name;
-    const byName = commands.find((cmd) => cmd.source === "skill" && cmd.name === "skill:poteto-mode");
+    const byName = commands.find(
+      (cmd) => cmd.source === "skill" && cmd.name === "skill:poteto-mode" && cmd.path === undefined,
+    );
     return byName?.name;
   }
 

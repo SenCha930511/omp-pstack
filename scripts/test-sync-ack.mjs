@@ -125,6 +125,15 @@ test("--adapt validates local skill existence and --adapt-only keeps SHAs unchan
     () => ackUpstream({ root, cursor: NEW_CURSOR_SHA, adapt: ["../escape"] }),
     /invalid skill name/,
   );
+  const evilDir = "$(printf${IFS}PWNED)";
+  fs.mkdirSync(path.join(root, "skills", evilDir), { recursive: true });
+  fs.writeFileSync(path.join(root, "skills", evilDir, "SKILL.md"), "---\nname: evil\ndescription: e\n---\n");
+  for (const unsafe of [evilDir, "a;id", "a b", "a`id`"]) {
+    assert.throws(
+      () => ackUpstream({ root, cursor: NEW_CURSOR_SHA, adapt: [unsafe] }),
+      /invalid skill name/,
+    );
+  }
 
   const partial = spawnSync(
     process.execPath,

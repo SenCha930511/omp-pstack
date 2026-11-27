@@ -237,6 +237,7 @@ test("worktree-audit.sh handles title-first headers, shared session dir, additio
   try {
     const repo = join(dir, "repo");
     const wt = join(dir, "wt-feature");
+    const wtOpenPr = join(dir, "wt-open-pr");
     const sessionsDir = join(dir, "sessions");
     mkdirSync(repo, { recursive: true });
     mkdirSync(sessionsDir, { recursive: true });
@@ -250,10 +251,12 @@ test("worktree-audit.sh handles title-first headers, shared session dir, additio
     git(["commit", "-m", "init"]);
     git(["update-ref", "refs/remotes/origin/main", "HEAD"]);
     git(["worktree", "add", "-b", "feat/x", wt]);
+    git(["worktree", "add", "-b", "feat/open-pr", wtOpenPr]);
 
     const realDir = dirname(git(["rev-parse", "--show-toplevel"], repo));
     const realRepo = git(["rev-parse", "--show-toplevel"], repo);
     const realWt = git(["rev-parse", "--show-toplevel"], wt);
+    const realWtOpenPr = git(["rev-parse", "--show-toplevel"], wtOpenPr);
     const titleSlot = (title) =>
       `${JSON.stringify({
         type: "title",
@@ -281,7 +284,7 @@ test("worktree-audit.sh handles title-first headers, shared session dir, additio
     const stubBin = join(dir, "stub-bin");
     mkdirSync(stubBin, { recursive: true });
     const fakeGh = join(stubBin, "gh");
-    writeFileSync(fakeGh, "#!/bin/sh\necho '[]'\n");
+    writeFileSync(fakeGh, '#!/bin/sh\necho \'[{"number":42,"state":"OPEN","headRefName":"feat/open-pr"}]\'\n');
     chmodSync(fakeGh, 0o755);
 
     const buildFilteredPath = (excludedCommands) => {
@@ -323,6 +326,16 @@ test("worktree-audit.sh handles title-first headers, shared session dir, additio
     const isolatedCols = isolatedRow.split("\t");
     assert.equal(isolatedCols[6], "-", `foreign session must not leak LAST_CHAT: ${isolatedRow}`);
     assert.equal(isolatedCols[7], "safe", `foreign session must not hold worktree: ${isolatedRow}`);
+
+    const openPrRow = isolatedOutput.split(/\r?\n/).find((line) => line.endsWith(`\t${realWtOpenPr}`));
+    assert.ok(openPrRow, `expected open PR row for ${realWtOpenPr} in:\n${isolatedOutput}`);
+    assert.equal(openPrRow.split("\t")[5], "#42/open");
+    assert.equal(openPrRow.split("\t")[7], "hold-open-pr");
+
+    const openPrNoTools = runAudit(noToolsPath).split(/\r?\n/).find((line) => line.endsWith(`\t${realWtOpenPr}`));
+    assert.ok(openPrNoTools, `expected open PR row without rg/jq/node`);
+    assert.equal(openPrNoTools.split("\t")[5], "#42/open");
+    assert.equal(openPrNoTools.split("\t")[7], "hold-open-pr");
 
     writeFileSync(
       siblingSession,

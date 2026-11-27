@@ -60,19 +60,94 @@ else
 	stat_fmt=(-f '%m %N'); fmt_day() { date -r "$1" '+%Y-%m-%d'; }
 fi
 
-# PR state by branch, fetched once as [{number, state, head}] with a lowercase
-# state. Origin when its CLI can read this repo's PRs, otherwise gh. Empty when
-# neither can.
+# PR state by branch, normalized once to TSV (<head>\t#<number>/<state>).
+# Origin when its CLI can read this repo's PRs, otherwise gh. Empty when
+# neither can. Supports jq, node, or pure POSIX awk.
+normalize_prs_tsv() {
+	local source_kind="$1"
+	if command -v jq >/dev/null 2>&1; then
+		if [ "$source_kind" = "origin" ]; then
+			jq -r '.[] | select(.headRef and .number and .status) | "\(.headRef)\t#\(.number)/\(.status | ascii_downcase)"' 2>/dev/null
+		else
+			jq -r '.[] | select(.headRefName and .number and .state) | "\(.headRefName)\t#\(.number)/\(.state | ascii_downcase)"' 2>/dev/null
+		fi
+		return $?
+	fi
+	if command -v node >/dev/null 2>&1; then
+		node -e '
+			const fs = require("node:fs");
+			const kind = process.argv[1];
+			try {
+				const items = JSON.parse(fs.readFileSync(0, "utf8"));
+				if (!Array.isArray(items)) process.exit(0);
+				for (const item of items) {
+					if (!item || typeof item !== "object") continue;
+					const head = kind === "origin" ? item.headRef : item.headRefName;
+					const st = kind === "origin" ? item.status : item.state;
+					if (typeof head === "string" && head && item.number != null && typeof st === "string" && st) {
+						console.log(`${head}\t#${item.number}/${st.toLowerCase()}`);
+					}
+				}
+			} catch {}
+		' "$source_kind" 2>/dev/null
+		return $?
+	fi
+	awk -v kind="$source_kind" '
+		BEGIN { RS = "}" }
+		function unescape_json(s,    out, i, ch, nx) {
+			out = ""
+			for (i = 1; i <= length(s); i++) {
+				ch = substr(s, i, 1)
+				if (ch == "\\" && i < length(s)) {
+					nx = substr(s, i + 1, 1)
+					if (nx == "\"" || nx == "\\" || nx == "/") { out = out nx; i++; continue }
+					if (nx == "t") { out = out "\t"; i++; continue }
+				}
+				out = out ch
+			}
+			return out
+		}
+		function extract_str(obj, key,    re, seg) {
+			re = "\"" key "\"[[:space:]]*:[[:space:]]*\"([^\"\\\\]|\\\\.)*\""
+			if (!match(obj, re)) return ""
+			seg = substr(obj, RSTART, RLENGTH)
+			sub("^\"" key "\"[[:space:]]*:[[:space:]]*\"", "", seg)
+			sub(/"$/, "", seg)
+			return unescape_json(seg)
+		}
+		function extract_num(obj,    re, seg) {
+			re = "\"number\"[[:space:]]*:[[:space:]]*[0-9]+"
+			if (!match(obj, re)) return ""
+			seg = substr(obj, RSTART, RLENGTH)
+			sub(/^"number"[[:space:]]*:[[:space:]]*/, "", seg)
+			return seg
+		}
+		{
+			num = extract_num($0)
+			if (kind == "origin") {
+				head = extract_str($0, "headRef")
+				st = tolower(extract_str($0, "status"))
+			} else {
+				head = extract_str($0, "headRefName")
+				st = tolower(extract_str($0, "state"))
+			}
+			if (head != "" && num != "" && st != "") {
+				print head "\t#" num "/" st
+			}
+		}
+	' 2>/dev/null
+}
+
 prs=$(mktemp)
 if command -v origin >/dev/null 2>&1 \
 	&& raw=$(origin pr list --author "@me" --state all --limit 1000 \
 		--json number,status,headRef 2>/dev/null); then
-	printf '%s' "$raw" | jq '[.[] | {number, state: .status, head: .headRef}]' > "$prs" 2>/dev/null
+	printf '%s' "$raw" | normalize_prs_tsv origin > "$prs" 2>/dev/null
 elif raw=$(gh pr list --author "@me" --state all --limit 1000 \
 	--json number,state,headRefName 2>/dev/null); then
-	printf '%s' "$raw" | jq '[.[] | {number, state: (.state | ascii_downcase), head: .headRefName}]' > "$prs" 2>/dev/null
+	printf '%s' "$raw" | normalize_prs_tsv gh > "$prs" 2>/dev/null
 fi
-[ -s "$prs" ] || echo "[]" > "$prs"
+[ -f "$prs" ] || : > "$prs"
 
 # OMP exposes PI_SESSION_FILE, whose directory may be a per-project bucket or a
 # shared --session-dir. Recent OMP versions write a fixed-width title slot
@@ -250,8 +325,7 @@ git worktree list --porcelain | awk '/^worktree /{print substr($0, 10)}' | while
 			|| remote="ahead$(git -C "$wt" rev-list --count "origin/$branch..HEAD" 2>/dev/null)"
 	else remote=no-remote; fi
 
-	pr=$([ -n "$branch" ] && jq -r --arg b "$branch" \
-		'.[] | select(.head==$b) | "#\(.number)/\(.state)"' "$prs" 2>/dev/null | head -1)
+	pr=$([ -n "$branch" ] && [ -s "$prs" ] && awk -F'\t' -v b="$branch" '$1 == b { print $2; exit }' "$prs" 2>/dev/null)
 	[ -z "$pr" ] && pr="-"
 
 	# Most recent chat whose transcript operated in this worktree. Match path
