@@ -392,6 +392,8 @@ test("continuing an open chore/upstream-sync PR branch preserves maintainer comm
   TEMP_DIRS.push(dir);
   const git = (args, cwd) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
   const configure = (cwd) => {
+    git(["config", "core.autocrlf", "false"], cwd);
+    git(["config", "commit.gpgsign", "false"], cwd);
     git(["config", "user.name", "Sync Test"], cwd);
     git(["config", "user.email", "sync-test@example.com"], cwd);
   };
@@ -401,7 +403,7 @@ test("continuing an open chore/upstream-sync PR branch preserves maintainer comm
   git(["init", "--bare", "-b", "main"], bareRemote);
 
   const seed = path.join(dir, "seed");
-  git(["clone", bareRemote, seed], dir);
+  git(["clone", "-c", "core.autocrlf=false", bareRemote, seed], dir);
   configure(seed);
   fs.mkdirSync(path.join(seed, ".github"), { recursive: true });
   fs.mkdirSync(path.join(seed, "skills", "swarm"), { recursive: true });
@@ -440,7 +442,7 @@ test("continuing an open chore/upstream-sync PR branch preserves maintainer comm
 
   // Run 1: bot opens mixed PR from main
   const botRun1 = path.join(dir, "bot-run1");
-  git(["clone", "--branch", "main", bareRemote, botRun1], dir);
+  git(["clone", "-c", "core.autocrlf=false", "--branch", "main", bareRemote, botRun1], dir);
   configure(botRun1);
   git(["checkout", "-B", "chore/upstream-sync"], botRun1);
   const res1 = syncUpstream({ root: botRun1, cursorDir, cursorSha: sha1, cursorChangedFile: changed1 });
@@ -452,7 +454,7 @@ test("continuing an open chore/upstream-sync PR branch preserves maintainer comm
 
   // Maintainer checks out PR branch, manually ports swarm, and runs sync:ack
   const maintainer = path.join(dir, "maintainer");
-  git(["clone", "--branch", "chore/upstream-sync", bareRemote, maintainer], dir);
+  git(["clone", "-c", "core.autocrlf=false", "--branch", "chore/upstream-sync", bareRemote, maintainer], dir);
   configure(maintainer);
   fs.writeFileSync(path.join(maintainer, "skills", "swarm", "SKILL.md"), "omp swarm v2 ported\n");
   ackUpstream({ root: maintainer, cursor: sha1 });
@@ -468,7 +470,7 @@ test("continuing an open chore/upstream-sync PR branch preserves maintainer comm
   const sha2 = "b".repeat(40);
 
   const botRun2 = path.join(dir, "bot-run2");
-  git(["clone", "--branch", "main", bareRemote, botRun2], dir);
+  git(["clone", "-c", "core.autocrlf=false", "--branch", "main", bareRemote, botRun2], dir);
   configure(botRun2);
   const remotePrSha = git(["ls-remote", "--heads", "origin", "refs/heads/chore/upstream-sync"], botRun2).split(/\s+/)[0];
   git(["fetch", "--depth=1", "origin", "refs/heads/chore/upstream-sync"], botRun2);
@@ -482,7 +484,7 @@ test("continuing an open chore/upstream-sync PR branch preserves maintainer comm
 
   // Verify maintainer's manual swarm port survived!
   const verify = path.join(dir, "verify");
-  git(["clone", "--branch", "chore/upstream-sync", bareRemote, verify], dir);
+  git(["clone", "-c", "core.autocrlf=false", "--branch", "chore/upstream-sync", bareRemote, verify], dir);
   assert.equal(fs.readFileSync(path.join(verify, "skills", "swarm", "SKILL.md"), "utf8"), "omp swarm v2 ported\n");
   assert.ok(fs.existsSync(path.join(verify, "skills", "reframe", "SKILL.md")));
   assert.ok(fs.existsSync(path.join(verify, "skills", "fresh", "SKILL.md")));
