@@ -95,3 +95,71 @@ test("CLI writes the commits JSON and changed-files TSV", () => {
   );
   assert.equal(fs.readFileSync(changedOutput, "utf8"), "M\tpstack/skills/alpha/SKILL.md\n");
 });
+
+test("collectRange and CLI support multiple --path filters", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omp-pstack-range-multi-"));
+  TEMP_DIRS.push(dir);
+  git(dir, ["init", "-q"]);
+  git(dir, ["config", "core.autocrlf", "false"]);
+  git(dir, ["config", "commit.gpgsign", "false"]);
+  git(dir, ["config", "user.name", "Upstream Range Test"]);
+  git(dir, ["config", "user.email", "upstream-range@example.com"]);
+
+  fs.mkdirSync(path.join(dir, "packages", "a"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "packages", "b"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "packages", "c"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "packages", "a", "x.ts"), "1\n");
+  git(dir, ["add", "-A"]);
+  git(dir, ["commit", "-q", "-m", "init"]);
+  const base = git(dir, ["rev-parse", "HEAD"]);
+
+  fs.writeFileSync(path.join(dir, "packages", "c", "ignored.ts"), "x\n");
+  git(dir, ["add", "-A"]);
+  git(dir, ["commit", "-q", "-m", "unrelated"]);
+
+  fs.writeFileSync(path.join(dir, "packages", "b", "y.ts"), "2\n");
+  git(dir, ["add", "-A"]);
+  git(dir, ["commit", "-q", "-m", "touch b"]);
+  const commitB = git(dir, ["rev-parse", "HEAD"]);
+
+  fs.writeFileSync(path.join(dir, "packages", "a", "x.ts"), "3\n");
+  git(dir, ["add", "-A"]);
+  git(dir, ["commit", "-q", "-m", "touch a"]);
+  const head = git(dir, ["rev-parse", "HEAD"]);
+
+  const range = collectRange({ repoDir: dir, base, head, paths: ["packages/a", "packages/b"] });
+  assert.deepEqual(
+    range.commits.map((commit) => commit.sha),
+    [head, commitB],
+  );
+  assert.deepEqual(range.changedFiles, ["M\tpackages/a/x.ts", "A\tpackages/b/y.ts"]);
+
+  const commitsOutput = path.join(dir, "out", "multi-commits.json");
+  const changedOutput = path.join(dir, "out", "multi-changed.txt");
+  const cli = spawnSync(
+    process.execPath,
+    [
+      SCRIPT_PATH,
+      "--repo-dir",
+      dir,
+      "--base",
+      base,
+      "--head",
+      head,
+      "--path",
+      "packages/a",
+      "--path",
+      "packages/b",
+      "--commits-output",
+      commitsOutput,
+      "--changed-output",
+      changedOutput,
+    ],
+    { encoding: "utf8" },
+  );
+  assert.equal(cli.status, 0, cli.stderr);
+  assert.deepEqual(
+    JSON.parse(fs.readFileSync(commitsOutput, "utf8")).map((commit) => commit.sha),
+    [head, commitB],
+  );
+});

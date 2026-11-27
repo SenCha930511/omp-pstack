@@ -18,12 +18,6 @@ const FORBIDDEN_PATTERNS = [
   { label: "generalPurpose", regex: /\bgeneralPurpose\b/ },
   { label: "/visualize", regex: /\/visualize\b/ },
   { label: "plugins/cache/", regex: /plugins\/cache\// },
-  { label: "is_background", regex: /\bis_background\b/ },
-  { label: "`subagent`", regex: /`subagent`/ },
-  { label: "subagents_write_task_models", regex: /subagents_write_task_models/ },
-  { label: "subagents_list", regex: /subagents_list/ },
-  { label: "herdr-agents", regex: /herdr-agents/ },
-  { label: "`set_tasks`", regex: /`set_tasks`/ },
 ];
 
 export function parseArgs(argv) {
@@ -109,6 +103,37 @@ function collectFiles(dir, base = dir) {
   return results.sort((a, b) => (a.relative < b.relative ? -1 : a.relative > b.relative ? 1 : 0));
 }
 
+const SCANNABLE_EXTENSIONS = new Set([
+  ".md",
+  ".ts",
+  ".mts",
+  ".js",
+  ".mjs",
+  ".cjs",
+  ".sh",
+  ".bash",
+  ".zsh",
+  ".json",
+  ".yaml",
+  ".yml",
+  ".txt",
+]);
+
+function isExecutable(filePath) {
+  if (process.platform === "win32") return false;
+  return (fs.statSync(filePath).mode & 0o111) !== 0;
+}
+
+function shouldScanFile(file) {
+  if (file.relative.startsWith("scripts/test/") || file.relative.includes("/test/")) return false;
+  const ext = path.extname(file.relative).toLowerCase();
+  if (SCANNABLE_EXTENSIONS.has(ext)) return true;
+  if (ext !== "") return false;
+  const buf = fs.readFileSync(file.fullPath);
+  if (buf.includes(0)) return false;
+  return buf.length >= 2 && buf[0] === 0x23 && buf[1] === 0x21;
+}
+
 function directoriesMatch(dirA, dirB) {
   if (!fs.existsSync(dirA) || !fs.existsSync(dirB)) return false;
   const filesA = collectFiles(dirA);
@@ -116,6 +141,7 @@ function directoriesMatch(dirA, dirB) {
   if (filesA.length !== filesB.length) return false;
   for (let index = 0; index < filesA.length; index += 1) {
     if (filesA[index].relative !== filesB[index].relative) return false;
+    if (isExecutable(filesA[index].fullPath) !== isExecutable(filesB[index].fullPath)) return false;
     const bytesA = fs.readFileSync(filesA[index].fullPath);
     const bytesB = fs.readFileSync(filesB[index].fullPath);
     if (!bytesA.equals(bytesB)) return false;
@@ -130,13 +156,16 @@ function replaceDirectory(srcDir, destDir) {
     const target = path.join(destDir, file.relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(file.fullPath, target);
+    if (process.platform !== "win32") {
+      fs.chmodSync(target, isExecutable(file.fullPath) ? 0o755 : 0o644);
+    }
   }
 }
 
 export function scanForbiddenReferences(skillDir) {
   const matches = [];
   for (const file of collectFiles(skillDir)) {
-    if (!file.relative.endsWith(".md")) continue;
+    if (!shouldScanFile(file)) continue;
     const content = fs.readFileSync(file.fullPath, "utf8");
     for (const pattern of FORBIDDEN_PATTERNS) {
       if (pattern.regex.test(content)) {
@@ -147,18 +176,29 @@ export function scanForbiddenReferences(skillDir) {
   return matches;
 }
 
-function parseChangedFiles(filePath) {
+function parseChangedEntries(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return [];
   const raw = fs.readFileSync(filePath, "utf8");
-  const paths = new Set();
+  const entries = [];
   for (const line of raw.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     const parts = trimmed.split("\t");
-    const chosen = parts.length >= 3 ? parts[2] : parts.length === 2 ? parts[1] : parts[0];
-    if (chosen) paths.add(chosen.replaceAll("\\", "/"));
+    if (parts.length >= 3) {
+      const status = parts[0].charAt(0);
+      entries.push({
+        status,
+        oldPath: parts[1].replaceAll("\\", "/"),
+        path: parts[2].replaceAll("\\", "/"),
+      });
+    } else if (parts.length === 2) {
+      const status = parts[0].charAt(0);
+      entries.push({ status, path: parts[1].replaceAll("\\", "/") });
+    } else {
+      entries.push({ status: "M", path: parts[0].replaceAll("\\", "/") });
+    }
   }
-  return [...paths].sort();
+  return entries;
 }
 
 function readJsonOptional(filePath, fallback) {
@@ -235,11 +275,14 @@ function buildReport(config, summary, cursorCommits) {
       lines.push("");
     }
     if (summary.blockedCursorSkills.length > 0) {
-      lines.push("**Unadapted/new skills skipped due to Cursor or pi-herdr references:**");
+      lines.push("**Unadapted/new skills skipped due to Cursor-specific references:**");
       for (const item of summary.blockedCursorSkills) {
         const detail = item.matches.map((m) => `\`${m.file}\` (\`${m.pattern}\`)`).join(", ");
         lines.push(`- \`${item.name}\`: ${detail}`);
       }
+      lines.push(
+        `  - After porting a blocked skill manually to omp, pass \`--adapt <skill>\` to \`npm run sync:ack -- --cursor ${summary.cursorSha} --adapt <skill>\` so future syncs preserve it.`,
+      );
       lines.push("");
     }
     if (summary.removedUpstreamSkills.length > 0) {
@@ -299,13 +342,45 @@ export function syncUpstream(options) {
   }
   const localSkillsDir = path.join(options.root, "skills");
 
-  const changedFiles = parseChangedFiles(options.cursorChangedFile);
+  const changedEntries = parseChangedEntries(options.cursorChangedFile);
+  const hasChangedFile = Boolean(options.cursorChangedFile && fs.existsSync(options.cursorChangedFile));
   const cursorCommits = readJsonOptional(options.cursorCommitsFile, []);
   const piMimirCommits = readJsonOptional(options.piMimirCommitsFile, []);
 
   const upstreamSkillNames = listDirectories(upstreamSkillsDir);
   const upstreamSkillSet = new Set(upstreamSkillNames);
   const localSkillNames = listDirectories(localSkillsDir);
+  const localSkillSet = new Set(localSkillNames);
+
+  const skillsPrefix = `${cursorPath}/skills/`;
+  const cursorPrefix = `${cursorPath}/`;
+
+  function skillChangedFiles(skillName) {
+    const skillPrefix = `${skillsPrefix}${skillName}/`;
+    const matched = new Set();
+    for (const entry of changedEntries) {
+      if (entry.path.startsWith(skillPrefix)) matched.add(entry.path);
+      if (entry.oldPath?.startsWith(skillPrefix)) matched.add(entry.oldPath);
+    }
+    return [...matched].sort();
+  }
+
+  const removedUpstreamSkillSet = new Set();
+  for (const entry of changedEntries) {
+    if (entry.status === "D" && entry.path.startsWith(skillsPrefix)) {
+      const skillName = entry.path.slice(skillsPrefix.length).split("/")[0];
+      if (skillName && !excluded.has(skillName) && !upstreamSkillSet.has(skillName) && localSkillSet.has(skillName)) {
+        removedUpstreamSkillSet.add(skillName);
+      }
+    }
+    if (entry.status === "R" && entry.oldPath?.startsWith(skillsPrefix)) {
+      const oldSkillName = entry.oldPath.slice(skillsPrefix.length).split("/")[0];
+      if (oldSkillName && !excluded.has(oldSkillName) && !upstreamSkillSet.has(oldSkillName) && localSkillSet.has(oldSkillName)) {
+        removedUpstreamSkillSet.add(oldSkillName);
+      }
+    }
+  }
+  const removedUpstreamSkills = [...removedUpstreamSkillSet].sort();
 
   const addedSkills = [];
   const updatedSkills = [];
@@ -318,8 +393,7 @@ export function syncUpstream(options) {
     const localSkill = path.join(localSkillsDir, name);
 
     if (adapted.has(name)) {
-      const skillPrefix = `${cursorPath}/skills/${name}/`;
-      const matching = changedFiles.filter((file) => file.startsWith(skillPrefix));
+      const matching = skillChangedFiles(name);
       if (matching.length > 0) {
         manualAdaptedSkills.push({ name, files: matching });
       }
@@ -333,7 +407,9 @@ export function syncUpstream(options) {
 
     const forbiddenMatches = scanForbiddenReferences(upstreamSkill);
     if (forbiddenMatches.length > 0) {
-      blockedCursorSkills.push({ name, matches: forbiddenMatches });
+      if (!existsLocally || !hasChangedFile || skillChangedFiles(name).length > 0) {
+        blockedCursorSkills.push({ name, matches: forbiddenMatches });
+      }
       continue;
     }
 
@@ -345,18 +421,15 @@ export function syncUpstream(options) {
     }
   }
 
-  const removedUpstreamSkills = localSkillNames.filter(
-    (name) => !adapted.has(name) && !upstreamSkillSet.has(name),
-  );
-
-  const skillsPrefix = `${cursorPath}/skills/`;
-  const cursorPrefix = `${cursorPath}/`;
-  const manualOtherFiles = changedFiles.filter((file) => {
-    if (!file.startsWith(cursorPrefix)) return false;
-    if (file.startsWith(skillsPrefix)) return false;
-    const rel = file.slice(cursorPrefix.length);
-    return !isPackagingPath(rel);
-  });
+  const manualOtherFileSet = new Set();
+  for (const entry of changedEntries) {
+    for (const candidate of [entry.path, entry.oldPath]) {
+      if (!candidate || !candidate.startsWith(cursorPrefix) || candidate.startsWith(skillsPrefix)) continue;
+      const rel = candidate.slice(cursorPrefix.length);
+      if (!isPackagingPath(rel)) manualOtherFileSet.add(candidate);
+    }
+  }
+  const manualOtherFiles = [...manualOtherFileSet].sort();
 
   const hasAutoChanges = addedSkills.length > 0 || updatedSkills.length > 0;
   const hasManualCursorItems =
@@ -372,7 +445,7 @@ export function syncUpstream(options) {
     mode,
     cursorSha: options.cursorSha,
     shortSha: options.cursorSha.slice(0, 7),
-    cursorShaAdvanced: mode === "pr" && !hasManualCursorItems,
+    cursorShaAdvanced: mode === "pr" && !hasManualCursorItems && !options.dryRun,
     addedSkills,
     updatedSkills,
     manualAdaptedSkills,

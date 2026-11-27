@@ -165,6 +165,18 @@ try {
   await access(path.join(installed, "skills", "poteto-mode", "SKILL.md"));
   await access(path.join(installed, "agents", "poteto-agent.md"));
 
+  if (process.platform !== "win32") {
+    for (const rel of [
+      "skills/statechart/scripts/statechart",
+      "skills/poteto-mode/scripts/worktree-audit.sh",
+      "skills/poteto-mode/scripts/watch-pr/watch-pr",
+      "skills/show-me-your-work/scripts/log.sh",
+    ]) {
+      const mode = (await stat(path.join(installed, rel))).mode;
+      assert.notEqual(mode & 0o111, 0, `installed script must keep executable bit: ${rel}`);
+    }
+  }
+
   const installedPkg = JSON.parse(await readFile(path.join(installed, "package.json"), "utf8"));
   assert.equal(installedPkg.dependencies, undefined, "package must not declare runtime dependencies");
 

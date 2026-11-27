@@ -68,22 +68,6 @@ test("bundled skills are hidden from the model catalog", () => {
   }
 });
 
-test("skills do not reference pi-herdr tooling", () => {
-  const forbidden = [
-    /`subagent`/,
-    /subagents_write_task_models/,
-    /subagents_list/,
-    /herdr-agents/,
-    /`set_tasks`/,
-  ];
-  for (const file of skillMarkdown) {
-    const text = readFileSync(file, "utf8");
-    for (const pattern of forbidden) {
-      assert.doesNotMatch(text, pattern, `${file}: stale reference ${pattern}`);
-    }
-  }
-});
-
 test("skills do not reference Cursor-specific tooling", () => {
   const forbidden = [
     /~\/\.cursor\//,
@@ -96,7 +80,6 @@ test("skills do not reference Cursor-specific tooling", () => {
     /\bgeneralPurpose\b/,
     /\/visualize\b/,
     /plugins\/cache\//,
-    /\bis_background\b/,
   ];
   for (const file of skillMarkdown) {
     const text = readFileSync(file, "utf8");
@@ -131,6 +114,11 @@ test("poteto-help documents the sticky commands, recipes, install, and reframe",
   const reflect = readFileSync(join(skillsDir, "reflect", "SKILL.md"), "utf8");
   assert.match(reflect, /\.omp\/skills\/<skill>\//);
   assert.match(reflect, /~\/\.omp\/agent\/skills\/<skill>\//);
+  assert.match(reflect, /omp plugin link <repo-path>/);
+
+  const setup = readFileSync(join(skillsDir, "setup-pstack", "SKILL.md"), "utf8");
+  assert.match(setup, /slow:\s*anthropic\/claude-opus-5\.5/);
+  assert.match(setup, /smol:\s*openai\/gpt-5\.4-mini/);
 });
 
 test("how and arena use scout, interrogate uses task", () => {
@@ -232,7 +220,18 @@ test("skills do not keep stale porting paths", () => {
   }
 });
 
-test("worktree-audit.sh scans sibling workspace sessions and works without rg", { skip: process.platform === "win32" }, () => {
+test("bundled runtime scripts keep executable bits on POSIX", { skip: process.platform === "win32" }, () => {
+  for (const rel of [
+    "skills/statechart/scripts/statechart",
+    "skills/poteto-mode/scripts/worktree-audit.sh",
+    "skills/poteto-mode/scripts/watch-pr/watch-pr",
+    "skills/show-me-your-work/scripts/log.sh",
+  ]) {
+    assert.notEqual(statSync(join(root, rel)).mode & 0o111, 0, `${rel}: missing executable bit`);
+  }
+});
+
+test("worktree-audit.sh isolates sessions per repo in a shared session dir and works without rg", { skip: process.platform === "win32" }, () => {
   const dir = mkdtempSync(join(tmpdir(), "omp-pstack-wt-audit-"));
   const cleanBins = [];
   try {
@@ -252,11 +251,16 @@ test("worktree-audit.sh scans sibling workspace sessions and works without rg", 
     git(["update-ref", "refs/remotes/origin/main", "HEAD"]);
     git(["worktree", "add", "-b", "feat/x", wt]);
 
+    const realRepo = git(["rev-parse", "--show-toplevel"], repo);
     const realWt = git(["rev-parse", "--show-toplevel"], wt);
     const activeSession = join(sessionsDir, "active.jsonl");
+    const foreignSession = join(sessionsDir, "foreign.jsonl");
     const siblingSession = join(sessionsDir, "sibling.jsonl");
-    writeFileSync(activeSession, '{"type":"session"}\n');
-    writeFileSync(siblingSession, `{"cwd":"${realWt}/src"}\n`);
+    writeFileSync(activeSession, `${JSON.stringify({ type: "session", id: "active", cwd: realRepo })}\n`);
+    writeFileSync(
+      foreignSession,
+      `${JSON.stringify({ type: "session", id: "foreign", cwd: "/tmp/unrelated-project" })}\n{"cwd":"${realWt}/src"}\n`,
+    );
 
     const stubBin = join(dir, "stub-bin");
     mkdirSync(stubBin, { recursive: true });
@@ -282,17 +286,30 @@ test("worktree-audit.sh scans sibling workspace sessions and works without rg", 
     }
 
     const script = join(root, "skills", "poteto-mode", "scripts", "worktree-audit.sh");
-    const output = execFileSync("bash", [script, "-b", "origin/main", repo], {
-      env: {
-        ...process.env,
-        PATH: filteredParts.join(delimiter),
-        PI_SESSION_FILE: activeSession,
-      },
-      encoding: "utf8",
-    });
+    const runAudit = () =>
+      execFileSync("bash", [script, "-b", "origin/main", repo], {
+        env: {
+          ...process.env,
+          PATH: filteredParts.join(delimiter),
+          PI_SESSION_FILE: activeSession,
+        },
+        encoding: "utf8",
+      });
 
-    const row = output.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
-    assert.ok(row, `expected row for ${realWt} in:\n${output}`);
+    const isolatedOutput = runAudit();
+    const isolatedRow = isolatedOutput.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.ok(isolatedRow, `expected row for ${realWt} in:\n${isolatedOutput}`);
+    const isolatedCols = isolatedRow.split("\t");
+    assert.equal(isolatedCols[6], "-", `foreign session must not leak LAST_CHAT: ${isolatedRow}`);
+    assert.equal(isolatedCols[7], "safe", `foreign session must not hold worktree: ${isolatedRow}`);
+
+    writeFileSync(
+      siblingSession,
+      `${JSON.stringify({ type: "session", id: "sibling", cwd: realWt })}\n{"tool":"bash","cwd":"${realWt}/src"}\n`,
+    );
+    const sameRepoOutput = runAudit();
+    const row = sameRepoOutput.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.ok(row, `expected row for ${realWt} in:\n${sameRepoOutput}`);
     const cols = row.split("\t");
     assert.match(cols[6] ?? "", /^\d{4}-\d{2}-\d{2}$/, `expected LAST_CHAT date in row: ${row}`);
     assert.equal(cols[7], "verify-recent-chat", `expected verify-recent-chat bucket in row: ${row}`);

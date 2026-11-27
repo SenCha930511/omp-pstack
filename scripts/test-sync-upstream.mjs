@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
+import { ackUpstream } from "./sync-ack.mjs";
 import { syncUpstream } from "./sync-upstream.mjs";
 
 const TEMP_DIRS = [];
@@ -179,7 +181,7 @@ test("mixed PR syncs clean skills while holding cursor.lastSyncedSha for manual 
   assert.deepEqual(followUp.summary.manualAdaptedSkills, [{ name: "swarm", files: ["pstack/skills/swarm/SKILL.md"] }]);
 });
 
-test("blocks new or updated skills containing expanded Cursor references without writing them", () => {
+test("blocks new or updated skills containing Cursor references without writing them", () => {
   const { root, cursorDir, changedPath } = createFixture({
     localSkills: {
       tdd: { "SKILL.md": "clean local tdd\n" },
@@ -188,7 +190,7 @@ test("blocks new or updated skills containing expanded Cursor references without
       tdd: { "SKILL.md": "uses ~/.cursor/rules\n" },
       "bad-new": { "SKILL.md": "uses subagent_type: generalPurpose\n" },
       "bad-ask": { "SKILL.md": "call AskQuestion and read plugins/cache/foo\n" },
-      "bad-bg": { "SKILL.md": "set is_background and check agent-transcripts/ or cursor-team-kit or /visualize\n" },
+      "bad-bg": { "SKILL.md": "check agent-transcripts/ or cursor-team-kit or /visualize\n" },
     },
     changedFiles: [
       "M\tpstack/skills/tdd/SKILL.md",
@@ -280,10 +282,210 @@ test("dry-run computes PR summary without modifying repository files", () => {
   });
 
   assert.equal(summary.mode, "pr");
+  assert.equal(summary.cursorShaAdvanced, false);
   assert.deepEqual(summary.addedSkills, ["reframe"]);
   assert.deepEqual(summary.updatedSkills, ["tdd"]);
   assert.equal(fs.readFileSync(path.join(root, "skills", "tdd", "SKILL.md"), "utf8"), "old\n");
   assert.equal(fs.existsSync(path.join(root, "skills", "reframe")), false);
   const cfg = JSON.parse(fs.readFileSync(path.join(root, ".github", "upstream-sync.json"), "utf8"));
   assert.equal(cfg.cursor.lastSyncedSha, "1111111111111111111111111111111111111111");
+});
+
+test("blocks forbidden references inside non-Markdown scripts and JSON files", () => {
+  const { root, cursorDir, changedPath } = createFixture({
+    upstreamSkills: {
+      "bad-ts": {
+        "SKILL.md": "clean docs\n",
+        "scripts/run.ts": "export const tool = 'AskQuestion';\n",
+      },
+      "bad-sh": {
+        "SKILL.md": "clean docs\n",
+        "scripts/helper": "#!/usr/bin/env bash\nread ~/.cursor/rules\n",
+      },
+      "bad-json": {
+        "SKILL.md": "clean docs\n",
+        "assets/config.json": '{"agent":"generalPurpose"}\n',
+      },
+    },
+    changedFiles: [
+      "A\tpstack/skills/bad-ts/SKILL.md",
+      "A\tpstack/skills/bad-sh/SKILL.md",
+      "A\tpstack/skills/bad-json/SKILL.md",
+    ],
+  });
+
+  const { summary } = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: "9999999999999999999999999999999999999999",
+    cursorChangedFile: changedPath,
+  });
+
+  assert.equal(summary.mode, "issue");
+  assert.equal(summary.blockedCursorSkills.length, 3);
+  assert.deepEqual(summary.addedSkills, []);
+});
+
+test("accurately reports deleted adapted skills and ignores local omp-only or unchanged blocked skills", () => {
+  const { root, cursorDir, changedPath } = createFixture({
+    localSkills: {
+      "omp-only": { "SKILL.md": "local only\n" },
+      swarm: { "SKILL.md": "adapted swarm\n" },
+      "already-ported": { "SKILL.md": "omp port\n" },
+    },
+    upstreamSkills: {
+      "already-ported": { "SKILL.md": "upstream with ~/.cursor/rules\n" },
+    },
+    changedFiles: ["D\tpstack/skills/swarm/SKILL.md"],
+  });
+
+  const { summary } = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: "8888888888888888888888888888888888888888",
+    cursorChangedFile: changedPath,
+  });
+
+  assert.equal(summary.mode, "issue");
+  assert.deepEqual(summary.removedUpstreamSkills, ["swarm"]);
+  assert.deepEqual(summary.blockedCursorSkills, []);
+});
+
+test("preserves executable bit changes when syncing scripts on POSIX", { skip: process.platform === "win32" }, () => {
+  const { root, cursorDir, changedPath } = createFixture({
+    localSkills: {
+      statechart: {
+        "SKILL.md": "statechart\n",
+        "scripts/statechart": "#!/bin/sh\necho hi\n",
+      },
+    },
+    upstreamSkills: {
+      statechart: {
+        "SKILL.md": "statechart\n",
+        "scripts/statechart": "#!/bin/sh\necho hi\n",
+      },
+    },
+    changedFiles: ["M\tpstack/skills/statechart/scripts/statechart"],
+  });
+
+  fs.chmodSync(path.join(root, "skills", "statechart", "scripts", "statechart"), 0o644);
+  fs.chmodSync(path.join(cursorDir, "pstack", "skills", "statechart", "scripts", "statechart"), 0o755);
+
+  const { summary } = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: "7777777777777777777777777777777777777777",
+    cursorChangedFile: changedPath,
+    dryRun: false,
+  });
+
+  assert.equal(summary.mode, "pr");
+  assert.deepEqual(summary.updatedSkills, ["statechart"]);
+  assert.notEqual(
+    fs.statSync(path.join(root, "skills", "statechart", "scripts", "statechart")).mode & 0o111,
+    0,
+  );
+});
+
+test("continuing an open chore/upstream-sync PR branch preserves maintainer commits across fresh checkouts", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omp-pstack-pr-resume-"));
+  TEMP_DIRS.push(dir);
+  const git = (args, cwd) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+  const configure = (cwd) => {
+    git(["config", "user.name", "Sync Test"], cwd);
+    git(["config", "user.email", "sync-test@example.com"], cwd);
+  };
+
+  const bareRemote = path.join(dir, "remote.git");
+  fs.mkdirSync(bareRemote, { recursive: true });
+  git(["init", "--bare", "-b", "main"], bareRemote);
+
+  const seed = path.join(dir, "seed");
+  git(["clone", bareRemote, seed], dir);
+  configure(seed);
+  fs.mkdirSync(path.join(seed, ".github"), { recursive: true });
+  fs.mkdirSync(path.join(seed, "skills", "swarm"), { recursive: true });
+  fs.mkdirSync(path.join(seed, "skills", "poteto-mode"), { recursive: true });
+  fs.writeFileSync(path.join(seed, "skills", "poteto-mode", "SKILL.md"), "---\nname: poteto-mode\ndescription: poteto\n---\n");
+  fs.writeFileSync(path.join(seed, "skills", "swarm", "SKILL.md"), "omp swarm v1\n");
+  fs.writeFileSync(
+    path.join(seed, ".github", "upstream-sync.json"),
+    `${JSON.stringify(
+      {
+        cursor: {
+          repo: "cursor/plugins",
+          branch: "main",
+          path: "pstack",
+          lastSyncedSha: "1".repeat(40),
+          excludedSkills: ["make-bot-ui"],
+          adaptedSkills: ["poteto-mode", "swarm"],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  git(["add", "-A"], seed);
+  git(["commit", "-m", "init"], seed);
+  git(["push", "origin", "main"], seed);
+
+  const cursorDir = path.join(dir, "cursor-plugins");
+  fs.mkdirSync(path.join(cursorDir, "pstack", "skills", "reframe"), { recursive: true });
+  fs.mkdirSync(path.join(cursorDir, "pstack", "skills", "swarm"), { recursive: true });
+  fs.writeFileSync(path.join(cursorDir, "pstack", "skills", "reframe", "SKILL.md"), "---\nname: reframe\ndescription: r\n---\n");
+  fs.writeFileSync(path.join(cursorDir, "pstack", "skills", "swarm", "SKILL.md"), "upstream swarm v2\n");
+  const changed1 = path.join(dir, "changed1.txt");
+  fs.writeFileSync(changed1, "A\tpstack/skills/reframe/SKILL.md\nM\tpstack/skills/swarm/SKILL.md\n");
+  const sha1 = "a".repeat(40);
+
+  // Run 1: bot opens mixed PR from main
+  const botRun1 = path.join(dir, "bot-run1");
+  git(["clone", "--branch", "main", bareRemote, botRun1], dir);
+  configure(botRun1);
+  git(["checkout", "-B", "chore/upstream-sync"], botRun1);
+  const res1 = syncUpstream({ root: botRun1, cursorDir, cursorSha: sha1, cursorChangedFile: changed1 });
+  assert.equal(res1.summary.mode, "pr");
+  assert.equal(res1.summary.cursorShaAdvanced, false);
+  git(["add", "-A"], botRun1);
+  git(["commit", "-m", "chore(sync): sync upstream pstack"], botRun1);
+  git(["push", "--force-with-lease", "origin", "HEAD:refs/heads/chore/upstream-sync"], botRun1);
+
+  // Maintainer checks out PR branch, manually ports swarm, and runs sync:ack
+  const maintainer = path.join(dir, "maintainer");
+  git(["clone", "--branch", "chore/upstream-sync", bareRemote, maintainer], dir);
+  configure(maintainer);
+  fs.writeFileSync(path.join(maintainer, "skills", "swarm", "SKILL.md"), "omp swarm v2 ported\n");
+  ackUpstream({ root: maintainer, cursor: sha1 });
+  git(["add", "-A"], maintainer);
+  git(["commit", "-m", "chore(sync): port swarm and ack"], maintainer);
+  git(["push", "origin", "chore/upstream-sync"], maintainer);
+
+  // Run 2: fresh checkout resumes open chore/upstream-sync PR branch when a new clean skill arrives
+  fs.mkdirSync(path.join(cursorDir, "pstack", "skills", "fresh"), { recursive: true });
+  fs.writeFileSync(path.join(cursorDir, "pstack", "skills", "fresh", "SKILL.md"), "---\nname: fresh\ndescription: f\n---\n");
+  const changed2 = path.join(dir, "changed2.txt");
+  fs.writeFileSync(changed2, "A\tpstack/skills/fresh/SKILL.md\n");
+  const sha2 = "b".repeat(40);
+
+  const botRun2 = path.join(dir, "bot-run2");
+  git(["clone", "--branch", "main", bareRemote, botRun2], dir);
+  configure(botRun2);
+  const remotePrSha = git(["ls-remote", "--heads", "origin", "refs/heads/chore/upstream-sync"], botRun2).split(/\s+/)[0];
+  git(["fetch", "--depth=1", "origin", "refs/heads/chore/upstream-sync"], botRun2);
+  git(["checkout", "-B", "chore/upstream-sync", "FETCH_HEAD"], botRun2);
+  const res2 = syncUpstream({ root: botRun2, cursorDir, cursorSha: sha2, cursorChangedFile: changed2 });
+  assert.equal(res2.summary.mode, "pr");
+  assert.equal(res2.summary.cursorShaAdvanced, true);
+  git(["add", "-A"], botRun2);
+  git(["commit", "-m", "chore(sync): sync fresh"], botRun2);
+  git(["push", `--force-with-lease=refs/heads/chore/upstream-sync:${remotePrSha}`, "origin", "HEAD:refs/heads/chore/upstream-sync"], botRun2);
+
+  // Verify maintainer's manual swarm port survived!
+  const verify = path.join(dir, "verify");
+  git(["clone", "--branch", "chore/upstream-sync", bareRemote, verify], dir);
+  assert.equal(fs.readFileSync(path.join(verify, "skills", "swarm", "SKILL.md"), "utf8"), "omp swarm v2 ported\n");
+  assert.ok(fs.existsSync(path.join(verify, "skills", "reframe", "SKILL.md")));
+  assert.ok(fs.existsSync(path.join(verify, "skills", "fresh", "SKILL.md")));
+  const finalCfg = JSON.parse(fs.readFileSync(path.join(verify, ".github", "upstream-sync.json"), "utf8"));
+  assert.equal(finalCfg.cursor.lastSyncedSha, sha2);
 });

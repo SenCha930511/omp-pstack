@@ -5,13 +5,13 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const USAGE =
-  "Usage: node scripts/upstream-range.mjs --repo-dir <dir> --base <sha> --head <sha> --path <path> --commits-output <file> --changed-output <file>";
+  "Usage: node scripts/upstream-range.mjs --repo-dir <dir> --base <sha> --head <sha> --path <path> [--path <path> ...] --commits-output <file> --changed-output <file>";
 
 const FLAGS = {
   "--repo-dir": "repoDir",
   "--base": "base",
   "--head": "head",
-  "--path": "path",
+  "--path": "paths",
   "--commits-output": "commitsOutput",
   "--changed-output": "changedOutput",
 };
@@ -33,7 +33,12 @@ function parseCommitLine(line) {
   };
 }
 
-export function collectRange({ repoDir, base, head, path: rangePath }) {
+export function collectRange({ repoDir, base, head, path: singlePath, paths }) {
+  const rangePaths = Array.isArray(paths) && paths.length > 0 ? paths : singlePath ? [singlePath] : [];
+  if (rangePaths.length === 0) {
+    throw new Error("at least one path is required");
+  }
+
   try {
     git(repoDir, ["cat-file", "-e", `${base}^{commit}`]);
   } catch {
@@ -51,7 +56,7 @@ export function collectRange({ repoDir, base, head, path: rangePath }) {
   }
 
   const commits = [];
-  const log = git(repoDir, ["log", "--format=%H%x09%cI%x09%s", `${base}..${head}`, "--", rangePath]);
+  const log = git(repoDir, ["log", "--format=%H%x09%cI%x09%s", `${base}..${head}`, "--", ...rangePaths]);
   for (const line of log.split(/\r?\n/)) {
     if (line) commits.push(parseCommitLine(line));
   }
@@ -61,7 +66,7 @@ export function collectRange({ repoDir, base, head, path: rangePath }) {
     "--name-status",
     `${base}..${head}`,
     "--",
-    rangePath,
+    ...rangePaths,
   ])
     .split(/\r?\n/)
     .filter(Boolean);
@@ -70,17 +75,23 @@ export function collectRange({ repoDir, base, head, path: rangePath }) {
 }
 
 function parseArgs(argv) {
-  const options = {};
+  const options = { paths: [] };
   for (let index = 0; index < argv.length; index += 1) {
-    const key = FLAGS[argv[index]];
-    if (key === undefined) throw new Error(`unknown argument: ${argv[index]}`);
+    const flag = argv[index];
+    const key = FLAGS[flag];
+    if (key === undefined) throw new Error(`unknown argument: ${flag}`);
     const value = argv[index + 1];
-    if (value === undefined) throw new Error(`${argv[index]} requires a value`);
-    options[key] = value;
+    if (value === undefined) throw new Error(`${flag} requires a value`);
+    if (key === "paths") options.paths.push(value);
+    else options[key] = value;
     index += 1;
   }
   for (const [flag, key] of Object.entries(FLAGS)) {
-    if (options[key] === undefined) throw new Error(`missing ${flag}`);
+    if (key === "paths") {
+      if (options.paths.length === 0) throw new Error(`missing ${flag}`);
+    } else if (options[key] === undefined) {
+      throw new Error(`missing ${flag}`);
+    }
   }
   return options;
 }
