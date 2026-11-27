@@ -207,6 +207,18 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     notify(ctx, "Poteto Mode sticky disabled for this session.");
   }
 
+  function findSkillCommandName(): string | undefined {
+    if (typeof pi.getCommands !== "function") return "skill:poteto-mode";
+    const targetPath = path.resolve(skillFile);
+    const commands = pi.getCommands();
+    const byPath = commands.find(
+      (cmd) => cmd.source === "skill" && cmd.path !== undefined && path.resolve(cmd.path) === targetPath,
+    );
+    if (byPath) return byPath.name;
+    const byName = commands.find((cmd) => cmd.source === "skill" && cmd.name === "skill:poteto-mode");
+    return byName?.name;
+  }
+
   function buildOneShotSkillPrompt(body: string, task: string): { text: string; details: SkillPromptDetails } {
     const trimmedBody = body.replace(/\r\n?/g, "\n").trim();
     const trimmedTask = task.trim();
@@ -345,6 +357,10 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     }
     if (potetoMode) {
       return { text: parsed.task };
+    }
+    const skillCommand = findSkillCommandName();
+    if (skillCommand) {
+      return { text: `/${skillCommand} ${parsed.task}` };
     }
     if (event.images && event.images.length > 0) {
       pendingOneShotImages = { task: parsed.task, images: [...event.images] };

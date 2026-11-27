@@ -163,3 +163,18 @@ test("collectRange and CLI support multiple --path filters", () => {
     [head, commitB],
   );
 });
+
+test("collectRange reports the configured --base-label on missing or non-ancestor bases", () => {
+  const { dir, head } = createFixture();
+  assert.throws(
+    () =>
+      collectRange({
+        repoDir: dir,
+        base: "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+        head,
+        path: "pstack",
+        baseLabel: "piMimir.lastCheckedSha",
+      }),
+    /reset piMimir\.lastCheckedSha in \.github\/upstream-sync\.json/,
+  );
+});
