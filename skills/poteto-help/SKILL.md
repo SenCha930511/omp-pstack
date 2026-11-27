@@ -35,7 +35,7 @@ When role routing is unconfigured and it matters, ask whether the user wants to 
 
 ## Get set up
 
-1. Install the plugin into omp (`omp plugin install omp-pstack`; locally `omp plugin link /path/to/omp-pstack`).
+1. Install the plugin into omp (`omp plugin install omp-pstack@sencha930511` or `omp plugin install npm:omp-pstack`; locally `omp plugin link /path/to/omp-pstack`).
 2. Optionally run [`/skill:setup-pstack`](../setup-pstack/SKILL.md). It asks for a reasoning budget, maps a model to each pstack agent through `task.agentModelOverrides` (or `pi-model-sync`), and offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
 3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
 
@@ -51,13 +51,13 @@ The skills use the Agent Skills format, and every workflow skill delegates throu
 
 `/poteto-mode <task>` matches the task to a playbook, copies the playbook's steps into the todo list, and runs the other skills as the steps need them. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one.
 
-`/poteto-mode <task>` is one-shot. It affects this message only. `/poteto-mode sticky` keeps the workflow on every later turn until the session ends, and `/poteto-mode off` stops it. Saying "new task" makes the mode match a fresh playbook without ending the session. `/skill:poteto-mode` is omp's native one-shot skill command and does not enable sticky mode.
+`/poteto-mode <task>` is one-shot. It affects this message only. `/poteto-mode sticky` keeps the workflow on every later turn until the session ends, `/poteto-mode sticky <task>` enables sticky mode and runs `<task>` right away, and `/poteto-mode off` stops it. Saying "new task" makes the mode match a fresh playbook without ending the session. `/skill:poteto-mode` is omp's native one-shot skill command and does not enable sticky mode.
 
 ```text
-/poteto-mode <task>   one-shot
-/poteto-mode sticky   keep Poteto Mode on across turns
-/poteto-mode off      stop sticky mode
-/poteto-mode status   show sticky state
+/poteto-mode <task>          one-shot
+/poteto-mode sticky [task]   keep Poteto Mode on across turns (and optionally run a task)
+/poteto-mode off             stop sticky mode
+/poteto-mode status          show sticky state
 ```
 
 `/poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. To get the same style from a subagent of your own, spawn it with `agent: "poteto-agent"`.

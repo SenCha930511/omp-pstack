@@ -82,7 +82,44 @@ after(() => {
   }
 });
 
-test("adds new clean skills, updates unadapted skills, and advances SHA", () => {
+test("clean PR advances lastSyncedSha without manual items", () => {
+  const { root, cursorDir, changedPath, piCommitsPath } = createFixture({
+    localSkills: {
+      tdd: { "SKILL.md": "old tdd\n" },
+    },
+    upstreamSkills: {
+      "make-bot-ui": { "SKILL.md": "cursor-only\n" },
+      reframe: { "SKILL.md": "---\nname: reframe\ndescription: reframe\n---\nNew skill\n" },
+      tdd: { "SKILL.md": "updated tdd\n" },
+    },
+    changedFiles: [
+      "M\tpstack/skills/tdd/SKILL.md",
+      "A\tpstack/skills/reframe/SKILL.md",
+    ],
+  });
+
+  const targetSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  const { summary } = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: targetSha,
+    cursorChangedFile: changedPath,
+    piMimirCommitsFile: piCommitsPath,
+    dryRun: false,
+  });
+
+  assert.equal(summary.mode, "pr");
+  assert.equal(summary.cursorShaAdvanced, true);
+  assert.deepEqual(summary.addedSkills, ["reframe"]);
+  assert.deepEqual(summary.updatedSkills, ["tdd"]);
+  assert.equal(fs.existsSync(path.join(root, "skills", "make-bot-ui")), false);
+  assert.equal(fs.readFileSync(path.join(root, "skills", "tdd", "SKILL.md"), "utf8"), "updated tdd\n");
+
+  const updatedConfig = JSON.parse(fs.readFileSync(path.join(root, ".github", "upstream-sync.json"), "utf8"));
+  assert.equal(updatedConfig.cursor.lastSyncedSha, targetSha);
+});
+
+test("mixed PR syncs clean skills while holding cursor.lastSyncedSha for manual items", () => {
   const { root, cursorDir, changedPath, piCommitsPath, dir } = createFixture({
     localSkills: {
       tdd: { "SKILL.md": "old tdd\n" },
@@ -104,7 +141,7 @@ test("adds new clean skills, updates unadapted skills, and advances SHA", () => 
   const reportOut = path.join(dir, "report.md");
   const summaryOut = path.join(dir, "summary.json");
   const targetSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  const { summary } = syncUpstream({
+  const { summary, report } = syncUpstream({
     root,
     cursorDir,
     cursorSha: targetSha,
@@ -116,20 +153,33 @@ test("adds new clean skills, updates unadapted skills, and advances SHA", () => 
   });
 
   assert.equal(summary.mode, "pr");
+  assert.equal(summary.cursorShaAdvanced, false);
   assert.deepEqual(summary.addedSkills, ["reframe"]);
   assert.deepEqual(summary.updatedSkills, ["tdd"]);
   assert.deepEqual(summary.manualAdaptedSkills, [{ name: "swarm", files: ["pstack/skills/swarm/SKILL.md"] }]);
-  assert.equal(fs.existsSync(path.join(root, "skills", "make-bot-ui")), false);
   assert.equal(fs.readFileSync(path.join(root, "skills", "swarm", "SKILL.md"), "utf8"), "omp swarm\n");
   assert.equal(fs.readFileSync(path.join(root, "skills", "tdd", "SKILL.md"), "utf8"), "updated tdd\n");
+  assert.ok(report.includes("### After porting"));
+  assert.ok(report.includes(`npm run sync:ack -- --cursor ${targetSha}`));
 
   const updatedConfig = JSON.parse(fs.readFileSync(path.join(root, ".github", "upstream-sync.json"), "utf8"));
-  assert.equal(updatedConfig.cursor.lastSyncedSha, targetSha);
+  assert.equal(updatedConfig.cursor.lastSyncedSha, "1111111111111111111111111111111111111111");
   assert.ok(fs.existsSync(reportOut));
   assert.ok(fs.existsSync(summaryOut));
+
+  const followUp = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: targetSha,
+    cursorChangedFile: changedPath,
+    piMimirCommitsFile: piCommitsPath,
+    dryRun: false,
+  });
+  assert.equal(followUp.summary.mode, "issue");
+  assert.deepEqual(followUp.summary.manualAdaptedSkills, [{ name: "swarm", files: ["pstack/skills/swarm/SKILL.md"] }]);
 });
 
-test("blocks new or updated skills containing Cursor references without writing them", () => {
+test("blocks new or updated skills containing expanded Cursor references without writing them", () => {
   const { root, cursorDir, changedPath } = createFixture({
     localSkills: {
       tdd: { "SKILL.md": "clean local tdd\n" },
@@ -137,8 +187,15 @@ test("blocks new or updated skills containing Cursor references without writing 
     upstreamSkills: {
       tdd: { "SKILL.md": "uses ~/.cursor/rules\n" },
       "bad-new": { "SKILL.md": "uses subagent_type: generalPurpose\n" },
+      "bad-ask": { "SKILL.md": "call AskQuestion and read plugins/cache/foo\n" },
+      "bad-bg": { "SKILL.md": "set is_background and check agent-transcripts/ or cursor-team-kit or /visualize\n" },
     },
-    changedFiles: ["M\tpstack/skills/tdd/SKILL.md", "A\tpstack/skills/bad-new/SKILL.md"],
+    changedFiles: [
+      "M\tpstack/skills/tdd/SKILL.md",
+      "A\tpstack/skills/bad-new/SKILL.md",
+      "A\tpstack/skills/bad-ask/SKILL.md",
+      "A\tpstack/skills/bad-bg/SKILL.md",
+    ],
   });
 
   const { summary } = syncUpstream({
@@ -151,9 +208,11 @@ test("blocks new or updated skills containing Cursor references without writing 
   assert.equal(summary.mode, "issue");
   assert.deepEqual(summary.addedSkills, []);
   assert.deepEqual(summary.updatedSkills, []);
-  assert.equal(summary.blockedCursorSkills.length, 2);
+  assert.equal(summary.blockedCursorSkills.length, 4);
   assert.equal(fs.readFileSync(path.join(root, "skills", "tdd", "SKILL.md"), "utf8"), "clean local tdd\n");
   assert.equal(fs.existsSync(path.join(root, "skills", "bad-new")), false);
+  assert.equal(fs.existsSync(path.join(root, "skills", "bad-ask")), false);
+  assert.equal(fs.existsSync(path.join(root, "skills", "bad-bg")), false);
 });
 
 test("returns issue mode for pi-mimir or adapted-only updates and none when up to date", () => {

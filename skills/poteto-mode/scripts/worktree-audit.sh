@@ -69,10 +69,25 @@ elif raw=$(gh pr list --author "@me" --state all --limit 1000 \
 fi
 [ -s "$prs" ] || echo "[]" > "$prs"
 
-# The host exposes only the active session path to child commands. Do not guess or scan
-# the global session directory, which could cross project boundaries.
+# PI_SESSION_FILE points into the current workspace's per-project session directory
+# (e.g. ~/.omp/agent/sessions/--<encoded-cwd>--/<session>.jsonl). Scan sibling
+# transcripts in that directory without crossing into other projects.
 session_file="${PI_SESSION_FILE:-}"
+sessions_dir=""
+if [ -n "$session_file" ]; then
+	cand_dir=$(dirname "$session_file")
+	[ -d "$cand_dir" ] && sessions_dir="$cand_dir"
+fi
 now=$(date +%s)
+
+find_matching_transcripts() {
+	local wt="$1"
+	if command -v rg >/dev/null 2>&1; then
+		rg -l -F -g '*.jsonl' -e "${wt}/" -e "${wt}\"" "$sessions_dir" 2>/dev/null
+	else
+		grep -r -l -F --include='*.jsonl' -e "${wt}/" -e "${wt}\"" "$sessions_dir" 2>/dev/null
+	fi
+}
 
 echo "# base: $base"
 printf "SIZE\tAGE\tMERGED\tDIRTY\tREMOTE\tPR\tLAST_CHAT\tBUCKET\tWORKTREE\n"
@@ -111,9 +126,17 @@ git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt;
 	# Most recent chat whose transcript operated in this worktree. Match path
 	# followed by "/" or a quote so glint-482 does not match glint-482-r37.
 	last="-"; last_ts=0
-	if [ -n "$session_file" ] && [ -f "$session_file" ] && rg -q -e "${wt}/" -e "${wt}\"" "$session_file" 2>/dev/null; then
-		last_ts=$(stat "${stat_fmt[@]}" "$session_file" 2>/dev/null | awk '{print $1}')
-		last=$(fmt_day "$last_ts" 2>/dev/null)
+	if [ -n "$sessions_dir" ]; then
+		while IFS= read -r tf; do
+			[ -n "$tf" ] || continue
+			ts=$(stat "${stat_fmt[@]}" "$tf" 2>/dev/null | awk '{print $1}')
+			if [ -n "$ts" ] && [ "$ts" -gt "$last_ts" ] 2>/dev/null; then
+				last_ts="$ts"
+			fi
+		done < <(find_matching_transcripts "$wt")
+		if [ "$last_ts" -gt 0 ] 2>/dev/null; then
+			last=$(fmt_day "$last_ts" 2>/dev/null)
+		fi
 	fi
 	recent=$([ "$last_ts" -gt 0 ] 2>/dev/null && [ $(( (now - last_ts) / 86400 )) -le 4 ] && echo yes || echo no)
 

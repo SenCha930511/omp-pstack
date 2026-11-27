@@ -21,6 +21,8 @@
   "files": [
     "extensions/",
     "skills/",
+    "!skills/statechart/scripts/test/**",
+    "!skills/**/*.test.ts",
     "agents/",
     "AGENT-INSTALL.md",
     "README.md",

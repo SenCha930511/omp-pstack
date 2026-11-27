@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { delimiter, dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -89,6 +91,12 @@ test("skills do not reference Cursor-specific tooling", () => {
     /\bcloud_base_branch\b/,
     /pstack-models\.mdc/,
     /environment:\s*"cloud"/,
+    /\bAskQuestion\b/,
+    /cursor-team-kit/,
+    /\bgeneralPurpose\b/,
+    /\/visualize\b/,
+    /plugins\/cache\//,
+    /\bis_background\b/,
   ];
   for (const file of skillMarkdown) {
     const text = readFileSync(file, "utf8");
@@ -108,12 +116,21 @@ test("poteto-mode autonomy matches Cursor", () => {
   assert.doesNotMatch(autonomy, /\bmerges\b/);
 });
 
-test("poteto-help documents the sticky commands and reframe", () => {
+test("poteto-help documents the sticky commands, recipes, install, and reframe", () => {
   const text = readFileSync(join(skillsDir, "poteto-help", "SKILL.md"), "utf8");
   assert.match(text, /\[`reframe`\]\(\.\.\/reframe\/SKILL\.md\)/);
-  assert.match(text, /\/poteto-mode sticky/);
+  assert.match(text, /\/poteto-mode sticky \[task\]/);
   assert.match(text, /\/poteto-mode off/);
   assert.match(text, /\/poteto-mode status/);
+  assert.match(text, /omp plugin install omp-pstack@sencha930511/);
+
+  const recipes = readFileSync(join(skillsDir, "poteto-help", "references", "recipes.md"), "utf8");
+  assert.doesNotMatch(recipes, /\/skill:poteto-mode/);
+  assert.match(recipes, /\/poteto-mode sticky <task>/);
+
+  const reflect = readFileSync(join(skillsDir, "reflect", "SKILL.md"), "utf8");
+  assert.match(reflect, /\.omp\/skills\/<skill>\//);
+  assert.match(reflect, /~\/\.omp\/agent\/skills\/<skill>\//);
 });
 
 test("how and arena use scout, interrogate uses task", () => {
@@ -182,22 +199,105 @@ test("agents use only supported omp frontmatter fields", () => {
 
   const poteto = readFileSync(join(agentsDir, "poteto-agent.md"), "utf8");
   assert.match(poteto, /\r?\nspawns:\s*"\*"/);
+  assert.match(frontmatterOf(poteto), /\r?\nautoloadSkills:\s*\r?\n\s*-\s*poteto-mode\b/);
 
   const sicko = readFileSync(join(agentsDir, "comment-sicko.md"), "utf8");
   assert.doesNotMatch(sicko, /\r?\nspawns:/);
   const toolsLine = sicko.match(/\r?\ntools:\s*(.+)\r?\n/);
   assert.ok(toolsLine, "comment-sicko: missing tools");
   const tools = toolsLine[1].split(",").map((tool) => tool.trim());
-  assert.deepEqual(tools, ["read", "grep", "glob"]);
-  assert.doesNotMatch(toolsLine[1], /\b(bash|task)\b/);
+  assert.deepEqual(tools, ["read", "grep", "glob", "edit", "bash"]);
+  assert.doesNotMatch(toolsLine[1], /\b(task|write)\b/);
 });
 
 test("skills do not keep stale porting paths", () => {
-  const stale = ["agent-transcripts/", "packages/pi-pstack", "inherit-parent", "explore (read-only"];
+  const stale = [
+    "agent-transcripts/",
+    "packages/pi-pstack",
+    "inherit-parent",
+    "explore (read-only",
+    ".pi/skills",
+    "~/.pi/agent/skills",
+    "pi-goal-x",
+    "a user question tool",
+    "only if it is registered",
+    "when registered; otherwise read this SKILL.md by path",
+  ];
   for (const file of skillMarkdown) {
     const text = readFileSync(file, "utf8");
     for (const marker of stale) {
       assert.ok(!text.includes(marker), `${file}: stale porting text ${marker}`);
     }
+    assert.doesNotMatch(text, /\bin pi\b/, `${file}: stale pi-specific phrasing`);
+  }
+});
+
+test("worktree-audit.sh scans sibling workspace sessions and works without rg", { skip: process.platform === "win32" }, () => {
+  const dir = mkdtempSync(join(tmpdir(), "omp-pstack-wt-audit-"));
+  const cleanBins = [];
+  try {
+    const repo = join(dir, "repo");
+    const wt = join(dir, "wt-feature");
+    const sessionsDir = join(dir, "sessions");
+    mkdirSync(repo, { recursive: true });
+    mkdirSync(sessionsDir, { recursive: true });
+
+    const git = (args, cwd = repo) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    git(["init", "-b", "main"]);
+    git(["config", "user.name", "Test"]);
+    git(["config", "user.email", "test@example.com"]);
+    writeFileSync(join(repo, "README.md"), "init\n");
+    git(["add", "README.md"]);
+    git(["commit", "-m", "init"]);
+    git(["update-ref", "refs/remotes/origin/main", "HEAD"]);
+    git(["worktree", "add", "-b", "feat/x", wt]);
+
+    const realWt = git(["rev-parse", "--show-toplevel"], wt);
+    const activeSession = join(sessionsDir, "active.jsonl");
+    const siblingSession = join(sessionsDir, "sibling.jsonl");
+    writeFileSync(activeSession, '{"type":"session"}\n');
+    writeFileSync(siblingSession, `{"cwd":"${realWt}/src"}\n`);
+
+    const stubBin = join(dir, "stub-bin");
+    mkdirSync(stubBin, { recursive: true });
+    const fakeGh = join(stubBin, "gh");
+    writeFileSync(fakeGh, "#!/bin/sh\necho '[]'\n");
+    chmodSync(fakeGh, 0o755);
+
+    const pathParts = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
+    const filteredParts = [stubBin];
+    for (const part of pathParts) {
+      if (!existsSync(part)) continue;
+      if (existsSync(join(part, "rg"))) {
+        const cleanDir = mkdtempSync(join(dir, "no-rg-"));
+        cleanBins.push(cleanDir);
+        for (const entry of readdirSync(part)) {
+          if (entry === "rg") continue;
+          symlinkSync(join(part, entry), join(cleanDir, entry));
+        }
+        filteredParts.push(cleanDir);
+      } else {
+        filteredParts.push(part);
+      }
+    }
+
+    const script = join(root, "skills", "poteto-mode", "scripts", "worktree-audit.sh");
+    const output = execFileSync("bash", [script, "-b", "origin/main", repo], {
+      env: {
+        ...process.env,
+        PATH: filteredParts.join(delimiter),
+        PI_SESSION_FILE: activeSession,
+      },
+      encoding: "utf8",
+    });
+
+    const row = output.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.ok(row, `expected row for ${realWt} in:\n${output}`);
+    const cols = row.split("\t");
+    assert.match(cols[6] ?? "", /^\d{4}-\d{2}-\d{2}$/, `expected LAST_CHAT date in row: ${row}`);
+    assert.equal(cols[7], "verify-recent-chat", `expected verify-recent-chat bucket in row: ${row}`);
+  } finally {
+    for (const d of cleanBins) rmSync(d, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
   }
 });

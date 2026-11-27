@@ -14,7 +14,7 @@ This skill orchestrates three others: an inline mining pass (see step 1), the Ag
 
 ### 0. Check for an existing skill
 
-Look recursively for a `*-mode/SKILL.md` matching the user's handle in the active host's project and user skill roots (`.pi/skills/` and `~/.pi/agent/skills/` under pi, `.omp/skills/` and `~/.omp/agent/skills/` under omp). Mode skills can live in a personal category directory under that root (`<root>/<handle>/`), not only at the top level. If one exists, confirm intent with the `ask` tool (unless they already said "update my skill" or similar):
+Look recursively for a `*-mode/SKILL.md` matching the user's handle in the project and user skill roots (`.omp/skills/` and `~/.omp/agent/skills/`). Mode skills can live in a personal category directory under that root (`<root>/<handle>/`), not only at the top level. If one exists, confirm intent with the `ask` tool (unless they already said "update my skill" or similar):
 
 - Update the existing skill (default for repeat runs)
 - Start fresh (rare; ask why before doing it)
@@ -64,7 +64,7 @@ The **poteto-mode** skill shows the shape. Read it for granularity. Don't copy i
 
 Use the Agent Skills standard to author the skill. Placement:
 
-- Path: preserve an existing mode skill's category. For a new mode, use `<project skill root>/<handle>/<handle>-mode/SKILL.md` when the repo has an established personal category for that handle; otherwise default to `<project skill root>/<handle>-mode/SKILL.md`, or the host's user skill root for a personal skill. The project root is `.pi/skills` under pi and `.omp/skills` under omp; the user root is `~/.pi/agent/skills` under pi and `~/.omp/agent/skills` under omp.
+- Path: preserve an existing mode skill's category. For a new mode, use `<project skill root>/<handle>/<handle>-mode/SKILL.md` when the repo has an established personal category for that handle; otherwise default to `<project skill root>/<handle>-mode/SKILL.md`, or the user skill root for a personal skill. The project root is `.omp/skills`; the user root is `~/.omp/agent/skills`.
 - Handle: the user's first name or chosen identifier.
 - Frontmatter `description`: trigger on their name + `/<handle>-mode` + "work in their style", not on generic keywords like "write code" or "review PR".
 - Frontmatter formatting: follow the Agent Skills standard's YAML rules. Keep `description` as one YAML scalar; quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.

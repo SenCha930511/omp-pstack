@@ -12,6 +12,13 @@ const FORBIDDEN_PATTERNS = [
   { label: "cloud_base_branch", regex: /\bcloud_base_branch\b/ },
   { label: "pstack-models.mdc", regex: /pstack-models\.mdc/ },
   { label: 'environment: "cloud"', regex: /environment:\s*"cloud"/ },
+  { label: "AskQuestion", regex: /\bAskQuestion\b/ },
+  { label: "agent-transcripts/", regex: /agent-transcripts\// },
+  { label: "cursor-team-kit", regex: /cursor-team-kit/ },
+  { label: "generalPurpose", regex: /\bgeneralPurpose\b/ },
+  { label: "/visualize", regex: /\/visualize\b/ },
+  { label: "plugins/cache/", regex: /plugins\/cache\// },
+  { label: "is_background", regex: /\bis_background\b/ },
   { label: "`subagent`", regex: /`subagent`/ },
   { label: "subagents_write_task_models", regex: /subagents_write_task_models/ },
   { label: "subagents_list", regex: /subagents_list/ },
@@ -211,12 +218,12 @@ function buildReport(config, summary, cursorCommits) {
     lines.push("");
   }
 
-  const hasManual =
+  const hasManualCursorItems =
     summary.manualAdaptedSkills.length > 0 ||
     summary.blockedCursorSkills.length > 0 ||
     summary.removedUpstreamSkills.length > 0 ||
-    summary.manualOtherFiles.length > 0 ||
-    summary.piMimirCommits.length > 0;
+    summary.manualOtherFiles.length > 0;
+  const hasManual = hasManualCursorItems || summary.piMimirCommits.length > 0;
 
   if (hasManual) {
     lines.push("### Manual Porting Required", "");
@@ -251,12 +258,13 @@ function buildReport(config, summary, cursorCommits) {
     }
   }
 
-  if (summary.mode === "issue") {
+  if (summary.mode === "issue" || (summary.mode === "pr" && hasManual)) {
     const piMimirArg = summary.piMimirCommits[0]?.sha ? ` --pi-mimir ${summary.piMimirCommits[0].sha}` : "";
+    const suffix = summary.mode === "issue" ? " and close this issue." : " after porting the manual items above.";
     lines.push(
       "### After porting",
       "",
-      `Run \`npm run sync:ack -- --cursor ${summary.cursorSha}${piMimirArg}\` and close this issue.`,
+      `Run \`npm run sync:ack -- --cursor ${summary.cursorSha}${piMimirArg}\`${suffix}`,
       "",
     );
   }
@@ -266,8 +274,13 @@ function buildReport(config, summary, cursorCommits) {
       "### Notes",
       "",
       "- Note: If this PR was opened with the default `GITHUB_TOKEN`, GitHub Actions prevents it from triggering PR CI workflows automatically. Close and reopen the PR (or push an amendment commit / set `UPSTREAM_SYNC_TOKEN`) to trigger the required checks.",
-      "",
     );
+    if (hasManualCursorItems) {
+      lines.push(
+        `- \`cursor.lastSyncedSha\` was intentionally left at \`${oldShort}\` so remaining manual items stay tracked until \`sync:ack\` runs.`,
+      );
+    }
+    lines.push("");
   }
 
   return `${lines.join("\n").trimEnd()}\n`;
@@ -346,12 +359,12 @@ export function syncUpstream(options) {
   });
 
   const hasAutoChanges = addedSkills.length > 0 || updatedSkills.length > 0;
-  const hasManualItems =
+  const hasManualCursorItems =
     manualAdaptedSkills.length > 0 ||
     blockedCursorSkills.length > 0 ||
     removedUpstreamSkills.length > 0 ||
-    manualOtherFiles.length > 0 ||
-    piMimirCommits.length > 0;
+    manualOtherFiles.length > 0;
+  const hasManualItems = hasManualCursorItems || piMimirCommits.length > 0;
 
   const mode = hasAutoChanges ? "pr" : hasManualItems ? "issue" : "none";
 
@@ -359,6 +372,7 @@ export function syncUpstream(options) {
     mode,
     cursorSha: options.cursorSha,
     shortSha: options.cursorSha.slice(0, 7),
+    cursorShaAdvanced: mode === "pr" && !hasManualCursorItems,
     addedSkills,
     updatedSkills,
     manualAdaptedSkills,
@@ -371,11 +385,18 @@ export function syncUpstream(options) {
   const report = buildReport(config, summary, cursorCommits);
 
   if (mode === "pr" && !options.dryRun) {
-    config.cursor.lastSyncedSha = options.cursorSha;
+    let configChanged = false;
+    if (!hasManualCursorItems) {
+      config.cursor.lastSyncedSha = options.cursorSha;
+      configChanged = true;
+    }
     if (options.piMimirSha && piMimirCommits.length === 0 && config.piMimir) {
       config.piMimir.lastCheckedSha = options.piMimirSha;
+      configChanged = true;
     }
-    fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    if (configChanged) {
+      fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    }
   }
 
   if (options.reportOutput) {

@@ -28,7 +28,17 @@ type Message = {
   timestamp?: number;
 };
 
-function createMockHost(activeTools: string[] = []) {
+type SlashCommand = {
+  name: string;
+  source: string;
+  path?: string;
+};
+
+const DEFAULT_SKILL_COMMANDS: SlashCommand[] = [
+  { name: "skill:poteto-mode", source: "skill", path: path.resolve("skills/poteto-mode/SKILL.md") },
+];
+
+function createMockHost(activeTools: string[] = [], registeredCommands: SlashCommand[] = DEFAULT_SKILL_COMMANDS) {
   const handlers = new Map<string, EventHandler[]>();
   const appended: Array<{ customType: string; data: unknown }> = [];
   const statusCalls: Array<{ key: string; value: string | undefined }> = [];
@@ -49,6 +59,9 @@ function createMockHost(activeTools: string[] = []) {
     getActiveTools() {
       return activeTools;
     },
+    getCommands() {
+      return registeredCommands;
+    },
     registerCommand(name: string, options: Command) {
       commands.set(name, options);
     },
@@ -58,9 +71,17 @@ function createMockHost(activeTools: string[] = []) {
     },
   };
 
-  function makeCtx(options: { hasUI?: boolean; entries?: Entry[]; ui?: Record<string, unknown> } = {}) {
+  function makeCtx(
+    options: {
+      hasUI?: boolean;
+      entries?: Entry[];
+      ui?: Record<string, unknown>;
+      agent?: { kind: "main" | "sub"; id: string; name: string; depth: number };
+    } = {},
+  ) {
     return {
       hasUI: options.hasUI ?? false,
+      agent: options.agent ?? { kind: "main" as const, id: "main", name: "main", depth: 0 },
       sessionManager: {
         getBranch() {
           return options.entries ?? [];
@@ -419,10 +440,7 @@ describe("pstackExtension", () => {
     };
     const user = userMessage();
 
-    expect(messagesOf(await host.emit("context", { messages: [injectedMessage, user] }, ctx))).toEqual([
-      injectedMessage,
-      user,
-    ]);
+    expect(await host.emit("context", { messages: [injectedMessage, user] }, ctx)).toBeUndefined();
   });
 
   test("restores state across session switches", async () => {
@@ -560,5 +578,143 @@ describe("pstackExtension", () => {
 
     const command = host.commands.get("poteto-mode");
     expect(command?.getArgumentCompletions?.("s")?.map((item) => item.value)).toEqual(["sticky", "status"]);
+  });
+
+  test("sticky <task> and on <task> enable sticky mode and strip the prefix on input", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true });
+
+    expect(await host.emit("input", { text: "/poteto-mode sticky fix the bug" }, ctx)).toEqual({
+      text: "fix the bug",
+    });
+    expect(host.appended).toEqual([{ customType: "pstack-mode", data: { enabled: true } }]);
+    expect(host.statusCalls.at(-1)).toEqual({ key: "pstack-mode", value: "pstack: poteto mode" });
+    expect(host.notifications.at(-1)?.message).toBe("Poteto Mode sticky enabled for this session.");
+
+    expect(await host.emit("input", { text: "  /poteto-mode on next task" }, ctx)).toEqual({
+      text: "next task",
+    });
+    expect(host.appended).toHaveLength(1);
+    expect(host.notifications.at(-1)?.message).toBe("Poteto Mode sticky is already enabled.");
+  });
+
+  test("sticky <task> with a missing skill file stops input without sending", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api, { skillFile: path.join(tmpdir(), "missing-pstack-skill.md") });
+    const ctx = host.makeCtx({ hasUI: true });
+
+    expect(await host.emit("input", { text: "/poteto-mode sticky fix the bug" }, ctx)).toEqual({ handled: true });
+    expect(host.appended).toEqual([]);
+    expect(host.notifications.at(-1)?.message).toContain("pstack skill file not found");
+  });
+
+  test("direct sticky <task> command enables sticky mode and sends the plain task", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true });
+
+    await host.runCommand("poteto-mode", "sticky fix the bug", ctx);
+
+    expect(host.appended).toEqual([{ customType: "pstack-mode", data: { enabled: true } }]);
+    expect(host.sent).toEqual([{ content: "fix the bug", options: undefined }]);
+  });
+
+  test("leading whitespace and on alias work cleanly", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true });
+
+    expect(await host.emit("input", { text: "  /poteto-mode fix the bug" }, ctx)).toEqual({
+      text: "/skill:poteto-mode fix the bug",
+    });
+    expect(await host.emit("input", { text: "  /poteto-mode sticky" }, ctx)).toEqual({
+      text: "/poteto-mode sticky",
+    });
+    await host.runCommand("poteto-mode", "on", ctx);
+    expect(host.appended).toEqual([{ customType: "pstack-mode", data: { enabled: true } }]);
+  });
+
+  test("falls back to the command handler when /skill:poteto-mode is not registered", async () => {
+    const host = createMockHost([], []);
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true });
+
+    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toBeUndefined();
+    const dispatched = await dispatchLikeHost(host, "/poteto-mode fix the bug", ctx);
+    expect(dispatched.kind).toBe("command");
+    expect(host.sent).toHaveLength(1);
+    expect(host.sent[0]?.content).toContain("Task:\nfix the bug");
+  });
+
+  test("routes to collision-namespaced skill command matching skillFile", async () => {
+    const host = createMockHost([], [
+      {
+        name: "skill:omp-pstack/poteto-mode",
+        source: "skill",
+        path: path.resolve("skills/poteto-mode/SKILL.md"),
+      },
+    ]);
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true });
+
+    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toEqual({
+      text: "/skill:omp-pstack/poteto-mode fix the bug",
+    });
+  });
+
+  test("does not double-expand poteto-mode when sticky is already active", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true, entries: ENABLED });
+    await host.emit("session_start", {}, ctx);
+
+    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toEqual({
+      text: "fix the bug",
+    });
+
+    await host.runCommand("poteto-mode", "follow up", ctx);
+    expect(host.sent).toEqual([{ content: "follow up", options: undefined }]);
+  });
+
+  test("context is a no-op when disabled without context messages and replaces stale messages in-place", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api);
+    const offCtx = host.makeCtx({ hasUI: true, entries: [] });
+    await host.emit("session_start", {}, offCtx);
+    const u1 = userMessage("first");
+    const u2 = userMessage("second");
+    expect(await host.emit("context", { messages: [u1, u2] }, offCtx)).toBeUndefined();
+
+    const onCtx = host.makeCtx({ hasUI: true, entries: ENABLED });
+    await host.emit("session_start", {}, onCtx);
+    const stale = contextMessage({ content: "stale" });
+    const dup = contextMessage({ content: "stale-dup" });
+    const replaced = messagesOf(await host.emit("context", { messages: [u1, stale, dup, u2] }, onCtx));
+    expect(replaced).toHaveLength(3);
+    expect(replaced[0]).toBe(u1);
+    expect(replaced[1]?.customType).toBe("pstack-mode-context");
+    expect(replaced[1]?.content).toContain("# Poteto mode");
+    expect(replaced[2]).toBe(u2);
+  });
+
+  test("subagents and revive turns do not inject or handle poteto-mode hooks", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api);
+    const subCtx = host.makeCtx({
+      hasUI: false,
+      entries: ENABLED,
+      agent: { kind: "sub", id: "0-poteto-agent", name: "poteto-agent", depth: 1 },
+    });
+
+    await host.emit("session_start", {}, subCtx);
+    expect(host.statusCalls).toEqual([]);
+    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, subCtx)).toBeUndefined();
+    expect(await host.emit("before_agent_start", { reason: "prompt" }, subCtx)).toBeUndefined();
+    expect(await host.emit("context", { messages: [userMessage()] }, subCtx)).toBeUndefined();
+
+    const mainCtx = host.makeCtx({ hasUI: true, entries: ENABLED });
+    await host.emit("session_start", {}, mainCtx);
+    expect(await host.emit("before_agent_start", { reason: "revive" }, mainCtx)).toBeUndefined();
   });
 });

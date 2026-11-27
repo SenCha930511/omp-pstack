@@ -33,6 +33,8 @@ const FORBIDDEN_EXACT = new Set([
 function isForbiddenPath(file) {
   if (FORBIDDEN_EXACT.has(file)) return true;
   if (file.startsWith("tests/") || file.startsWith("scripts/") || file.startsWith(".github/")) return true;
+  if (file.startsWith("skills/statechart/scripts/test/")) return true;
+  if (file.startsWith("skills/") && file.endsWith(".test.ts")) return true;
   if (file.startsWith("node_modules/") || file.includes("/node_modules/")) return true;
   if (file === ".DS_Store" || file.endsWith("/.DS_Store")) return true;
   if (file.endsWith(".tgz")) return true;
@@ -85,7 +87,9 @@ async function listFilesRecursive(directory, base) {
 async function expectedPackedFiles(root) {
   const files = [];
   for (const directory of ["extensions", "skills", "agents"]) {
-    files.push(...(await listFilesRecursive(path.join(root, directory), root)));
+    for (const file of await listFilesRecursive(path.join(root, directory), root)) {
+      if (!isForbiddenPath(file)) files.push(file);
+    }
   }
   files.push("AGENT-INSTALL.md", "README.md", "LICENSE", "NOTICE.md", "package.json");
   return files.sort();
@@ -230,7 +234,7 @@ try {
       "console.log(JSON.stringify({",
       "  skills: skills.skills.map((skill) => skill.name).sort(),",
       "  skillWarnings: skills.warnings,",
-      "  agents: agents.agents.map((agent) => ({ name: agent.name, spawns: agent.spawns ?? null, tools: agent.tools ?? null })),",
+      "  agents: agents.agents.map((agent) => ({ name: agent.name, spawns: agent.spawns ?? null, autoloadSkills: agent.autoloadSkills ?? null, tools: agent.tools ?? null })),",
       "  extensionPaths,",
       "  extensionErrors: loaded.errors,",
       "  extensionCount: loaded.extensions.length,",
@@ -265,10 +269,15 @@ try {
   const commentSicko = discovered.agents.find((agent) => agent.name === "comment-sicko");
   assert.ok(potetoAgent, "discovery missed poteto-agent");
   assert.equal(potetoAgent.spawns, "*", 'poteto-agent must declare spawns: "*"');
+  assert.deepEqual(potetoAgent.autoloadSkills, ["poteto-mode"], 'poteto-agent must autoload "poteto-mode"');
   assert.ok(commentSicko, "discovery missed comment-sicko");
   assert.equal(commentSicko.spawns, null, "comment-sicko must not declare spawns");
   assert.ok(commentSicko.tools?.includes("glob"), "comment-sicko must include glob");
+  assert.ok(commentSicko.tools?.includes("edit"), "comment-sicko must include edit");
+  assert.ok(commentSicko.tools?.includes("bash"), "comment-sicko must include bash");
   assert.ok(!commentSicko.tools?.includes("ls"), "comment-sicko must not include ls");
+  assert.ok(!commentSicko.tools?.includes("task"), "comment-sicko must not include task");
+  assert.ok(!commentSicko.tools?.includes("write"), "comment-sicko must not include write");
 
   const discoveredExtension = discovered.extensionPaths.find(
     (extensionPath) =>
