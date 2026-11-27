@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
+const SAFE_SKILL_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
 const USAGE =
   "Usage: node scripts/sync-upstream.mjs --cursor-dir <dir> --cursor-sha <sha> [--root <dir>] [--cursor-changed-file <file>] [--cursor-commits-file <file>] [--pi-mimir-sha <sha>] [--pi-mimir-commits-file <file>] [--pi-mimir-error-file <file>] [--report-output <file>] [--summary-json <file>] [--dry-run]";
 
@@ -230,6 +231,11 @@ function isPackagingPath(relativeUnderCursorPath) {
   );
 }
 
+function formatCodeSpan(text) {
+  const clean = String(text).replace(/[\r\n]+/g, " ");
+  return clean.includes("`") ? `\`\` ${clean} \`\`` : `\`${clean}\``;
+}
+
 function formatCommitList(commits, repo) {
   if (commits.length === 0) return "_No new commits recorded._";
   return commits
@@ -269,6 +275,8 @@ function buildReport(config, summary, cursorCommits) {
     lines.push("");
   }
 
+  const safeBlockedSkills = summary.blockedCursorSkills.filter((item) => SAFE_SKILL_NAME.test(item.name));
+  const unsafeBlockedSkills = summary.blockedCursorSkills.filter((item) => !SAFE_SKILL_NAME.test(item.name));
   const hasManualCursorItems =
     summary.manualAdaptedSkills.length > 0 ||
     summary.blockedCursorSkills.length > 0 ||
@@ -281,34 +289,41 @@ function buildReport(config, summary, cursorCommits) {
     if (summary.manualAdaptedSkills.length > 0) {
       lines.push("**Adapted skills changed upstream (preserved local omp adaptations):**");
       for (const item of summary.manualAdaptedSkills) {
-        lines.push(`- \`${item.name}\`: ${item.files.map((f) => `\`${f}\``).join(", ")}`);
+        lines.push(`- ${formatCodeSpan(item.name)}: ${item.files.map((f) => formatCodeSpan(f)).join(", ")}`);
       }
       lines.push("");
     }
     if (summary.blockedCursorSkills.length > 0) {
       lines.push("**Unadapted/new skills skipped due to Cursor-specific references:**");
       for (const item of summary.blockedCursorSkills) {
-        const detail = item.matches.map((m) => `\`${m.file}\` (\`${m.pattern}\`)`).join(", ");
-        lines.push(`- \`${item.name}\`: ${detail}`);
+        const detail = item.matches.map((m) => `${formatCodeSpan(m.file)} (${formatCodeSpan(m.pattern)})`).join(", ");
+        lines.push(`- ${formatCodeSpan(item.name)}: ${detail}`);
       }
-      const adaptFlags = summary.blockedCursorSkills.map((item) => `--adapt ${item.name}`).join(" ");
-      lines.push(
-        "  - To record a partial port before finishing everything, run `npm run sync:ack -- --adapt-only --adapt <skill>` (updates `adaptedSkills` without advancing `cursor.lastSyncedSha`).",
-        `  - Once all manual items are ported, include \`${adaptFlags}\` in the global \`sync:ack\` command below.`,
-        "",
-      );
+      if (safeBlockedSkills.length > 0) {
+        const adaptFlags = safeBlockedSkills.map((item) => `--adapt ${item.name}`).join(" ");
+        lines.push(
+          "  - To record a partial port before finishing everything, run `npm run sync:ack -- --adapt-only --adapt <skill>` (updates `adaptedSkills` without advancing `cursor.lastSyncedSha`).",
+          `  - Once all manual items are ported, include \`${adaptFlags}\` in the global \`sync:ack\` command below.`,
+        );
+      }
+      if (unsafeBlockedSkills.length > 0) {
+        lines.push(
+          `  - Warning: skipped CLI \`--adapt\` suggestions for unsafe skill name(s): ${unsafeBlockedSkills.map((item) => formatCodeSpan(item.name)).join(", ")}. Rename to \`[A-Za-z0-9._-]+\` before recording in \`adaptedSkills\`.`,
+        );
+      }
+      lines.push("");
     }
     if (summary.removedUpstreamSkills.length > 0) {
-      lines.push(`**Skills removed upstream (kept locally):** ${summary.removedUpstreamSkills.map((s) => `\`${s}\``).join(", ")}`, "");
+      lines.push(`**Skills removed upstream (kept locally):** ${summary.removedUpstreamSkills.map((s) => formatCodeSpan(s)).join(", ")}`, "");
     }
     if (summary.manualOtherFiles.length > 0) {
       lines.push("**Other upstream files changed (review for omp relevance):**");
       for (const file of summary.manualOtherFiles) {
-        lines.push(`- \`${file}\``);
+        lines.push(`- ${formatCodeSpan(file)}`);
       }
       lines.push("");
     }
-    if (summary.piMimirCommits.length > 0) {
+    if (!summary.piMimirError && summary.piMimirCommits.length > 0) {
       const piRepo = config.piMimir?.repo ?? "casualjim/pi-mimir";
       lines.push(`**\`${piRepo}\` extension/agent updates:**`, "", formatCommitList(summary.piMimirCommits, piRepo), "");
     }
@@ -318,7 +333,7 @@ function buildReport(config, summary, cursorCommits) {
       lines.push(
         `**\`${piRepo}\` range check failed (review manually; \`piMimir.lastCheckedSha\` was not advanced):**`,
         "",
-        `- Error${headNote}: \`${summary.piMimirError}\``,
+        `- Error${headNote}: ${formatCodeSpan(summary.piMimirError)}`,
         "- Do not pass `--pi-mimir` until the range error is resolved and verified manually.",
         "",
       );
@@ -327,12 +342,11 @@ function buildReport(config, summary, cursorCommits) {
 
   if (summary.mode === "issue" || (summary.mode === "pr" && hasManual)) {
     const adaptFlags =
-      summary.blockedCursorSkills.length > 0
-        ? summary.blockedCursorSkills.map((item) => ` --adapt ${item.name}`).join("")
-        : "";
-    const piMimirTargetSha = summary.piMimirCommits[0]?.sha;
+      safeBlockedSkills.length > 0 ? safeBlockedSkills.map((item) => ` --adapt ${item.name}`).join("") : "";
+    const piMimirTargetSha = summary.piMimirError ? undefined : summary.piMimirCommits[0]?.sha;
     const piMimirArg = piMimirTargetSha ? ` --pi-mimir ${piMimirTargetSha}` : "";
-    const hasAckableManualItems = hasManualCursorItems || summary.piMimirCommits.length > 0;
+    const hasAckableManualItems =
+      hasManualCursorItems || (!summary.piMimirError && summary.piMimirCommits.length > 0);
     const suffix = summary.mode === "issue" ? " and close this issue." : " after porting all manual items above.";
     lines.push("### After porting", "");
     if (hasAckableManualItems) {

@@ -658,4 +658,52 @@ test("surfaces --pi-mimir-error-file without failing sync or advancing piMimir.l
   const mixedCfg = JSON.parse(fs.readFileSync(path.join(mixed.root, ".github", "upstream-sync.json"), "utf8"));
   assert.equal(mixedCfg.cursor.lastSyncedSha, cursorHeadSha);
   assert.equal(mixedCfg.piMimir.lastCheckedSha, "2222222222222222222222222222222222222222");
+
+  const withCommits = createFixture({
+    localSkills: { tdd: { "SKILL.md": "old\n" } },
+    upstreamSkills: { tdd: { "SKILL.md": "new\n" } },
+    changedFiles: ["M\tpstack/skills/tdd/SKILL.md"],
+    piMimirCommits: [
+      { sha: "f".repeat(40), date: "2026-11-25T00:00:00Z", subject: "fix: should be superseded by error" },
+    ],
+  });
+  const withCommitsError = path.join(withCommits.dir, "pi-error.txt");
+  fs.writeFileSync(withCommitsError, "range failed\n");
+  const errorPriorityRes = syncUpstream({
+    root: withCommits.root,
+    cursorDir: withCommits.cursorDir,
+    cursorSha: cursorHeadSha,
+    cursorChangedFile: withCommits.changedPath,
+    piMimirSha: piHeadSha,
+    piMimirCommitsFile: withCommits.piCommitsPath,
+    piMimirErrorFile: withCommitsError,
+  });
+  assert.equal(errorPriorityRes.report.includes("--pi-mimir " + "f".repeat(40)), false);
+  assert.equal(errorPriorityRes.report.includes("--pi-mimir <verified-sha>"), true);
+});
+
+test("omits unsafe upstream skill names from CLI --adapt commands in report", () => {
+  const evilName = "$(printf${IFS}PWNED)";
+  const { root, cursorDir, changedPath } = createFixture({
+    upstreamSkills: {
+      [evilName]: { "SKILL.md": "uses ~/.cursor/rules\n" },
+      "blocked-ok": { "SKILL.md": "uses subagent_type\n" },
+    },
+    changedFiles: [
+      `A\tpstack/skills/${evilName}/SKILL.md`,
+      "A\tpstack/skills/blocked-ok/SKILL.md",
+    ],
+  });
+
+  const sha = "a".repeat(40);
+  const { summary, report } = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: sha,
+    cursorChangedFile: changedPath,
+  });
+  assert.equal(summary.blockedCursorSkills.length, 2);
+  assert.ok(report.includes(`\`npm run sync:ack -- --cursor ${sha} --adapt blocked-ok\` and close this issue.`));
+  assert.equal(report.includes(`--adapt ${evilName}`), false);
+  assert.ok(report.includes("skipped CLI `--adapt` suggestions for unsafe skill name"));
 });

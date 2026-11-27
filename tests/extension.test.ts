@@ -838,6 +838,38 @@ function stripOmpMultiBlankLines(text: string): string {
     expect(host.sentCustom[0]?.message.customType).toBe(SKILL_PROMPT_MESSAGE_TYPE);
   });
 
+  test("ignores foreign skill:poteto-mode path and allows legacy undefined path", async () => {
+    const foreignHost = createMockHost([], {
+      commands: [
+        {
+          name: "skill:poteto-mode",
+          source: "skill",
+          path: "/tmp/foreign-pstack/poteto-mode/SKILL.md",
+        },
+      ],
+    });
+    pstackExtension(foreignHost.api);
+    const foreignCtx = foreignHost.makeCtx({ hasUI: true });
+
+    expect(await foreignHost.emit("input", { text: "/poteto-mode fix the bug" }, foreignCtx)).toBeUndefined();
+    const dispatched = await dispatchLikeHost(foreignHost, "/poteto-mode fix the bug", foreignCtx);
+    expect(dispatched.kind).toBe("command");
+    expect(foreignHost.sentCustom).toHaveLength(1);
+    expect(foreignHost.sentCustom[0]?.message.customType).toBe(SKILL_PROMPT_MESSAGE_TYPE);
+    expect((foreignHost.sentCustom[0]?.message.details as SkillPromptDetails).path).toBe(
+      path.resolve("skills/poteto-mode/SKILL.md"),
+    );
+
+    const legacyHost = createMockHost([], {
+      commands: [{ name: "skill:poteto-mode", source: "skill" }],
+    });
+    pstackExtension(legacyHost.api);
+    const legacyCtx = legacyHost.makeCtx({ hasUI: true });
+    expect(await legacyHost.emit("input", { text: "/poteto-mode fix the bug" }, legacyCtx)).toEqual({
+      text: "/skill:poteto-mode fix the bug",
+    });
+  });
+
   test("routes to collision-namespaced skill command matching skillFile", async () => {
     const host = createMockHost([], {
       commands: [

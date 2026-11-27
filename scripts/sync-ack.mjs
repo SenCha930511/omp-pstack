@@ -6,6 +6,7 @@ const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const USAGE =
   "Usage: node scripts/sync-ack.mjs (--cursor <sha> [--pi-mimir <sha>] [--adapt <skill> ...] | --adapt-only --adapt <skill> ...) [--root <dir>]";
 const SHA_PATTERN = /^[0-9a-f]{40}$/;
+const SAFE_SKILL_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
 
 function parseArgs(argv) {
   const options = {
@@ -63,7 +64,7 @@ function assertSha(flag, sha) {
 function validateAdaptedSkill(root, rawSkill) {
   const skill = rawSkill.trim();
   if (!skill) throw new Error("--adapt requires a nonempty skill name");
-  if (path.basename(skill) !== skill || skill === "." || skill === ".." || /[\\/<>:*?"|]/.test(skill)) {
+  if (!SAFE_SKILL_NAME.test(skill) || skill === "." || skill === "..") {
     throw new Error(`invalid skill name for --adapt: ${skill}`);
   }
   const skillFile = path.join(root, "skills", skill, "SKILL.md");
