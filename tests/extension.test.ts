@@ -1,7 +1,17 @@
 import { describe, expect, test } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
-import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
+import {
+  buildSkillPromptMessage,
+  convertToLlm,
+  isUserInvokedSkillPrompt,
+  isUserTurnInitiator,
+  SKILL_PROMPT_MESSAGE_TYPE,
+  type CustomMessage,
+  type ExtensionAPI,
+  type SkillPromptDetails,
+} from "@oh-my-pi/pi-coding-agent";
 import pstackExtension from "../extensions/pstack/index.ts";
 import { preferredAskTool } from "../extensions/pstack/interaction.ts";
 
@@ -28,26 +38,23 @@ type Message = {
   timestamp?: number;
 };
 
-type SlashCommand = {
-  name: string;
-  source: string;
-  path?: string;
+type ImageAttachment = {
+  type: "image";
+  data: string;
+  mimeType: string;
 };
 
-const DEFAULT_SKILL_COMMANDS: SlashCommand[] = [
-  { name: "skill:poteto-mode", source: "skill", path: path.resolve("skills/poteto-mode/SKILL.md") },
-];
-
-function createMockHost(activeTools: string[] = [], registeredCommands: SlashCommand[] = DEFAULT_SKILL_COMMANDS) {
+function createMockHost(activeTools: string[] = [], options: { omitSendMessage?: boolean } = {}) {
   const handlers = new Map<string, EventHandler[]>();
   const appended: Array<{ customType: string; data: unknown }> = [];
   const statusCalls: Array<{ key: string; value: string | undefined }> = [];
   const notifications: Array<{ message: string; type?: string }> = [];
   const commands = new Map<string, Command>();
   const sent: Array<{ content: string | unknown[]; options?: unknown }> = [];
+  const sentCustom: Array<{ message: Record<string, unknown>; options?: unknown }> = [];
   let sendError: Error | undefined;
 
-  const api = {
+  const api: Record<string, unknown> = {
     on(event: string, handler: EventHandler) {
       const list = handlers.get(event) ?? [];
       list.push(handler);
@@ -59,32 +66,38 @@ function createMockHost(activeTools: string[] = [], registeredCommands: SlashCom
     getActiveTools() {
       return activeTools;
     },
-    getCommands() {
-      return registeredCommands;
+    registerCommand(name: string, commandOptions: Command) {
+      commands.set(name, commandOptions);
     },
-    registerCommand(name: string, options: Command) {
-      commands.set(name, options);
-    },
-    async sendUserMessage(content: string | unknown[], options?: unknown) {
+    async sendUserMessage(content: string | unknown[], sendOptions?: unknown) {
       if (sendError) throw sendError;
-      sent.push({ content, options });
+      sent.push({ content, options: sendOptions });
     },
   };
 
+  if (!options.omitSendMessage) {
+    api.sendMessage = (message: Record<string, unknown>, sendOptions?: unknown) => {
+      if (sendError) throw sendError;
+      sentCustom.push({ message, options: sendOptions });
+    };
+  }
+
   function makeCtx(
-    options: {
+    ctxOptions: {
       hasUI?: boolean;
+      mode?: "tui" | "rpc" | "print" | "json";
       entries?: Entry[];
       ui?: Record<string, unknown>;
       agent?: { kind: "main" | "sub"; id: string; name: string; depth: number };
     } = {},
   ) {
     return {
-      hasUI: options.hasUI ?? false,
-      agent: options.agent ?? { kind: "main" as const, id: "main", name: "main", depth: 0 },
+      hasUI: ctxOptions.hasUI ?? false,
+      mode: ctxOptions.mode ?? "tui",
+      agent: ctxOptions.agent ?? { kind: "main" as const, id: "main", name: "main", depth: 0 },
       sessionManager: {
         getBranch() {
-          return options.entries ?? [];
+          return ctxOptions.entries ?? [];
         },
       },
       ui: {
@@ -94,7 +107,7 @@ function createMockHost(activeTools: string[] = [], registeredCommands: SlashCom
         notify(message: string, type?: string) {
           notifications.push({ message, type });
         },
-        ...options.ui,
+        ...ctxOptions.ui,
       },
     };
   }
@@ -107,6 +120,7 @@ function createMockHost(activeTools: string[] = [], registeredCommands: SlashCom
     notifications,
     commands,
     sent,
+    sentCustom,
     makeCtx,
     failSends(error: Error) {
       sendError = error;
@@ -164,16 +178,19 @@ async function dispatchLikeHost(
   host: ReturnType<typeof createMockHost>,
   text: string,
   ctx: unknown,
-): Promise<{ kind: "command" | "skill"; text: string }> {
-  const input = await host.emit("input", { text }, ctx);
+  images?: ImageAttachment[],
+): Promise<{ kind: "command" | "handled" | "prompt"; text: string }> {
+  const input = await host.emit("input", { text, ...(images ? { images } : {}), source: "interactive" }, ctx);
+  if (input && typeof input === "object" && "handled" in input && (input as { handled?: boolean }).handled) {
+    return { kind: "handled", text };
+  }
   const routed = input && typeof input === "object" && "text" in input ? (input as { text: string }).text : text;
-  if (routed.startsWith("/skill:")) return { kind: "skill", text: routed };
   const commandName = routed.startsWith("/") ? routed.slice(1).split(/\s+/, 1)[0] : undefined;
   if (commandName && host.commands.has(commandName)) {
     await host.runCommand(commandName, routed.slice(commandName.length + 1).trim(), ctx);
     return { kind: "command", text: routed };
   }
-  return { kind: "skill", text: routed };
+  return { kind: "prompt", text: routed };
 }
 
 describe("interaction", () => {
@@ -254,14 +271,12 @@ describe("pstackExtension", () => {
     expect(host.notifications.at(-1)?.message).toContain("/poteto-mode sticky");
   });
 
-  test("input rewrites a one-shot task and leaves control words alone", async () => {
+  test("input lets one-shot /poteto-mode route directly to the command without rewriting to a skill command", async () => {
     const host = createMockHost();
     pstackExtension(host.api);
     const ctx = host.makeCtx({ hasUI: true });
 
-    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toEqual({
-      text: "/skill:poteto-mode fix the bug",
-    });
+    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toBeUndefined();
     expect(await host.emit("input", { text: "/poteto-mode" }, ctx)).toBeUndefined();
     expect(await host.emit("input", { text: "/poteto-mode sticky" }, ctx)).toBeUndefined();
     expect(await host.emit("input", { text: "/poteto-mode off" }, ctx)).toBeUndefined();
@@ -274,14 +289,15 @@ describe("pstackExtension", () => {
     expect(host.statusCalls).toEqual([]);
   });
 
-  test("one-shot input reaches the skill path, not the command fallback", async () => {
+  test("one-shot input runs directly through /poteto-mode without invoking /skill:poteto-mode", async () => {
     const host = createMockHost();
     pstackExtension(host.api);
     const ctx = host.makeCtx({ hasUI: true });
 
     const oneShot = await dispatchLikeHost(host, "/poteto-mode fix the bug", ctx);
-    expect(oneShot).toEqual({ kind: "skill", text: "/skill:poteto-mode fix the bug" });
+    expect(oneShot).toEqual({ kind: "command", text: "/poteto-mode fix the bug" });
     expect(host.sent).toEqual([]);
+    expect(host.sentCustom).toHaveLength(1);
     expect(host.appended).toEqual([]);
 
     const control = await dispatchLikeHost(host, "/poteto-mode sticky", ctx);
@@ -531,7 +547,7 @@ describe("pstackExtension", () => {
     expect(await host.emit("before_agent_start", {}, ctx)).toBeUndefined();
   });
 
-  test("missing skill file leaves sticky off and injects nothing", async () => {
+  test("missing skill file leaves sticky off and one-shot notifies without sending", async () => {
     const host = createMockHost();
     pstackExtension(host.api, { skillFile: path.join(tmpdir(), "missing-pstack-skill.md") });
     const ctx = host.makeCtx({ hasUI: true });
@@ -542,22 +558,90 @@ describe("pstackExtension", () => {
     expect(host.statusCalls).toEqual([]);
     expect(host.notifications.at(-1)?.message).toContain("pstack skill file not found");
     expect(await host.emit("before_agent_start", {}, ctx)).toBeUndefined();
+
+    await host.runCommand("poteto-mode", "fix the bug", ctx);
+    expect(host.sent).toEqual([]);
+    expect(host.sentCustom).toEqual([]);
+    expect(host.notifications.at(-1)?.message).toContain("pstack skill file not found");
   });
 
-  test("command fallback sends the skill body for a one-shot task", async () => {
+function stripOmpMultiBlankLines(text: string): string {
+  return text.replace(/\n{3,}/g, "\n");
+}
+
+  test("one-shot /poteto-mode matches OMP skill-prompt format, details, and LLM conversion", async () => {
     const host = createMockHost();
     pstackExtension(host.api);
     const ctx = host.makeCtx({ hasUI: true });
+    const skillFile = path.resolve("skills/poteto-mode/SKILL.md");
+    const built = await buildSkillPromptMessage(
+      { name: "poteto-mode", filePath: skillFile, baseDir: path.dirname(skillFile) },
+      { args: "fix the bug" },
+      "user",
+    );
 
     await host.runCommand("poteto-mode", "fix the bug", ctx);
 
     expect(host.appended).toEqual([]);
-    expect(host.sent).toHaveLength(1);
-    const content = host.sent[0]?.content;
-    if (typeof content !== "string") throw new Error("expected a text prompt");
-    expect(content).toContain("[Skill directory:");
-    expect(content).toContain("# Poteto mode");
-    expect(content).toContain("Task:\nfix the bug");
+    expect(host.sent).toEqual([]);
+    expect(host.sentCustom).toHaveLength(1);
+    const record = host.sentCustom[0];
+    expect(record?.options).toEqual({ triggerTurn: true });
+    expect(record?.message.customType).toBe(SKILL_PROMPT_MESSAGE_TYPE);
+    expect(record?.message.attribution).toBe("user");
+    expect(record?.message.display).toBe(true);
+    expect(typeof record?.message.content).toBe("string");
+    const contentText = record?.message.content as string;
+    expect(stripOmpMultiBlankLines(contentText)).toBe(built.message);
+    expect(record?.message.details).toEqual({
+      name: built.details.name,
+      path: built.details.path,
+      args: built.details.args,
+      lineCount: built.details.lineCount,
+    });
+
+    const customMsg: CustomMessage<SkillPromptDetails> = {
+      role: "custom",
+      customType: record.message.customType as string,
+      content: contentText,
+      display: record.message.display as boolean,
+      attribution: record.message.attribution as "user",
+      details: record.message.details as SkillPromptDetails,
+      timestamp: 1,
+    };
+    expect(isUserInvokedSkillPrompt(customMsg)).toBe(true);
+    expect(isUserTurnInitiator(customMsg)).toBe(true);
+    expect(convertToLlm([customMsg])).toEqual([
+      {
+        role: "user",
+        content: [{ type: "text", text: contentText }],
+        attribution: "user",
+        timestamp: 1,
+      },
+    ]);
+
+    const cleanDir = mkdtempSync(path.join(tmpdir(), "omp-pstack-clean-skill-"));
+    try {
+      const cleanSkillFile = path.join(cleanDir, "SKILL.md");
+      writeFileSync(cleanSkillFile, "---\nname: poteto-mode\ndescription: test\n---\n\n# Clean\n\nFollow steps.\n");
+      const cleanHost = createMockHost();
+      pstackExtension(cleanHost.api, { skillFile: cleanSkillFile });
+      const cleanBuilt = await buildSkillPromptMessage(
+        { name: "poteto-mode", filePath: cleanSkillFile, baseDir: cleanDir },
+        { args: "fix the bug" },
+        "user",
+      );
+      await cleanHost.runCommand("poteto-mode", "fix the bug", cleanHost.makeCtx({ hasUI: true }));
+      expect(cleanHost.sentCustom[0]?.message.content).toBe(cleanBuilt.message);
+      expect(cleanHost.sentCustom[0]?.message.details).toEqual({
+        name: cleanBuilt.details.name,
+        path: cleanBuilt.details.path,
+        args: cleanBuilt.details.args,
+        lineCount: cleanBuilt.details.lineCount,
+      });
+    } finally {
+      rmSync(cleanDir, { recursive: true, force: true });
+    }
   });
 
   test("a failed one-shot reports the error without enabling sticky", async () => {
@@ -570,6 +654,80 @@ describe("pstackExtension", () => {
 
     expect(host.appended).toEqual([]);
     expect(host.notifications.at(-1)?.message).toBe("Task was not sent: aborted");
+  });
+
+  test("one-shot forwards attached images from input and clears stashed images afterward", async () => {
+    const host = createMockHost();
+    pstackExtension(host.api);
+    const ctx = host.makeCtx({ hasUI: true });
+    const skillFile = path.resolve("skills/poteto-mode/SKILL.md");
+    const built = await buildSkillPromptMessage(
+      { name: "poteto-mode", filePath: skillFile, baseDir: path.dirname(skillFile) },
+      { args: "fix this screenshot" },
+      "user",
+    );
+    const image: ImageAttachment = { type: "image", data: "abc", mimeType: "image/png" };
+
+    const dispatched = await dispatchLikeHost(host, "  /poteto-mode fix this screenshot  ", ctx, [image]);
+    expect(dispatched).toEqual({ kind: "command", text: "/poteto-mode fix this screenshot" });
+    expect(host.sentCustom).toHaveLength(1);
+    const parts = host.sentCustom[0]?.message.content as Array<{ type: string; text?: string }>;
+    expect(parts).toHaveLength(2);
+    expect(parts[0]?.type).toBe("text");
+    expect(stripOmpMultiBlankLines(parts[0]?.text ?? "")).toBe(built.message);
+    expect(parts[1]).toEqual(image);
+
+    await host.runCommand("poteto-mode", "fix this screenshot", ctx);
+    expect(host.sentCustom).toHaveLength(2);
+    expect(typeof host.sentCustom[1]?.message.content).toBe("string");
+    expect(stripOmpMultiBlankLines(host.sentCustom[1]?.message.content as string)).toBe(built.message);
+
+    await host.emit("input", { text: "/poteto-mode leaked task", images: [image] }, ctx);
+    await host.emit("input", { text: "unrelated message" }, ctx);
+    await host.runCommand("poteto-mode", "leaked task", ctx);
+    expect(host.sentCustom).toHaveLength(3);
+    expect(typeof host.sentCustom[2]?.message.content).toBe("string");
+
+    await host.emit("input", { text: "/poteto-mode session switch task", images: [image] }, ctx);
+    await host.emit("session_switch", { reason: "resume" }, ctx);
+    await host.runCommand("poteto-mode", "session switch task", ctx);
+    expect(host.sentCustom).toHaveLength(4);
+    expect(typeof host.sentCustom[3]?.message.content).toBe("string");
+  });
+
+  test("print and json modes or missing sendMessage fall back to awaiting sendUserMessage with skill prompt content", async () => {
+    const skillFile = path.resolve("skills/poteto-mode/SKILL.md");
+    const built = await buildSkillPromptMessage(
+      { name: "poteto-mode", filePath: skillFile, baseDir: path.dirname(skillFile) },
+      { args: "fix the bug" },
+      "user",
+    );
+
+    for (const mode of ["print", "json"] as const) {
+      const host = createMockHost();
+      pstackExtension(host.api);
+      const ctx = host.makeCtx({ hasUI: false, mode });
+
+      await host.runCommand("poteto-mode", "fix the bug", ctx);
+      expect(host.sentCustom).toEqual([]);
+      expect(host.sent).toHaveLength(1);
+      expect(typeof host.sent[0]?.content).toBe("string");
+      expect(stripOmpMultiBlankLines(host.sent[0]?.content as string)).toBe(built.message);
+      expect(host.sent[0]?.options).toBeUndefined();
+    }
+
+    const legacyHost = createMockHost([], { omitSendMessage: true });
+    pstackExtension(legacyHost.api);
+    const tuiCtx = legacyHost.makeCtx({ hasUI: true, mode: "tui" });
+    const image: ImageAttachment = { type: "image", data: "xyz", mimeType: "image/png" };
+    await dispatchLikeHost(legacyHost, "/poteto-mode fix the bug", tuiCtx, [image]);
+    expect(legacyHost.sent).toHaveLength(1);
+    const legacyParts = legacyHost.sent[0]?.content as Array<{ type: string; text?: string }>;
+    expect(legacyParts).toHaveLength(2);
+    expect(legacyParts[0]?.type).toBe("text");
+    expect(stripOmpMultiBlankLines(legacyParts[0]?.text ?? "")).toBe(built.message);
+    expect(legacyParts[1]).toEqual(image);
+    expect(legacyHost.sent[0]?.options).toBeUndefined();
   });
 
   test("command completions list the control words", () => {
@@ -626,41 +784,13 @@ describe("pstackExtension", () => {
     const ctx = host.makeCtx({ hasUI: true });
 
     expect(await host.emit("input", { text: "  /poteto-mode fix the bug" }, ctx)).toEqual({
-      text: "/skill:poteto-mode fix the bug",
+      text: "/poteto-mode fix the bug",
     });
     expect(await host.emit("input", { text: "  /poteto-mode sticky" }, ctx)).toEqual({
       text: "/poteto-mode sticky",
     });
     await host.runCommand("poteto-mode", "on", ctx);
     expect(host.appended).toEqual([{ customType: "pstack-mode", data: { enabled: true } }]);
-  });
-
-  test("falls back to the command handler when /skill:poteto-mode is not registered", async () => {
-    const host = createMockHost([], []);
-    pstackExtension(host.api);
-    const ctx = host.makeCtx({ hasUI: true });
-
-    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toBeUndefined();
-    const dispatched = await dispatchLikeHost(host, "/poteto-mode fix the bug", ctx);
-    expect(dispatched.kind).toBe("command");
-    expect(host.sent).toHaveLength(1);
-    expect(host.sent[0]?.content).toContain("Task:\nfix the bug");
-  });
-
-  test("routes to collision-namespaced skill command matching skillFile", async () => {
-    const host = createMockHost([], [
-      {
-        name: "skill:omp-pstack/poteto-mode",
-        source: "skill",
-        path: path.resolve("skills/poteto-mode/SKILL.md"),
-      },
-    ]);
-    pstackExtension(host.api);
-    const ctx = host.makeCtx({ hasUI: true });
-
-    expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toEqual({
-      text: "/skill:omp-pstack/poteto-mode fix the bug",
-    });
   });
 
   test("does not double-expand poteto-mode when sticky is already active", async () => {
@@ -674,6 +804,7 @@ describe("pstackExtension", () => {
     });
 
     await host.runCommand("poteto-mode", "follow up", ctx);
+    expect(host.sentCustom).toEqual([]);
     expect(host.sent).toEqual([{ content: "follow up", options: undefined }]);
   });
 
