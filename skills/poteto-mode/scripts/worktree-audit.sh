@@ -75,18 +75,104 @@ fi
 [ -s "$prs" ] || echo "[]" > "$prs"
 
 # OMP exposes PI_SESSION_FILE, whose directory may be a per-project bucket or a
-# shared --session-dir. Verify each candidate transcript's SessionHeader against
-# this repo's worktrees before searching bodies; without jq, inspect only $session_file.
+# shared --session-dir. Recent OMP versions write a fixed-width session_title
+# slot on line 1 followed by the session header on line 2 (older sessions have
+# the session header on line 1). Scan the first lines of each candidate
+# transcript for its SessionHeader and verify that cwd or additionalDirectories
+# points at a repo worktree (or an ancestor workspace containing one). Foreign
+# sibling projects stay excluded for privacy under shared --session-dir.
+extract_session_dirs() {
+	local tf="$1"
+	if command -v jq >/dev/null 2>&1; then
+		head -n 10 "$tf" 2>/dev/null | jq -Rnr '
+			first(inputs | fromjson? | select(type == "object" and .type == "session"))
+			| [(.cwd // empty), ((.additionalDirectories // [])[]?)]
+			| .[]
+		' 2>/dev/null
+		return $?
+	fi
+	if command -v node >/dev/null 2>&1; then
+		head -n 10 "$tf" 2>/dev/null | node -e '
+			const fs = require("node:fs");
+			const lines = fs.readFileSync(0, "utf8").split(/\r?\n/);
+			for (const line of lines) {
+				if (!line) continue;
+				try {
+					const obj = JSON.parse(line);
+					if (obj && typeof obj === "object" && obj.type === "session") {
+						if (typeof obj.cwd === "string" && obj.cwd) console.log(obj.cwd);
+						if (Array.isArray(obj.additionalDirectories)) {
+							for (const dir of obj.additionalDirectories) {
+								if (typeof dir === "string" && dir) console.log(dir);
+							}
+						}
+						break;
+					}
+				} catch {}
+			}
+		' 2>/dev/null
+		return $?
+	fi
+	head -n 10 "$tf" 2>/dev/null | awk '
+		function unescape_json(s,    out, i, ch, nx) {
+			out = ""
+			for (i = 1; i <= length(s); i++) {
+				ch = substr(s, i, 1)
+				if (ch == "\\" && i < length(s)) {
+					nx = substr(s, i + 1, 1)
+					if (nx == "\"" || nx == "\\" || nx == "/") { out = out nx; i++; continue }
+					if (nx == "t") { out = out "\t"; i++; continue }
+				}
+				out = out ch
+			}
+			return out
+		}
+		function print_json_strings(rest,    pos, raw, i, ch, prev, endpos) {
+			pos = 1
+			while (match(substr(rest, pos), /"/)) {
+				pos += RSTART
+				raw = ""
+				prev = ""
+				endpos = 0
+				for (i = pos; i <= length(rest); i++) {
+					ch = substr(rest, i, 1)
+					if (ch == "\"" && prev != "\\") {
+						endpos = i
+						break
+					}
+					raw = raw ch
+					if (ch == "\\" && prev == "\\") prev = ""
+					else prev = ch
+				}
+				if (endpos == 0) break
+				if (raw != "") print unescape_json(raw)
+				pos = endpos + 1
+			}
+		}
+		/"type"[[:space:]]*:[[:space:]]*"session"/ {
+			line = $0
+			if (match(line, /"cwd"[[:space:]]*:[[:space:]]*"([^"\\]|\\.)*"/)) {
+				cwd_seg = substr(line, RSTART, RLENGTH)
+				sub(/^"cwd"[[:space:]]*:[[:space:]]*"/, "", cwd_seg)
+				sub(/"$/, "", cwd_seg)
+				if (cwd_seg != "") print unescape_json(cwd_seg)
+			}
+			if (match(line, /"additionalDirectories"[[:space:]]*:[[:space:]]*\[[^\]]*\]/)) {
+				arr_seg = substr(line, RSTART, RLENGTH)
+				sub(/^"additionalDirectories"[[:space:]]*:[[:space:]]*\[/, "", arr_seg)
+				sub(/\]$/, "", arr_seg)
+				print_json_strings(arr_seg)
+			}
+			exit
+		}
+	' 2>/dev/null
+}
+
 transcript_belongs_to_repo() {
 	local tf="$1"
 	[ "$tf" = "$session_file" ] && return 0
-	command -v jq >/dev/null 2>&1 || return 1
 	local dirs d resolved r
-	dirs=$(head -n 1 "$tf" 2>/dev/null | jq -r '
-		select(.type == "session")
-		| [(.cwd // empty), ((.additionalDirectories // [])[]?)]
-		| .[]
-	' 2>/dev/null) || return 1
+	dirs=$(extract_session_dirs "$tf") || return 1
 	[ -n "$dirs" ] || return 1
 	while IFS= read -r d; do
 		[ -n "$d" ] || continue
@@ -94,10 +180,14 @@ transcript_belongs_to_repo() {
 		if [ -d "$d" ]; then
 			resolved=$(cd "$d" 2>/dev/null && pwd -P) || resolved="$d"
 		fi
-		d="${d%/}"
-		resolved="${resolved%/}"
+		[ "$d" != "/" ] && d="${d%/}"
+		[ "$resolved" != "/" ] && resolved="${resolved%/}"
 		for r in "${repo_roots[@]}"; do
 			if [ "$d" = "$r" ] || [[ "$d" == "$r/"* ]] || [ "$resolved" = "$r" ] || [[ "$resolved" == "$r/"* ]]; then
+				return 0
+			fi
+			if { [ -n "$d" ] && [ "$d" != "/" ] && [[ "$r" == "$d/"* ]]; } \
+				|| { [ -n "$resolved" ] && [ "$resolved" != "/" ] && [[ "$r" == "$resolved/"* ]]; }; then
 				return 0
 			fi
 		done
@@ -109,7 +199,7 @@ session_file="${PI_SESSION_FILE:-}"
 repo_transcripts=()
 if [ -n "$session_file" ] && [ -f "$session_file" ]; then
 	sessions_dir=$(dirname "$session_file")
-	if command -v jq >/dev/null 2>&1 && [ -d "$sessions_dir" ]; then
+	if [ -d "$sessions_dir" ]; then
 		while IFS= read -r tf; do
 			[ -n "$tf" ] || continue
 			if transcript_belongs_to_repo "$tf"; then

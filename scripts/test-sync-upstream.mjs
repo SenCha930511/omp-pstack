@@ -491,3 +491,132 @@ test("continuing an open chore/upstream-sync PR branch preserves maintainer comm
   const finalCfg = JSON.parse(fs.readFileSync(path.join(verify, ".github", "upstream-sync.json"), "utf8"));
   assert.equal(finalCfg.cursor.lastSyncedSha, sha2);
 });
+
+test("multiple blocked skills stay tracked after partial --adapt-only and missing adapted skills are flagged", () => {
+  const { root, cursorDir, changedPath } = createFixture({
+    localSkills: {
+      swarm: { "SKILL.md": "local swarm\n" },
+    },
+    upstreamSkills: {
+      "blocked-a": { "SKILL.md": "uses ~/.cursor/rules\n" },
+      "blocked-b": { "SKILL.md": "uses subagent_type\n" },
+      swarm: { "SKILL.md": "upstream swarm\n" },
+    },
+    changedFiles: [
+      "A\tpstack/skills/blocked-a/SKILL.md",
+      "A\tpstack/skills/blocked-b/SKILL.md",
+    ],
+  });
+
+  const sha = "a".repeat(40);
+  const first = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: sha,
+    cursorChangedFile: changedPath,
+  });
+  assert.equal(first.summary.mode, "issue");
+  assert.deepEqual(
+    first.summary.blockedCursorSkills.map((item) => item.name),
+    ["blocked-a", "blocked-b"],
+  );
+  assert.ok(first.report.includes("--adapt-only --adapt <skill>"));
+  assert.ok(first.report.includes(`npm run sync:ack -- --cursor ${sha} --adapt blocked-a --adapt blocked-b`));
+
+  // Port blocked-a locally and record it with --adapt-only; blocked-b is still unported.
+  fs.mkdirSync(path.join(root, "skills", "blocked-a"), { recursive: true });
+  fs.writeFileSync(path.join(root, "skills", "blocked-a", "SKILL.md"), "---\nname: blocked-a\ndescription: a\n---\n");
+  ackUpstream({ root, adapt: ["blocked-a"], adaptOnly: true });
+
+  const second = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: sha,
+    cursorChangedFile: changedPath,
+  });
+  assert.equal(second.summary.mode, "issue");
+  assert.deepEqual(
+    second.summary.blockedCursorSkills.map((item) => item.name),
+    ["blocked-b"],
+  );
+  assert.deepEqual(second.summary.manualAdaptedSkills, [
+    { name: "blocked-a", files: ["pstack/skills/blocked-a/SKILL.md"] },
+  ]);
+
+  // If a skill in adaptedSkills is missing locally, do not silently skip it.
+  fs.rmSync(path.join(root, "skills", "swarm"), { recursive: true, force: true });
+  const missingAdapted = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: sha,
+  });
+  assert.ok(
+    missingAdapted.summary.manualAdaptedSkills.some(
+      (item) => item.name === "swarm" && item.files.some((f) => f.includes("missing locally")),
+    ),
+  );
+});
+
+test("scans all non-binary text files regardless of extension while skipping binary assets", () => {
+  const { root, cursorDir, changedPath } = createFixture({
+    upstreamSkills: {
+      "bad-tla": {
+        "SKILL.md": "clean docs\n",
+        "specs/Model.tla": "\\* mentions ~/.cursor/rules\n",
+      },
+      "clean-with-png": {
+        "SKILL.md": "clean docs\n",
+        "assets/diagram.png": Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01]),
+      },
+    },
+    changedFiles: [
+      "A\tpstack/skills/bad-tla/SKILL.md",
+      "A\tpstack/skills/clean-with-png/SKILL.md",
+    ],
+  });
+
+  const { summary } = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: "c".repeat(40),
+    cursorChangedFile: changedPath,
+  });
+
+  assert.equal(summary.mode, "pr");
+  assert.deepEqual(summary.addedSkills, ["clean-with-png"]);
+  assert.deepEqual(summary.blockedCursorSkills, [
+    { name: "bad-tla", matches: [{ file: "specs/Model.tla", pattern: "~/.cursor/" }] },
+  ]);
+});
+
+test("surfaces --pi-mimir-error-file without failing sync or advancing piMimir.lastCheckedSha", () => {
+  const { root, cursorDir, changedPath, piCommitsPath, dir } = createFixture({
+    localSkills: { tdd: { "SKILL.md": "old\n" } },
+    upstreamSkills: { tdd: { "SKILL.md": "new\n" } },
+    changedFiles: ["M\tpstack/skills/tdd/SKILL.md"],
+  });
+  const piErrorPath = path.join(dir, "pi-error.txt");
+  fs.writeFileSync(piErrorPath, "base commit 2222222 is not an ancestor; reset piMimir.lastCheckedSha\n");
+  const piHeadSha = "d".repeat(40);
+  const cursorHeadSha = "e".repeat(40);
+
+  const { summary, report } = syncUpstream({
+    root,
+    cursorDir,
+    cursorSha: cursorHeadSha,
+    cursorChangedFile: changedPath,
+    piMimirSha: piHeadSha,
+    piMimirCommitsFile: piCommitsPath,
+    piMimirErrorFile: piErrorPath,
+  });
+
+  assert.equal(summary.mode, "pr");
+  assert.equal(summary.cursorShaAdvanced, true);
+  assert.match(summary.piMimirError ?? "", /piMimir\.lastCheckedSha/);
+  assert.ok(report.includes("range check failed"));
+  assert.ok(report.includes(`--cursor ${cursorHeadSha} --pi-mimir ${piHeadSha}`));
+
+  const cfg = JSON.parse(fs.readFileSync(path.join(root, ".github", "upstream-sync.json"), "utf8"));
+  assert.equal(cfg.cursor.lastSyncedSha, cursorHeadSha);
+  assert.equal(cfg.piMimir.lastCheckedSha, "2222222222222222222222222222222222222222");
+});

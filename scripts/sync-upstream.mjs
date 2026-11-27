@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const USAGE =
-  "Usage: node scripts/sync-upstream.mjs --cursor-dir <dir> --cursor-sha <sha> [--root <dir>] [--cursor-changed-file <file>] [--cursor-commits-file <file>] [--pi-mimir-sha <sha>] [--pi-mimir-commits-file <file>] [--report-output <file>] [--summary-json <file>] [--dry-run]";
+  "Usage: node scripts/sync-upstream.mjs --cursor-dir <dir> --cursor-sha <sha> [--root <dir>] [--cursor-changed-file <file>] [--cursor-commits-file <file>] [--pi-mimir-sha <sha>] [--pi-mimir-commits-file <file>] [--pi-mimir-error-file <file>] [--report-output <file>] [--summary-json <file>] [--dry-run]";
 
 const FORBIDDEN_PATTERNS = [
   { label: "~/.cursor/", regex: /~\/\.cursor\// },
@@ -29,6 +29,7 @@ export function parseArgs(argv) {
     cursorCommitsFile: undefined,
     piMimirSha: undefined,
     piMimirCommitsFile: undefined,
+    piMimirErrorFile: undefined,
     reportOutput: undefined,
     summaryJson: undefined,
     dryRun: false,
@@ -42,6 +43,7 @@ export function parseArgs(argv) {
     "--cursor-commits-file",
     "--pi-mimir-sha",
     "--pi-mimir-commits-file",
+    "--pi-mimir-error-file",
     "--report-output",
     "--summary-json",
   ]);
@@ -68,6 +70,7 @@ export function parseArgs(argv) {
     else if (argument === "--cursor-commits-file") options.cursorCommitsFile = path.resolve(value);
     else if (argument === "--pi-mimir-sha") options.piMimirSha = value.trim();
     else if (argument === "--pi-mimir-commits-file") options.piMimirCommitsFile = path.resolve(value);
+    else if (argument === "--pi-mimir-error-file") options.piMimirErrorFile = path.resolve(value);
     else if (argument === "--report-output") options.reportOutput = path.resolve(value);
     else options.summaryJson = path.resolve(value);
   }
@@ -103,20 +106,30 @@ function collectFiles(dir, base = dir) {
   return results.sort((a, b) => (a.relative < b.relative ? -1 : a.relative > b.relative ? 1 : 0));
 }
 
-const SCANNABLE_EXTENSIONS = new Set([
-  ".md",
-  ".ts",
-  ".mts",
-  ".js",
-  ".mjs",
-  ".cjs",
-  ".sh",
-  ".bash",
-  ".zsh",
-  ".json",
-  ".yaml",
-  ".yml",
-  ".txt",
+const BINARY_EXTENSIONS = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".ico",
+  ".pdf",
+  ".mp4",
+  ".mov",
+  ".webm",
+  ".zip",
+  ".tar",
+  ".gz",
+  ".bz2",
+  ".xz",
+  ".7z",
+  ".wasm",
+  ".jar",
+  ".class",
+  ".ttf",
+  ".otf",
+  ".woff",
+  ".woff2",
 ]);
 
 function isExecutable(filePath) {
@@ -127,11 +140,9 @@ function isExecutable(filePath) {
 function shouldScanFile(file) {
   if (file.relative.startsWith("scripts/test/") || file.relative.includes("/test/")) return false;
   const ext = path.extname(file.relative).toLowerCase();
-  if (SCANNABLE_EXTENSIONS.has(ext)) return true;
-  if (ext !== "") return false;
+  if (BINARY_EXTENSIONS.has(ext)) return false;
   const buf = fs.readFileSync(file.fullPath);
-  if (buf.includes(0)) return false;
-  return buf.length >= 2 && buf[0] === 0x23 && buf[1] === 0x21;
+  return !buf.subarray(0, 8192).includes(0);
 }
 
 function directoriesMatch(dirA, dirB) {
@@ -263,7 +274,7 @@ function buildReport(config, summary, cursorCommits) {
     summary.blockedCursorSkills.length > 0 ||
     summary.removedUpstreamSkills.length > 0 ||
     summary.manualOtherFiles.length > 0;
-  const hasManual = hasManualCursorItems || summary.piMimirCommits.length > 0;
+  const hasManual = hasManualCursorItems || summary.piMimirCommits.length > 0 || Boolean(summary.piMimirError);
 
   if (hasManual) {
     lines.push("### Manual Porting Required", "");
@@ -280,10 +291,12 @@ function buildReport(config, summary, cursorCommits) {
         const detail = item.matches.map((m) => `\`${m.file}\` (\`${m.pattern}\`)`).join(", ");
         lines.push(`- \`${item.name}\`: ${detail}`);
       }
+      const adaptFlags = summary.blockedCursorSkills.map((item) => `--adapt ${item.name}`).join(" ");
       lines.push(
-        `  - After porting a blocked skill manually to omp, pass \`--adapt <skill>\` to \`npm run sync:ack -- --cursor ${summary.cursorSha} --adapt <skill>\` so future syncs preserve it.`,
+        "  - To record a partial port before finishing everything, run `npm run sync:ack -- --adapt-only --adapt <skill>` (updates `adaptedSkills` without advancing `cursor.lastSyncedSha`).",
+        `  - Once all manual items are ported, include \`${adaptFlags}\` in the global \`sync:ack\` command below.`,
+        "",
       );
-      lines.push("");
     }
     if (summary.removedUpstreamSkills.length > 0) {
       lines.push(`**Skills removed upstream (kept locally):** ${summary.removedUpstreamSkills.map((s) => `\`${s}\``).join(", ")}`, "");
@@ -299,15 +312,30 @@ function buildReport(config, summary, cursorCommits) {
       const piRepo = config.piMimir?.repo ?? "casualjim/pi-mimir";
       lines.push(`**\`${piRepo}\` extension/agent updates:**`, "", formatCommitList(summary.piMimirCommits, piRepo), "");
     }
+    if (summary.piMimirError) {
+      const piRepo = config.piMimir?.repo ?? "casualjim/pi-mimir";
+      const headNote = summary.piMimirSha ? ` at \`${summary.piMimirSha.slice(0, 7)}\`` : "";
+      lines.push(
+        `**\`${piRepo}\` range check failed (review manually; \`piMimir.lastCheckedSha\` was not advanced):**`,
+        "",
+        `- Error${headNote}: \`${summary.piMimirError}\``,
+        "",
+      );
+    }
   }
 
   if (summary.mode === "issue" || (summary.mode === "pr" && hasManual)) {
-    const piMimirArg = summary.piMimirCommits[0]?.sha ? ` --pi-mimir ${summary.piMimirCommits[0].sha}` : "";
-    const suffix = summary.mode === "issue" ? " and close this issue." : " after porting the manual items above.";
+    const adaptFlags =
+      summary.blockedCursorSkills.length > 0
+        ? summary.blockedCursorSkills.map((item) => ` --adapt ${item.name}`).join("")
+        : "";
+    const piMimirTargetSha = summary.piMimirCommits[0]?.sha ?? (summary.piMimirError ? summary.piMimirSha : undefined);
+    const piMimirArg = piMimirTargetSha ? ` --pi-mimir ${piMimirTargetSha}` : "";
+    const suffix = summary.mode === "issue" ? " and close this issue." : " after porting all manual items above.";
     lines.push(
       "### After porting",
       "",
-      `Run \`npm run sync:ack -- --cursor ${summary.cursorSha}${piMimirArg}\`${suffix}`,
+      `Run \`npm run sync:ack -- --cursor ${summary.cursorSha}${piMimirArg}${adaptFlags}\`${suffix}`,
       "",
     );
   }
@@ -346,6 +374,10 @@ export function syncUpstream(options) {
   const hasChangedFile = Boolean(options.cursorChangedFile && fs.existsSync(options.cursorChangedFile));
   const cursorCommits = readJsonOptional(options.cursorCommitsFile, []);
   const piMimirCommits = readJsonOptional(options.piMimirCommitsFile, []);
+  const piMimirError =
+    options.piMimirErrorFile && fs.existsSync(options.piMimirErrorFile)
+      ? fs.readFileSync(options.piMimirErrorFile, "utf8").trim() || undefined
+      : undefined;
 
   const upstreamSkillNames = listDirectories(upstreamSkillsDir);
   const upstreamSkillSet = new Set(upstreamSkillNames);
@@ -391,16 +423,21 @@ export function syncUpstream(options) {
     if (excluded.has(name)) continue;
     const upstreamSkill = path.join(upstreamSkillsDir, name);
     const localSkill = path.join(localSkillsDir, name);
+    const existsLocally = fs.existsSync(localSkill);
 
     if (adapted.has(name)) {
       const matching = skillChangedFiles(name);
-      if (matching.length > 0) {
+      if (!existsLocally) {
+        manualAdaptedSkills.push({
+          name,
+          files: matching.length > 0 ? matching : [`${skillsPrefix}${name} (missing locally)`],
+        });
+      } else if (matching.length > 0) {
         manualAdaptedSkills.push({ name, files: matching });
       }
       continue;
     }
 
-    const existsLocally = fs.existsSync(localSkill);
     if (existsLocally && directoriesMatch(upstreamSkill, localSkill)) {
       continue;
     }
@@ -437,7 +474,7 @@ export function syncUpstream(options) {
     blockedCursorSkills.length > 0 ||
     removedUpstreamSkills.length > 0 ||
     manualOtherFiles.length > 0;
-  const hasManualItems = hasManualCursorItems || piMimirCommits.length > 0;
+  const hasManualItems = hasManualCursorItems || piMimirCommits.length > 0 || Boolean(piMimirError);
 
   const mode = hasAutoChanges ? "pr" : hasManualItems ? "issue" : "none";
 
@@ -446,6 +483,8 @@ export function syncUpstream(options) {
     cursorSha: options.cursorSha,
     shortSha: options.cursorSha.slice(0, 7),
     cursorShaAdvanced: mode === "pr" && !hasManualCursorItems && !options.dryRun,
+    piMimirSha: options.piMimirSha ?? null,
+    piMimirError: piMimirError ?? null,
     addedSkills,
     updatedSkills,
     manualAdaptedSkills,
@@ -463,7 +502,7 @@ export function syncUpstream(options) {
       config.cursor.lastSyncedSha = options.cursorSha;
       configChanged = true;
     }
-    if (options.piMimirSha && piMimirCommits.length === 0 && config.piMimir) {
+    if (options.piMimirSha && piMimirCommits.length === 0 && !piMimirError && config.piMimir) {
       config.piMimir.lastCheckedSha = options.piMimirSha;
       configChanged = true;
     }

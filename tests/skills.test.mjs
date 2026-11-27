@@ -231,7 +231,7 @@ test("bundled runtime scripts keep executable bits on POSIX", { skip: process.pl
   }
 });
 
-test("worktree-audit.sh isolates sessions per repo in a shared session dir and works without rg", { skip: process.platform === "win32" }, () => {
+test("worktree-audit.sh handles title-first headers, shared session dir, ancestor cwd, and missing rg/jq/node", { skip: process.platform === "win32" }, () => {
   const dir = mkdtempSync(join(tmpdir(), "omp-pstack-wt-audit-"));
   const cleanBins = [];
   try {
@@ -251,15 +251,31 @@ test("worktree-audit.sh isolates sessions per repo in a shared session dir and w
     git(["update-ref", "refs/remotes/origin/main", "HEAD"]);
     git(["worktree", "add", "-b", "feat/x", wt]);
 
+    const realDir = dirname(git(["rev-parse", "--show-toplevel"], repo));
     const realRepo = git(["rev-parse", "--show-toplevel"], repo);
     const realWt = git(["rev-parse", "--show-toplevel"], wt);
+    const titleSlot = (title) =>
+      `${JSON.stringify({
+        type: "session_title",
+        v: 1,
+        title,
+        updatedAt: "2026-11-27T00:00:00.000Z",
+        pad: "   ",
+      })}\n`;
+
     const activeSession = join(sessionsDir, "active.jsonl");
     const foreignSession = join(sessionsDir, "foreign.jsonl");
     const siblingSession = join(sessionsDir, "sibling.jsonl");
-    writeFileSync(activeSession, `${JSON.stringify({ type: "session", id: "active", cwd: realRepo })}\n`);
+    const ancestorSession = join(sessionsDir, "ancestor.jsonl");
+    const legacySession = join(sessionsDir, "legacy.jsonl");
+
+    writeFileSync(
+      activeSession,
+      `${titleSlot("active")}${JSON.stringify({ type: "session", version: 3, id: "active", cwd: realRepo })}\n`,
+    );
     writeFileSync(
       foreignSession,
-      `${JSON.stringify({ type: "session", id: "foreign", cwd: "/tmp/unrelated-project" })}\n{"cwd":"${realWt}/src"}\n`,
+      `${titleSlot("foreign")}${JSON.stringify({ type: "session", version: 3, id: "foreign", cwd: "/tmp/unrelated-project" })}\n{"cwd":"${realWt}/src"}\n`,
     );
 
     const stubBin = join(dir, "stub-bin");
@@ -268,35 +284,40 @@ test("worktree-audit.sh isolates sessions per repo in a shared session dir and w
     writeFileSync(fakeGh, "#!/bin/sh\necho '[]'\n");
     chmodSync(fakeGh, 0o755);
 
-    const pathParts = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
-    const filteredParts = [stubBin];
-    for (const part of pathParts) {
-      if (!existsSync(part)) continue;
-      if (existsSync(join(part, "rg"))) {
-        const cleanDir = mkdtempSync(join(dir, "no-rg-"));
-        cleanBins.push(cleanDir);
-        for (const entry of readdirSync(part)) {
-          if (entry === "rg") continue;
-          symlinkSync(join(part, entry), join(cleanDir, entry));
+    const buildFilteredPath = (excludedCommands) => {
+      const pathParts = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
+      const filteredParts = [stubBin];
+      for (const part of pathParts) {
+        if (!existsSync(part)) continue;
+        if (excludedCommands.some((cmd) => existsSync(join(part, cmd)))) {
+          const cleanDir = mkdtempSync(join(dir, "clean-bin-"));
+          cleanBins.push(cleanDir);
+          for (const entry of readdirSync(part)) {
+            if (excludedCommands.includes(entry)) continue;
+            symlinkSync(join(part, entry), join(cleanDir, entry));
+          }
+          filteredParts.push(cleanDir);
+        } else {
+          filteredParts.push(part);
         }
-        filteredParts.push(cleanDir);
-      } else {
-        filteredParts.push(part);
       }
-    }
+      return filteredParts.join(delimiter);
+    };
 
+    const noRgPath = buildFilteredPath(["rg"]);
+    const noToolsPath = buildFilteredPath(["rg", "jq", "node"]);
     const script = join(root, "skills", "poteto-mode", "scripts", "worktree-audit.sh");
-    const runAudit = () =>
+    const runAudit = (envPath) =>
       execFileSync("bash", [script, "-b", "origin/main", repo], {
         env: {
           ...process.env,
-          PATH: filteredParts.join(delimiter),
+          PATH: envPath,
           PI_SESSION_FILE: activeSession,
         },
         encoding: "utf8",
       });
 
-    const isolatedOutput = runAudit();
+    const isolatedOutput = runAudit(noRgPath);
     const isolatedRow = isolatedOutput.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
     assert.ok(isolatedRow, `expected row for ${realWt} in:\n${isolatedOutput}`);
     const isolatedCols = isolatedRow.split("\t");
@@ -305,14 +326,42 @@ test("worktree-audit.sh isolates sessions per repo in a shared session dir and w
 
     writeFileSync(
       siblingSession,
-      `${JSON.stringify({ type: "session", id: "sibling", cwd: realWt })}\n{"tool":"bash","cwd":"${realWt}/src"}\n`,
+      `${titleSlot("sibling")}${JSON.stringify({ type: "session", version: 3, id: "sibling", cwd: realWt })}\n{"tool":"bash","cwd":"${realWt}/src"}\n`,
     );
-    const sameRepoOutput = runAudit();
+    const sameRepoOutput = runAudit(noRgPath);
     const row = sameRepoOutput.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
     assert.ok(row, `expected row for ${realWt} in:\n${sameRepoOutput}`);
     const cols = row.split("\t");
     assert.match(cols[6] ?? "", /^\d{4}-\d{2}-\d{2}$/, `expected LAST_CHAT date in row: ${row}`);
     assert.equal(cols[7], "verify-recent-chat", `expected verify-recent-chat bucket in row: ${row}`);
+
+    const noToolsOutput = runAudit(noToolsPath);
+    const noToolsRow = noToolsOutput.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.ok(noToolsRow, `expected row without rg/jq/node in:\n${noToolsOutput}`);
+    assert.equal(noToolsRow.split("\t")[7], "verify-recent-chat");
+
+    rmSync(siblingSession);
+    writeFileSync(
+      ancestorSession,
+      `${titleSlot("workspace")}${JSON.stringify({ type: "session", version: 3, id: "ancestor", cwd: realDir })}\n{"tool":"bash","cwd":"${realWt}/src"}\n`,
+    );
+    const ancestorOutput = runAudit(noRgPath);
+    const ancestorRow = ancestorOutput.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.equal(ancestorRow?.split("\t")[7], "verify-recent-chat", `ancestor cwd session should be scanned: ${ancestorRow}`);
+
+    const ancestorNoTools = runAudit(noToolsPath);
+    assert.equal(
+      ancestorNoTools.split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`))?.split("\t")[7],
+      "verify-recent-chat",
+    );
+
+    rmSync(ancestorSession);
+    writeFileSync(
+      legacySession,
+      `${JSON.stringify({ type: "session", id: "legacy", cwd: realWt })}\n{"tool":"bash","cwd":"${realWt}/src"}\n`,
+    );
+    const legacyRow = runAudit(noToolsPath).split(/\r?\n/).find((line) => line.endsWith(`\t${realWt}`));
+    assert.equal(legacyRow?.split("\t")[7], "verify-recent-chat", `legacy line-1 header must remain supported: ${legacyRow}`);
   } finally {
     for (const d of cleanBins) rmSync(d, { recursive: true, force: true });
     rmSync(dir, { recursive: true, force: true });

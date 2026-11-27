@@ -198,4 +198,7 @@ and [`casualjim/pi-mimir`](https://github.com/casualjim/pi-mimir) using the
 manifest in [`.github/upstream-sync.json`](.github/upstream-sync.json). Unadapted
 and new skills without Cursor-only syntax are synced automatically into a PR;
 changes to adapted skills, blocked skills, or extension/agent files are flagged
-for manual porting.
+for manual porting. After porting, record the synced SHAs (and any newly adapted
+blocked skills) with `npm run sync:ack -- --cursor <sha> [--pi-mimir <sha>] [--adapt <skill> ...]`,
+or record individual adapted skills before finishing everything with
+`npm run sync:ack -- --adapt-only --adapt <skill>`.

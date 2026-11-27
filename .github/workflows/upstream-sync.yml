@@ -32,16 +32,15 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
-
       - name: Prepare sync branch
         env:
           GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_TOKEN || github.token }}
         run: |
           set -euo pipefail
           up_dir="$RUNNER_TEMP/upstream"
-          mkdir -p "$up_dir"
+          scripts_dir="$RUNNER_TEMP/sync-scripts"
+          mkdir -p "$up_dir" "$scripts_dir"
+          cp scripts/upstream-range.mjs scripts/sync-upstream.mjs "$scripts_dir/"
 
           branch="chore/upstream-sync"
           existing_pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --state open --json number --jq '.[0].number // empty')
@@ -61,10 +60,14 @@ jobs:
             printf 'false\n' > "$up_dir/using-open-pr.txt"
           fi
 
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+
       - name: Fetch upstream commits and files
         run: |
           set -euo pipefail
           up_dir="$RUNNER_TEMP/upstream"
+          scripts_dir="$RUNNER_TEMP/sync-scripts"
           mkdir -p "$up_dir"
 
           cursor_repo=$(node -p 'require("./.github/upstream-sync.json").cursor.repo')
@@ -78,24 +81,36 @@ jobs:
           cursor_head=$(git -C "$up_dir/cursor-plugins" rev-parse HEAD)
           printf '%s\n' "$cursor_head" > "$up_dir/cursor-sha.txt"
 
-          node scripts/upstream-range.mjs --repo-dir "$up_dir/cursor-plugins" --base "$cursor_base" --head "$cursor_head" --path "$cursor_path" --commits-output "$up_dir/cursor-commits.json" --changed-output "$up_dir/cursor-changed.txt"
+          node "$scripts_dir/upstream-range.mjs" --repo-dir "$up_dir/cursor-plugins" --base "$cursor_base" --head "$cursor_head" --path "$cursor_path" --base-label "cursor.lastSyncedSha" --commits-output "$up_dir/cursor-commits.json" --changed-output "$up_dir/cursor-changed.txt"
 
-          pi_repo=$(node -p 'require("./.github/upstream-sync.json").piMimir.repo')
-          pi_branch=$(node -p 'require("./.github/upstream-sync.json").piMimir.branch')
-          pi_base=$(node -p 'require("./.github/upstream-sync.json").piMimir.lastCheckedSha')
+          : > "$up_dir/pi-mimir-sha.txt"
+          : > "$up_dir/pi-mimir-error.txt"
+          printf '[]\n' > "$up_dir/pi-mimir-commits.json"
+          : > "$up_dir/pi-mimir-changed.txt"
 
-          git clone --branch "$pi_branch" --single-branch --filter=blob:none --no-checkout \
-            "https://github.com/${pi_repo}.git" "$up_dir/pi-mimir"
-          pi_head=$(git -C "$up_dir/pi-mimir" rev-parse HEAD)
-          printf '%s\n' "$pi_head" > "$up_dir/pi-mimir-sha.txt"
+          has_pi_mimir=$(node -p 'Boolean(require("./.github/upstream-sync.json").piMimir)')
+          if [ "$has_pi_mimir" = "true" ]; then
+            pi_repo=$(node -p 'require("./.github/upstream-sync.json").piMimir.repo')
+            pi_branch=$(node -p 'require("./.github/upstream-sync.json").piMimir.branch')
+            pi_base=$(node -p 'require("./.github/upstream-sync.json").piMimir.lastCheckedSha')
 
-          pi_path_args=()
-          while IFS= read -r watch_path; do
-            [ -z "$watch_path" ] && continue
-            pi_path_args+=(--path "$watch_path")
-          done < <(node -e 'for (const p of require("./.github/upstream-sync.json").piMimir.watchPaths) console.log(p);')
+            git clone --branch "$pi_branch" --single-branch --filter=blob:none --no-checkout \
+              "https://github.com/${pi_repo}.git" "$up_dir/pi-mimir"
+            pi_head=$(git -C "$up_dir/pi-mimir" rev-parse HEAD)
+            printf '%s\n' "$pi_head" > "$up_dir/pi-mimir-sha.txt"
 
-          node scripts/upstream-range.mjs --repo-dir "$up_dir/pi-mimir" --base "$pi_base" --head "$pi_head" "${pi_path_args[@]}" --commits-output "$up_dir/pi-mimir-commits.json" --changed-output "$up_dir/pi-mimir-changed.txt"
+            pi_path_args=()
+            while IFS= read -r watch_path; do
+              [ -z "$watch_path" ] && continue
+              pi_path_args+=(--path "$watch_path")
+            done < <(node -e 'for (const p of require("./.github/upstream-sync.json").piMimir.watchPaths) console.log(p);')
+
+            if ! err_msg=$(node "$scripts_dir/upstream-range.mjs" --repo-dir "$up_dir/pi-mimir" --base "$pi_base" --head "$pi_head" "${pi_path_args[@]}" --base-label "piMimir.lastCheckedSha" --commits-output "$up_dir/pi-mimir-commits.json" --changed-output "$up_dir/pi-mimir-changed.txt" 2>&1); then
+              printf '%s\n' "$err_msg" | tail -n 1 > "$up_dir/pi-mimir-error.txt"
+              printf '[]\n' > "$up_dir/pi-mimir-commits.json"
+              : > "$up_dir/pi-mimir-changed.txt"
+            fi
+          fi
 
       - name: Run upstream sync
         env:
@@ -103,22 +118,29 @@ jobs:
         run: |
           set -euo pipefail
           up_dir="$RUNNER_TEMP/upstream"
+          scripts_dir="$RUNNER_TEMP/sync-scripts"
           cursor_sha=$(tr -d '[:space:]' < "$up_dir/cursor-sha.txt")
           pi_sha=$(tr -d '[:space:]' < "$up_dir/pi-mimir-sha.txt")
           args=(
+            --root "$GITHUB_WORKSPACE"
             --cursor-dir "$up_dir/cursor-plugins"
             --cursor-sha "$cursor_sha"
             --cursor-changed-file "$up_dir/cursor-changed.txt"
             --cursor-commits-file "$up_dir/cursor-commits.json"
-            --pi-mimir-sha "$pi_sha"
             --pi-mimir-commits-file "$up_dir/pi-mimir-commits.json"
             --report-output "$up_dir/report.md"
             --summary-json "$up_dir/summary.json"
           )
+          if [ -n "$pi_sha" ]; then
+            args+=(--pi-mimir-sha "$pi_sha")
+          fi
+          if [ -s "$up_dir/pi-mimir-error.txt" ]; then
+            args+=(--pi-mimir-error-file "$up_dir/pi-mimir-error.txt")
+          fi
           if [ "$DRY_RUN" = "true" ]; then
             args+=(--dry-run)
           fi
-          node scripts/sync-upstream.mjs "${args[@]}"
+          node "$scripts_dir/sync-upstream.mjs" "${args[@]}"
           cat "$up_dir/report.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify synced repository
@@ -198,15 +220,13 @@ jobs:
               fi
               ;;
             none)
-              if [ "$using_open_pr" = "true" ]; then
-                echo "Open sync PR #${existing_pr} is already up to date with upstream."
-                exit 0
-              fi
               existing_json=$(sync_issue_json)
               if [ -n "$existing_json" ]; then
                 issue_num=$(printf '%s' "$existing_json" | node -pe 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).number')
                 gh issue close "$issue_num" --repo "$GITHUB_REPOSITORY" \
                   --comment "Upstream pstack is up to date at \`${short_sha}\`. Closing this tracking issue."
+              elif [ "$using_open_pr" = "true" ]; then
+                echo "Open sync PR #${existing_pr} is already up to date with upstream."
               else
                 echo "Already up to date with upstream."
               fi

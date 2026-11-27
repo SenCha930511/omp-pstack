@@ -94,6 +94,10 @@ test("CLI writes the config and exits 0", () => {
 
 test("records --adapt skills deduplicated and sorted", () => {
   const root = createRoot();
+  for (const name of ["alpha", "zeta"]) {
+    fs.mkdirSync(path.join(root, "skills", name), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", name, "SKILL.md"), `---\nname: ${name}\ndescription: test\n---\n`);
+  }
   const result = spawnSync(
     process.execPath,
     [SCRIPT_PATH, "--root", root, "--cursor", NEW_CURSOR_SHA, "--adapt", "zeta", "--adapt", "alpha", "--adapt", "zeta"],
@@ -102,4 +106,41 @@ test("records --adapt skills deduplicated and sorted", () => {
   assert.equal(result.status, 0, result.stderr);
   const config = readConfig(root);
   assert.deepEqual(config.cursor.adaptedSkills, ["alpha", "zeta"]);
+});
+
+test("--adapt validates local skill existence and --adapt-only keeps SHAs unchanged", () => {
+  const root = createRoot();
+  fs.mkdirSync(path.join(root, "skills", "beta"), { recursive: true });
+  fs.writeFileSync(path.join(root, "skills", "beta", "SKILL.md"), "---\nname: beta\ndescription: b\n---\n");
+
+  assert.throws(
+    () => ackUpstream({ root, cursor: NEW_CURSOR_SHA, adapt: ["missing-skill"] }),
+    /does not exist locally/,
+  );
+  assert.throws(
+    () => ackUpstream({ root, cursor: NEW_CURSOR_SHA, adapt: ["<skill>"] }),
+    /invalid skill name/,
+  );
+  assert.throws(
+    () => ackUpstream({ root, cursor: NEW_CURSOR_SHA, adapt: ["../escape"] }),
+    /invalid skill name/,
+  );
+
+  const partial = spawnSync(
+    process.execPath,
+    [SCRIPT_PATH, "--root", root, "--adapt-only", "--adapt", "beta"],
+    { encoding: "utf8" },
+  );
+  assert.equal(partial.status, 0, partial.stderr);
+  const config = readConfig(root);
+  assert.equal(config.cursor.lastSyncedSha, OLD_CURSOR_SHA);
+  assert.equal(config.piMimir.lastCheckedSha, OLD_PI_MIMIR_SHA);
+  assert.deepEqual(config.cursor.adaptedSkills, ["beta"]);
+
+  const conflict = spawnSync(
+    process.execPath,
+    [SCRIPT_PATH, "--root", root, "--adapt-only", "--cursor", NEW_CURSOR_SHA, "--adapt", "beta"],
+    { encoding: "utf8" },
+  );
+  assert.notEqual(conflict.status, 0);
 });

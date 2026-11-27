@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const USAGE =
-  "Usage: node scripts/upstream-range.mjs --repo-dir <dir> --base <sha> --head <sha> --path <path> [--path <path> ...] --commits-output <file> --changed-output <file>";
+  "Usage: node scripts/upstream-range.mjs --repo-dir <dir> --base <sha> --head <sha> --path <path> [--path <path> ...] --commits-output <file> --changed-output <file> [--base-label <label>]";
 
 const FLAGS = {
   "--repo-dir": "repoDir",
@@ -14,6 +14,7 @@ const FLAGS = {
   "--path": "paths",
   "--commits-output": "commitsOutput",
   "--changed-output": "changedOutput",
+  "--base-label": "baseLabel",
 };
 
 function git(repoDir, args) {
@@ -33,7 +34,7 @@ function parseCommitLine(line) {
   };
 }
 
-export function collectRange({ repoDir, base, head, path: singlePath, paths }) {
+export function collectRange({ repoDir, base, head, path: singlePath, paths, baseLabel = "lastSyncedSha" }) {
   const rangePaths = Array.isArray(paths) && paths.length > 0 ? paths : singlePath ? [singlePath] : [];
   if (rangePaths.length === 0) {
     throw new Error("at least one path is required");
@@ -43,7 +44,7 @@ export function collectRange({ repoDir, base, head, path: singlePath, paths }) {
     git(repoDir, ["cat-file", "-e", `${base}^{commit}`]);
   } catch {
     throw new Error(
-      `base commit ${base} is not in the upstream clone; reset lastSyncedSha in .github/upstream-sync.json`,
+      `base commit ${base} is not in the upstream clone; reset ${baseLabel} in .github/upstream-sync.json`,
     );
   }
 
@@ -51,7 +52,7 @@ export function collectRange({ repoDir, base, head, path: singlePath, paths }) {
     git(repoDir, ["merge-base", "--is-ancestor", base, head]);
   } catch {
     throw new Error(
-      `base commit ${base} is not an ancestor of ${head}; reset lastSyncedSha in .github/upstream-sync.json`,
+      `base commit ${base} is not an ancestor of ${head}; reset ${baseLabel} in .github/upstream-sync.json`,
     );
   }
 
@@ -76,6 +77,7 @@ export function collectRange({ repoDir, base, head, path: singlePath, paths }) {
 
 function parseArgs(argv) {
   const options = { paths: [] };
+  const requiredFlags = ["--repo-dir", "--base", "--head", "--commits-output", "--changed-output"];
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     const key = FLAGS[flag];
@@ -86,10 +88,9 @@ function parseArgs(argv) {
     else options[key] = value;
     index += 1;
   }
-  for (const [flag, key] of Object.entries(FLAGS)) {
-    if (key === "paths") {
-      if (options.paths.length === 0) throw new Error(`missing ${flag}`);
-    } else if (options[key] === undefined) {
+  if (options.paths.length === 0) throw new Error("missing --path");
+  for (const flag of requiredFlags) {
+    if (options[FLAGS[flag]] === undefined) {
       throw new Error(`missing ${flag}`);
     }
   }
