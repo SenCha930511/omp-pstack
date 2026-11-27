@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.3.3 - 2026-11-27
+
+### Poteto Mode
+
+- One-shot `/poteto-mode <task>` uses the native `/skill:poteto-mode` path when available and falls back to the local skill prompt when it is not.
+- `/poteto-mode sticky <task>` enables sticky mode and runs the task immediately.
+- Foreign `skill:poteto-mode` commands with a different path no longer capture the local skill.
+- Sticky state remains scoped to the session and subagents; one-shot and sticky task paths preserve attached images.
+
+### Upstream sync
+
+- Added `sync:ack --adapt-only` to record a partial port without advancing `lastSyncedSha`.
+- The sync report omits unsafe upstream skill names from CLI suggestions, and `sync:ack` rejects names outside `[A-Za-z0-9._-]+`.
+- pi-mimir range failures are reported without advancing `lastCheckedSha`; ack guidance waits for manual verification.
+- The workflow runs sync scripts from the main checkout, installs the PR branch toolchain after checkout, and handles missing jq or node.
+- The sync scans all non-binary text files, skips binary assets, and preserves executable bits.
+
+### Worktree audit
+
+- Session headers are read from title-first and legacy transcripts, with jq, Node, and awk fallbacks.
+- Worktree matching is strict per repo and accepts `additionalDirectories` when a session starts outside the worktree.
+- PR state is normalized without jq, so open-PR worktrees remain `hold-open-pr` when jq is unavailable.
+
+### Tests and docs
+
+- Added regression coverage for native skill routing, foreign skill paths, sticky tasks, image forwarding, sync ack safety, pi-mimir errors, title-first sessions, and jq-free PR state.
+- Updated install and upgrade instructions for 0.3.3.
+
 ## 0.3.2 - 2026-11-27
 
 ### Setup
