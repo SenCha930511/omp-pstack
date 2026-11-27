@@ -14,4 +14,4 @@ Keep a finding only if it will still hold in six months, would change what a fut
 
 Present Accepted (problem, proposal, skill), Rejected (reason) and Backlog, and wait for approval before editing any skill.
 
-Never edit a skill inside the host's plugin install directory. Before approval, show the destination file in this repo's `skills/<name>/SKILL.md`. After approval, edit the skill there. When the plugin is linked with `omp plugin link <repo-path>`, the change is live; otherwise reinstall or relink the package. Never open a PR or push.
+Never edit a skill inside omp's plugin install directory. Before approval, show the destination: `.omp/skills/<skill>/` (project override) or `~/.omp/agent/skills/<skill>/` (user override), both of which take precedence over the bundled plugin skill. After approval, copy the skill folder there (if not already present) and edit the copy. Only when working directly inside an `omp-pstack` source checkout should you edit `skills/<skill>/SKILL.md` in place. Never open a PR or push.

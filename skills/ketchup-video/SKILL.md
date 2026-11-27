@@ -1,6 +1,6 @@
 ---
 name: ketchup-video
-description: "Catch the user up like the ketchup skill, with a short subtitled video of slides for what happened and the waiting calls as text under it. Use for /skill:ketchup-video when registered; otherwise read this SKILL.md by path."
+description: "Catch the user up like the ketchup skill, with a short subtitled video of slides for what happened and the waiting calls as text under it. Use for /skill:ketchup-video."
 disable-model-invocation: true
 ---
 

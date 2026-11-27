@@ -9,10 +9,10 @@ const CONTEXT_TYPE = "pstack-mode-context";
 const SKILL_FILE = path.join(packageRoot(), "skills/poteto-mode/SKILL.md");
 const STATUS_TEXT = "pstack: poteto mode";
 const USAGE = [
-  "/poteto-mode <task>   one-shot",
-  "/poteto-mode sticky   keep Poteto Mode on across turns",
-  "/poteto-mode off      stop sticky mode",
-  "/poteto-mode status   show sticky state",
+  "/poteto-mode <task>          one-shot",
+  "/poteto-mode sticky [task]   keep Poteto Mode on across turns (and optionally run a task)",
+  "/poteto-mode off             stop sticky mode",
+  "/poteto-mode status          show sticky state",
 ].join("\n");
 
 type ContextMessage = {
@@ -22,6 +22,13 @@ type ContextMessage = {
   display: false;
   timestamp: number;
 };
+
+type ParsedCommand =
+  | { kind: "usage" }
+  | { kind: "status" }
+  | { kind: "off" }
+  | { kind: "sticky"; task?: string }
+  | { kind: "one-shot"; task: string };
 
 type ExtensionOptions = {
   skillFile?: string;
@@ -42,6 +49,23 @@ function isPotetoModeEnabled(data: unknown): boolean {
 
 function isContextMessage(message: { role: string; customType?: string }): boolean {
   return message.role === "custom" && message.customType === CONTEXT_TYPE;
+}
+
+function isSubagent(ctx: ExtensionContext): boolean {
+  return ctx.agent?.kind === "sub";
+}
+
+function parsePotetoCommand(rawArgs: string): ParsedCommand {
+  const trimmed = rawArgs.trim();
+  if (trimmed === "") return { kind: "usage" };
+  if (trimmed === "status") return { kind: "status" };
+  if (trimmed === "off" || trimmed === "disable" || trimmed === "stop") return { kind: "off" };
+  const stickyMatch = /^(?:sticky|on)(?:\s+([\s\S]*))?$/.exec(trimmed);
+  if (stickyMatch) {
+    const task = stickyMatch[1]?.trim();
+    return task ? { kind: "sticky", task } : { kind: "sticky" };
+  }
+  return { kind: "one-shot", task: trimmed };
 }
 
 export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
@@ -135,6 +159,10 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   }
 
   function restorePotetoMode(ctx: ExtensionContext): void {
+    if (isSubagent(ctx)) {
+      potetoMode = false;
+      return;
+    }
     let enabled = false;
     for (const entry of ctx.sessionManager.getBranch()) {
       if (entry.type === "reset_boundary") {
@@ -173,6 +201,27 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     notify(ctx, "Poteto Mode sticky disabled for this session.");
   }
 
+  function findSkillCommandName(): string | undefined {
+    if (typeof pi.getCommands !== "function") return "skill:poteto-mode";
+    const targetPath = path.resolve(skillFile);
+    const commands = pi.getCommands();
+    const byPath = commands.find(
+      (cmd) => cmd.source === "skill" && cmd.path !== undefined && path.resolve(cmd.path) === targetPath,
+    );
+    if (byPath) return byPath.name;
+    const byName = commands.find((cmd) => cmd.source === "skill" && cmd.name === "skill:poteto-mode");
+    return byName?.name;
+  }
+
+  async function sendPlainTask(ctx: ExtensionContext, task: string): Promise<void> {
+    try {
+      await pi.sendUserMessage(task);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notify(ctx, `Task was not sent: ${message}`, "error");
+    }
+  }
+
   async function sendOneShotFallback(ctx: ExtensionContext, task: string): Promise<void> {
     const body = readSkillBody();
     if (body === undefined) {
@@ -200,40 +249,60 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
         .filter((value) => value.startsWith(prefix))
         .map((value) => ({ value, label: value })),
     handler: async (args, ctx) => {
-      const command = args.trim();
-      if (command === "sticky") {
-        enableMode(ctx);
+      const parsed = parsePotetoCommand(args);
+      if (parsed.kind === "sticky") {
+        if (!enableMode(ctx)) return;
+        if (parsed.task) await sendPlainTask(ctx, parsed.task);
         return;
       }
-      if (command === "off" || command === "disable" || command === "stop") {
+      if (parsed.kind === "off") {
         disableMode(ctx);
         return;
       }
-      if (command === "status") {
+      if (parsed.kind === "status") {
         notify(ctx, potetoMode ? "Poteto Mode sticky is enabled." : "Poteto Mode sticky is disabled.");
         return;
       }
-      if (command === "") {
+      if (parsed.kind === "usage") {
         const state = potetoMode ? "Poteto Mode sticky is enabled." : "Poteto Mode sticky is disabled.";
         notify(ctx, `${state}\n${USAGE}`);
         return;
       }
-      await sendOneShotFallback(ctx, command);
+      if (potetoMode) {
+        await sendPlainTask(ctx, parsed.task);
+        return;
+      }
+      await sendOneShotFallback(ctx, parsed.task);
     },
   });
 
-  pi.on("input", (event) => {
-    if (/^\/poteto-mode\s*$/.test(event.text)) return;
-    if (/^\/poteto-mode\s+(sticky|off|disable|stop|status)\s*$/.test(event.text)) return;
-    const match = /^\/poteto-mode\s+([\s\S]*)$/.exec(event.text);
+  pi.on("input", (event, ctx) => {
+    if (isSubagent(ctx)) return;
+    const match = /^\s*\/poteto-mode(?:\s+([\s\S]*))?$/.exec(event.text);
     if (!match) return;
-    const task = match[1].trim();
-    if (task === "") return;
-    return { text: `/skill:poteto-mode ${task}` };
+    const parsed = parsePotetoCommand(match[1] ?? "");
+    if (parsed.kind === "usage" || parsed.kind === "status" || parsed.kind === "off") {
+      return event.text !== event.text.trimStart() ? { text: event.text.trim() } : undefined;
+    }
+    if (parsed.kind === "sticky") {
+      if (!parsed.task) {
+        return event.text !== event.text.trimStart() ? { text: event.text.trim() } : undefined;
+      }
+      if (!enableMode(ctx)) return { handled: true };
+      return { text: parsed.task };
+    }
+    if (potetoMode) {
+      return { text: parsed.task };
+    }
+    const skillCommand = findSkillCommandName();
+    if (skillCommand) {
+      return { text: `/${skillCommand} ${parsed.task}` };
+    }
+    return event.text !== event.text.trimStart() ? { text: event.text.trim() } : undefined;
   });
 
-  pi.on("before_agent_start", (_event, ctx) => {
-    if (!potetoMode) return;
+  pi.on("before_agent_start", (event, ctx) => {
+    if (isSubagent(ctx) || !potetoMode || event.reason === "revive") return;
     const body = readSkillBody();
     if (body === undefined) return;
     const content = buildContextPayload(ctx, body);
@@ -248,19 +317,47 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   });
 
   pi.on("context", (event, ctx) => {
+    if (isSubagent(ctx)) return;
+    const contextIndices: number[] = [];
+    for (let index = 0; index < event.messages.length; index += 1) {
+      if (isContextMessage(event.messages[index])) {
+        contextIndices.push(index);
+      }
+    }
     if (!potetoMode) {
+      if (contextIndices.length === 0) return;
       return { messages: event.messages.filter((message) => !isContextMessage(message)) };
     }
     const body = readSkillBody();
     if (body === undefined) {
+      if (contextIndices.length === 0) return;
       return { messages: event.messages.filter((message) => !isContextMessage(message)) };
     }
     const content = buildContextPayload(ctx, body);
-    const current = event.messages.find(
-      (message) => isContextMessage(message) && "content" in message && message.content === content,
-    );
-    const messages = event.messages.filter((message) => !isContextMessage(message) || message === current);
-    if (current) return { messages };
+    const currentIndex = contextIndices.find((index) => {
+      const message = event.messages[index];
+      return message !== undefined && "content" in message && message.content === content;
+    });
+    if (currentIndex !== undefined) {
+      if (contextIndices.length === 1) return;
+      return {
+        messages: event.messages.filter((message, index) => !isContextMessage(message) || index === currentIndex),
+      };
+    }
+    if (contextIndices.length > 0) {
+      const replaceAt = contextIndices[0];
+      const nextMessage = contextMessage(content);
+      const messages = [];
+      for (let index = 0; index < event.messages.length; index += 1) {
+        if (index === replaceAt) {
+          messages.push(nextMessage);
+        } else if (!isContextMessage(event.messages[index])) {
+          messages.push(event.messages[index]);
+        }
+      }
+      return { messages };
+    }
+    const messages = [...event.messages];
     messages.splice(messages[0]?.role === "compactionSummary" ? 1 : 0, 0, contextMessage(content));
     return { messages };
   });

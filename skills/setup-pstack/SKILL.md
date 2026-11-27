@@ -22,20 +22,34 @@ Read `task.agentModelOverrides` from `~/.omp/agent/config.yml` (and the project 
 Ask for a budget: `large` (highest thinking level the model supports), `medium` (one step lower), `small` (two steps lower). Show every pstack agent with its model and thinking level:
 
 - `poteto-agent` (implementation delegate)
-- `comment-sicko` (read-only comment reviewer)
+- `comment-sicko` (comment deletion and workaround reviewer)
 - `task` (generic worker)
-- scout (read-only investigator)
+- `scout` (read-only investigator)
 - `reviewer` (review specialist)
 
-To inherit the parent model, leave the agent out of the mapping; omp has no special inherit value. For panel skills (`arena`, `swarm`, `interrogate`), ask whether to enable per-call model selection: `task.perCallModel: "on"` plus the chosen models in `task.perCallModelAllow`. Without it, every seat uses the agent's configured model.
+To inherit the parent model, leave the agent out of the mapping; omp has no special inherit value. For panel skills (`arena`, `swarm`, `interrogate`), ask whether to enable per-call model selection: `task.perCallModel: "on"` plus the chosen models in `task.perCallModelAllow`. Without it, every seat uses the agent's configured model. Also ask whether to enable `task.isolation.enabled: true` so parallel subagents can run in isolated copy-on-write worktrees (`isolated: true`).
 
 ### 4. Validate
 
-Every model written must be in the detected set, including every model listed in `task.perCallModelAllow`. Those models must also be granted through a configured chat role or an agent frontmatter `model`, and confirmed available with `/models`. If a chosen model is not available, stop and ask again.
+Every model written must be in the detected set, including every model listed in `task.perCallModelAllow`. Those models must also be granted through a configured chat role (`modelRoles`) or an agent frontmatter `model`, and confirmed available with `/models`. If a chosen model is not available, stop and ask again.
 
 ### 5. Write the routing
 
 Write the agreed agent-to-model mapping with `task.agentModelOverrides` in `~/.omp/agent/config.yml`. If `pi-model-sync` is installed and the user wants routing that follows the main model, write the same mapping into `~/.omp/agent/pi-model-sync.json` instead. Do not set both for the same agent: model-sync treats an override as an explicit per-call model and skips it. Do not put an agent used by a panel in `task.agentModelOverrides`; a per-call `model` and an override conflict.
+
+When enabling per-call model selection for panels, write `task.perCallModel: "on"` and `task.perCallModelAllow` in `~/.omp/agent/config.yml`, and grant any chosen model not already covered by a role or agent frontmatter under `modelRoles`:
+
+```yaml
+modelRoles:
+  fast: openai/gpt-5.4-mini
+task:
+  perCallModel: "on"
+  perCallModelAllow:
+    - anthropic/claude-opus-5.5
+    - openai/gpt-5.4-mini
+  isolation:
+    enabled: true # when subagent isolation was approved
+```
 
 ### 6. Confirm
 
@@ -47,10 +61,10 @@ Add `setup-pstack` to `skills.manualSkills` in `~/.omp/agent/config.yml`. Read t
 
 ### 8. Offer a verification skill (optional)
 
-Check whether the project has a way to drive the real app for proof (a `verify-*` skill, or an existing harness). If not, offer once: "want a project-local verification skill, so agents can drive the app the way a user does and prove changes work? I can generate one by following `../create-verification-skill/SKILL.md`." On yes, read and follow that file (invoke `/skill:create-verification-skill` only if it is registered). On no, move on without pushing.
+Check whether the project has a way to drive the real app for proof (a `verify-*` skill, or an existing harness). If not, offer once: "want a project-local verification skill, so agents can drive the app the way a user does and prove changes work? I can generate one with `/skill:create-verification-skill`." On yes, run `/skill:create-verification-skill` (or read `skill://create-verification-skill`). On no, move on without pushing.
 
 ### 9. Offer a formal verification skill (optional)
 
-Check whether the project already has a formal verification skill (a project skill that runs a model checker, a proof, or another verifier against the code). If not, offer once: "want a formal verification skill, so agents can prove a key property of your code holds in every case in scope, not only the cases tests reach? I can generate one by following `../create-formal-verification-skill/SKILL.md`." On yes, read and follow that file (invoke `/skill:create-formal-verification-skill` only if it is registered). On no, move on without pushing.
+Check whether the project already has a formal verification skill (a project skill that runs a model checker, a proof, or another verifier against the code). If not, offer once: "want a formal verification skill, so agents can prove a key property of your code holds in every case in scope, not only the cases tests reach? I can generate one with `/skill:create-formal-verification-skill`." On yes, run `/skill:create-formal-verification-skill` (or read `skill://create-formal-verification-skill`). On no, move on without pushing.
 
 When developing or testing pstack itself, do not rewrite the user's `~/.omp/agent/config.yml`.

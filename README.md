@@ -57,8 +57,9 @@ If you are an agent installing this for a user, follow
 matches the task to a playbook, copies its steps into the `todo` list, and
 delegates through omp's `task` tool.
 
-Use `/poteto-mode sticky` to keep the workflow on every later turn, and
-`/poteto-mode off` to stop it. `/poteto-mode status` shows the current state.
+Use `/poteto-mode sticky` to keep the workflow on every later turn, or
+`/poteto-mode sticky <task>` to enable sticky mode and run `<task>` right away,
+and `/poteto-mode off` to stop it. `/poteto-mode status` shows the current state.
 `/skill:poteto-mode` remains omp's native one-shot skill command and does not
 enable sticky mode.
 
@@ -81,9 +82,11 @@ default empty allowlist loads them all.
   visible, then hides itself after it writes the routing.
 - `agents/poteto-agent.md` and `agents/comment-sicko.md`. omp discovers them
   from the plugin's `agents/` directory; no role pack is needed. `poteto-agent`
-  can spawn its own subagents; `comment-sicko` is read-only and cannot spawn.
+  autoloads `poteto-mode` and can spawn its own subagents; `comment-sicko`
+  deletes bad comments with `edit` and inspects git history with `bash`, and
+  cannot spawn.
 - A small extension that implements `/poteto-mode` one-shot,
-  `/poteto-mode sticky`, and `/poteto-mode off`. Sticky content is injected as a
+  `/poteto-mode sticky [task]`, and `/poteto-mode off`. Sticky content is injected as a
   hidden `custom_message`; off filters it.
 
 Poteto Mode is scoped to the session that enabled it. Switching sessions,
@@ -102,7 +105,7 @@ stays off until you run `/poteto-mode sticky` again. One-shot
 | `set_tasks` | `todo` |
 | per-call `role` | per-call `model` when `task.perCallModel` is on |
 | pi-herdr role pack | omp's conventional `agents/` discovery |
-| `/poteto-mode` extension command | `/poteto-mode <task>` one-shot, `/poteto-mode sticky`, `/poteto-mode off`, `/poteto-mode status` |
+| `/poteto-mode` extension command | `/poteto-mode <task>` one-shot, `/poteto-mode sticky [task]`, `/poteto-mode off`, `/poteto-mode status` |
 | `/skill:poteto-mode` | omp native one-shot; does not enable sticky |
 
 Every bundled skill is registered. All but `setup-pstack` are hidden from the
