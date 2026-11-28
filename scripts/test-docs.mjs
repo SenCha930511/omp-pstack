@@ -21,7 +21,6 @@ import {
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DOCS_DIR = join(ROOT, "docs");
-const SPEC_DOC = join(DOCS_DIR, "implementation-plan-jrecos.md");
 
 function walkMarkdown(dir) {
   const files = [];
@@ -191,8 +190,6 @@ test("every linked playbook exists", () => {
 
 test("docs use /skill: instead of bare skill commands inside code", () => {
   for (const file of docsMarkdown) {
-    // The implementation plan is the spec that names the banned forms as text.
-    if (file === SPEC_DOC) continue;
     const findings = findBareCommands(readFileSync(file, "utf8"), skillNames);
     assert.deepEqual(
       findings.map((finding) => finding.name),
