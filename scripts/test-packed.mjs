@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import { access, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+
+import { access, mkdir, mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { resolveCommandProbe } from "./command-probe.mjs";
+import { resolveOmpCommand } from "./omp-command.mjs";
+import { isolatedOmpEnv, verifyInstall } from "./verify-install.mjs";
 
 const execute = promisify(execFile);
 const PACKAGE_NAME = "omp-pstack";
@@ -33,6 +35,7 @@ const FORBIDDEN_EXACT = new Set([
 function isForbiddenPath(file) {
   if (FORBIDDEN_EXACT.has(file)) return true;
   if (file.startsWith("tests/") || file.startsWith("scripts/") || file.startsWith(".github/")) return true;
+  if (file.startsWith(".omp-plugin/")) return true;
   if (file.startsWith("skills/statechart/scripts/test/")) return true;
   if (file.startsWith("skills/") && file.endsWith(".test.ts")) return true;
   if (file.startsWith("node_modules/") || file.includes("/node_modules/")) return true;
@@ -51,17 +54,6 @@ const runNpm = (args, options) => {
   });
 };
 
-function resolveOmpCommand(root) {
-  if (process.env.OMP_PSTACK_OMP_COMMAND) return process.env.OMP_PSTACK_OMP_COMMAND;
-  const localOmp = path.join(
-    root,
-    "node_modules",
-    ".bin",
-    process.platform === "win32" ? "omp.cmd" : "omp",
-  );
-  if (existsSync(localOmp)) return localOmp;
-  return process.platform === "win32" ? "omp.cmd" : "omp";
-}
 
 async function measureUnpackedSize(directory) {
   let total = 0;
@@ -198,12 +190,7 @@ try {
 
   const ompHome = path.join(temporary, "omp-home");
   await mkdir(ompHome, { recursive: true });
-  const ompEnv = {
-    ...process.env,
-    HOME: ompHome,
-    USERPROFILE: ompHome,
-    PI_CODING_AGENT_DIR: path.join(ompHome, "agent"),
-  };
+  const ompEnv = isolatedOmpEnv(ompHome, path.join(ompHome, "agent"));
   const ompCommand = resolveOmpCommand(root);
 
   const linkProbe = resolveCommandProbe(ompCommand, ["plugin", "link", installed]);
@@ -225,83 +212,28 @@ try {
     windowsHide: true,
     windowsVerbatimArguments: process.platform === "win32",
   });
-  const plugins = JSON.parse(listed.stdout);
-  assert.ok(
-    Array.isArray(plugins.npm) && plugins.npm.some((plugin) => plugin.name === PACKAGE_NAME),
-    `omp plugin list did not register ${PACKAGE_NAME}: ${listed.stdout}`,
-  );
+  const discovery = await verifyInstall({
+    sourceRoot: root,
+    installedRoot: installed,
+    home: ompHome,
+    agentDir: path.join(ompHome, "agent"),
+    packageName: PACKAGE_NAME,
+    projectDir: temporary,
+  });
 
-  const discoveryScript = path.join(root, `.omp-pstack-discovery-${process.pid}.mjs`);
-  await writeFile(
-    discoveryScript,
-    [
-      'import { loadSkills } from "@oh-my-pi/pi-coding-agent/extensibility/skills";',
-      'import { discoverAgents } from "@oh-my-pi/pi-coding-agent/task";',
-      'import { discoverExtensionPaths, loadExtensions } from "@oh-my-pi/pi-coding-agent/extensibility/extensions";',
-      "const [projectDir, home] = process.argv.slice(2);",
-      "const skills = await loadSkills({ cwd: projectDir });",
-      "const agents = await discoverAgents(projectDir, home);",
-      "const extensionPaths = await discoverExtensionPaths([], projectDir, undefined, { ambient: true, includeAmbientHooks: false });",
-      "const loaded = await loadExtensions(extensionPaths, projectDir);",
-      "console.log(JSON.stringify({",
-      "  skills: skills.skills.map((skill) => skill.name).sort(),",
-      "  skillWarnings: skills.warnings,",
-      "  agents: agents.agents.map((agent) => ({ name: agent.name, spawns: agent.spawns ?? null, autoloadSkills: agent.autoloadSkills ?? null, tools: agent.tools ?? null })),",
-      "  extensionPaths,",
-      "  extensionErrors: loaded.errors,",
-      "  extensionCount: loaded.extensions.length,",
-      "}));",
-    ].join("\n"),
-  );
-  let discovered;
-  try {
-    const discoveryProbe = resolveCommandProbe("bun", [discoveryScript, temporary, ompHome]);
-    const discovery = await execute(discoveryProbe.command, discoveryProbe.args, {
-      cwd: root,
-      env: ompEnv,
-      timeout: 120_000,
-      maxBuffer: 8 * 1024 * 1024,
-      windowsHide: true,
-      windowsVerbatimArguments: process.platform === "win32",
-    });
-    discovered = JSON.parse(discovery.stdout);
-  } finally {
-    await rm(discoveryScript, { force: true });
-  }
-
-  const expectedSkills = (await readdir(path.join(root, "skills"), { withFileTypes: true }))
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
-  assert.deepEqual(discovered.skills, expectedSkills, "discovered skills do not match the source tree");
-  assert.ok(discovered.skills.includes("poteto-mode"), "discovery missed poteto-mode");
-  assert.ok(discovered.skills.includes("reframe"), "discovery missed reframe");
-
-  const potetoAgent = discovered.agents.find((agent) => agent.name === "poteto-agent");
-  const commentSicko = discovered.agents.find((agent) => agent.name === "comment-sicko");
-  assert.ok(potetoAgent, "discovery missed poteto-agent");
-  assert.equal(potetoAgent.spawns, "*", 'poteto-agent must declare spawns: "*"');
-  assert.deepEqual(potetoAgent.autoloadSkills, ["poteto-mode"], 'poteto-agent must autoload "poteto-mode"');
-  assert.ok(commentSicko, "discovery missed comment-sicko");
-  assert.equal(commentSicko.spawns, null, "comment-sicko must not declare spawns");
-  assert.ok(commentSicko.tools?.includes("glob"), "comment-sicko must include glob");
-  assert.ok(commentSicko.tools?.includes("edit"), "comment-sicko must include edit");
-  assert.ok(commentSicko.tools?.includes("bash"), "comment-sicko must include bash");
-  assert.ok(!commentSicko.tools?.includes("ls"), "comment-sicko must not include ls");
-  assert.ok(!commentSicko.tools?.includes("task"), "comment-sicko must not include task");
-  assert.ok(!commentSicko.tools?.includes("write"), "comment-sicko must not include write");
-
-  const discoveredExtension = discovered.extensionPaths.find(
+  const discoveredExtension = discovery.extensionPaths.find(
     (extensionPath) =>
       extensionPath.includes(PACKAGE_NAME) && extensionPath.includes(path.join("extensions", "pstack")),
   );
   assert.ok(
     discoveredExtension,
-    `discovery missed the pstack extension: ${JSON.stringify(discovered.extensionPaths)}`,
+    `discovery missed the pstack extension: ${JSON.stringify(discovery.extensionPaths)}`,
   );
-  assert.deepEqual(discovered.extensionErrors, [], `extension load errors: ${JSON.stringify(discovered.extensionErrors)}`);
-  assert.ok(discovered.extensionCount > 0, "no extension loaded");
-  console.log(`OMP discovery: ${discovered.skills.length} skills, 2 pstack agents, ${discovered.extensionCount} extension: PASS`);
+  assert.ok(discovery.discoveredSkillNames.includes("poteto-mode"), "discovery missed poteto-mode");
+  assert.ok(discovery.discoveredSkillNames.includes("reframe"), "discovery missed reframe");
+  console.log(
+    `OMP discovery: ${discovery.discoveredSkillNames.length} skills, 2 pstack agents, ${discovery.extensionCount} extension: PASS`,
+  );
 
   const modelsProbe = resolveCommandProbe(ompCommand, ["models", "--json"]);
   const catalog = await execute(modelsProbe.command, modelsProbe.args, {

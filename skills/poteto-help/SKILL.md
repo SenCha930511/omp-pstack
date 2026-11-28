@@ -35,7 +35,7 @@ When role routing is unconfigured and it matters, ask whether the user wants to 
 
 ## Get set up
 
-1. Install the plugin into omp (`omp plugin install omp-pstack@sencha930511` or `omp plugin install npm:omp-pstack`; locally `omp plugin link /path/to/omp-pstack`).
+1. Install the plugin into omp (`omp plugin install omp-pstack@omp-pstack` from this repo's marketplace, `omp plugin install omp-pstack@sencha930511` from the external catalog, or `omp plugin install npm:omp-pstack`; locally `omp plugin link /path/to/omp-pstack`).
 2. Optionally run [`/skill:setup-pstack`](../setup-pstack/SKILL.md). It asks for a reasoning budget, maps a model to each pstack agent through `task.agentModelOverrides` (or `pi-model-sync`), and offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
 3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
 

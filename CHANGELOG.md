@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Install
+
+- Added `.omp-plugin/marketplace.json` so the repo installs as its own OMP marketplace: `omp plugin marketplace add SenCha930511/omp-pstack` then `omp plugin install omp-pstack@omp-pstack`.
+- Added `scripts/verify-install.mjs`, a shared discovery validator used by the packed-tarball and marketplace tests. It runs in an isolated home with host XDG, profile, and config overrides removed.
+- Added `scripts/test-marketplace.mjs`, which covers local add, install, list, update, force reinstall, the same-name runtime conflict, and the uninstall-then-install migration offline.
+- Documented the marketplace tree-cache copy, version-only upgrade comparison, and the one-runtime-package-per-scope rule in `README.md`, `AGENT-INSTALL.md`, and `poteto-help`.
+
 ## 0.3.3 - 2026-11-27
 
 ### Poteto Mode
