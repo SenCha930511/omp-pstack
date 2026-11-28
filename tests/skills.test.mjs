@@ -27,6 +27,7 @@ const docFiles = [
   join(root, "README.md"),
   ...skillMarkdown,
   ...agentFiles.map((name) => join(agentsDir, name)),
+  ...walkMarkdown(join(root, "docs")),
 ];
 
 test("local Markdown links resolve to real files", () => {

@@ -1,0 +1,96 @@
+# Make it yours
+
+Poteto Mode is one person's style. The playbooks, routing, and model mapping underneath it work just as well with yours. This page covers generating a personal mode, capturing lessons from a session, fixing the repo so agents stop repeating mistakes, authoring a focused skill, and testing a skill change before you trust it.
+
+Start smaller than you think. You do not need many skills on day one, or even this whole plugin. Prompt plainly, watch where agents fail, and add a skill or a check when the same failure shows up twice.
+
+## Generate your own mode with `/skill:automate-me`
+
+```text
+/skill:automate-me
+```
+
+You do not describe your style, because [`automate-me`](../../skills/automate-me/SKILL.md) reads it out of your history. It mines your recent transcripts in the active workspace for repeated preferences, in how you like replies, delegation, verification, code, prose, and process, then asks you which patterns are really you. It drafts `.omp/skills/<handle>-mode/SKILL.md`, or the same path under `~/.omp/agent/skills/` for a personal skill, runs the draft through [`/skill:unslop`](../../skills/unslop/SKILL.md), and opens a PR from a worktree so you review it like any other change.
+
+Run it again whenever your habits drift:
+
+```text
+/skill:automate-me update my mode skill with everything since its last edit
+```
+
+Update mode mines only the history since the skill last changed. It keeps rules you have not contradicted, revises the ones with new evidence, and adds sections only for new patterns.
+
+## Capture a session's lessons with `/skill:reflect`
+
+Right after a task that taught you something, run:
+
+```text
+/skill:reflect that took way too long. capture what we learned so the next run doesn't repeat it.
+```
+
+[`reflect`](../../skills/reflect/SKILL.md) reads the transcript, keeps only lessons that would change a future agent's work, and routes each to a concrete edit on an existing skill. It shows the destination before it writes: `.omp/skills/<skill>/` for a project override or `~/.omp/agent/skills/<skill>/` for a user override, both of which take precedence over the bundled plugin skill. It never edits the plugin install directory and never opens a PR or pushes. Approve a proposal only if it would change a future decision. One weird session is an anecdote, not a rule.
+
+## Fix the environment with `/skill:correct`
+
+When you correct agents for the same mistake again and again, the fix belongs in the repo, not in your next prompt. Rank the options by how well they hold:
+
+1. Make the mistake impossible with architecture or a better data structure.
+2. Block it with types, or with a lint or CI check whose error names the fix.
+3. Catch it with a test.
+4. Write it down as a doc or agent rule. Nothing fails when an agent skips a rule, so this comes last.
+
+Human review is not on the list. A reviewer who must catch the same mistake on every PR is the problem this fixes. [`correct`](../../skills/correct/SKILL.md) does the work:
+
+```text
+/skill:correct agents keep calling the database client directly instead of going through the repository layer
+```
+
+It reads recent commits, reverts, review comments, and comments that explain workarounds, then groups the mistakes into classes. A class counts once it has happened twice. It fixes the most frequent classes one commit each, at the highest level that works, and proves each new check fails on a real past mistake. It also keeps a table in the agent instruction file that pairs each rule with what enforces it, so a rule that nothing enforces shows up as a repeat. The reply lists each class with its evidence, the level chosen, and why a higher level did not work.
+
+Run it with no argument and it finds the classes from history on its own. `/skill:reflect` and `/skill:correct` split the work. `/skill:reflect` improves skills from one session. `/skill:correct` changes the repo so a mistake class cannot come back. Pair it with `/skill:architect` when the fix is a new boundary.
+
+## Author a focused skill
+
+When you already know the workflow you want to capture:
+
+```text
+/poteto-mode write a skill for verifying database migrations in this repo
+```
+
+Writing a skill matches the [Authoring or modifying a skill playbook](../../skills/poteto-mode/playbooks/authoring-a-skill.md), which validates the frontmatter and links and ships the result through the Opening a PR playbook. Agent-facing prose has a higher bar than human prose, because an unhelpful sentence becomes an instruction some future agent follows. Let the playbook hold that bar rather than writing a `SKILL.md` freehand.
+
+Two special cases have their own generators. A skill that must drive your app and prove behavior is a verification skill, so use [`/skill:create-verification-skill`](../../skills/create-verification-skill/SKILL.md) and [`/skill:maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md) instead. A skill that checks a property of your code with a model checker, a proof, or another verifier is a formal verification skill, so use [`/skill:create-formal-verification-skill`](../../skills/create-formal-verification-skill/SKILL.md) and [`/skill:maintain-formal-verification-skill`](../../skills/maintain-formal-verification-skill/SKILL.md). [Verify and ship](./06-verify-and-ship.md#prove-a-property-with-a-formal-verification-skill) covers both kinds.
+
+## Write docs to a standard with `/skill:technical-writing`
+
+Skills are not the only prose you ship. For docs, RFCs, readmes, PR descriptions, and commit messages:
+
+```text
+/skill:technical-writing review the readme changes
+```
+
+[`technical-writing`](../../skills/technical-writing/SKILL.md) applies a layered standard: Diátaxis structure, Google developer style sentences, STE instruction rules, and Global English syntax. Its goal is prose that a tired engineer understands on the first read. It picks the document's mode first (tutorial, how-to, reference, or explanation), then works sentence by sentence: who does what, one thought per sentence, nothing readable two ways. Use it to review what you or an agent just wrote, or name it up front when you ask for a doc.
+
+## Test a skill change blind
+
+A skill edit affects every future session, so test it like the experiment it is. The same goes for adopting someone else's skill. Check that it makes the agent better on your work before you keep it.
+
+```text
+/poteto-mode run the eval playbook on this skill change. same task for both variants, candidates stay blind.
+```
+
+When a skill keeps missing and you know what it should do, change and test it in one task:
+
+```text
+/poteto-mode update the review skill so it flags missing migrations, and eval the change.
+```
+
+Asking for the eval up front keeps the edit honest. A fix written from one bad session tends to overfit that session, and over many edits the skill drifts. The eval catches the drift before it ships.
+
+The [Eval playbook](../../skills/poteto-mode/playbooks/eval.md) is built around one failure mode, the observer effect. An agent that knows it is being evaluated behaves differently. So candidate agents get an organic-looking task in sanitized directories, never the words "eval" or "candidate", and never each other's existence. One judge scores all outputs under neutral labels, and chain-following gets graded from which files each candidate actually read, not from what it claims.
+
+Read every output yourself before accepting the verdict. If you disagree with the judge, suspect the rubric before you suspect your judgment.
+
+**Pitfall:** do not edit a skill mid-task because it is misbehaving. Fix it in its own PR and keep the task moving. A skill edit that ships tangled into feature work is invisible to review and impossible to evaluate.
+
+Next: [Recipes and pitfalls](./10-recipes-and-pitfalls.md).
