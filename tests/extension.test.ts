@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import {
@@ -107,10 +107,12 @@ function createMockHost(
       entries?: Entry[];
       ui?: Record<string, unknown>;
       agent?: { kind: "main" | "sub"; id: string; name: string; depth: number };
+      cwd?: string;
     } = {},
   ) {
     return {
       hasUI: ctxOptions.hasUI ?? false,
+      cwd: ctxOptions.cwd ?? process.cwd(),
       mode: ctxOptions.mode ?? "tui",
       agent: ctxOptions.agent ?? { kind: "main" as const, id: "main", name: "main", depth: 0 },
       sessionManager: {
@@ -942,5 +944,80 @@ function stripOmpMultiBlankLines(text: string): string {
     const mainCtx = host.makeCtx({ hasUI: true, entries: ENABLED });
     await host.emit("session_start", {}, mainCtx);
     expect(await host.emit("before_agent_start", { reason: "revive" }, mainCtx)).toBeUndefined();
+  });
+
+  test("sticky mode switches to a replaced skill file without a session event", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "omp-pstack-upgrade-"));
+    try {
+      const first = path.join(dir, "v1", "skills", "poteto-mode", "SKILL.md");
+      const second = path.join(dir, "v2", "skills", "poteto-mode", "SKILL.md");
+      mkdirSync(path.dirname(first), { recursive: true });
+      mkdirSync(path.dirname(second), { recursive: true });
+      writeFileSync(first, "---\nname: poteto-mode\ndescription: v1\n---\n\nV1 BODY\n");
+      writeFileSync(second, "---\nname: poteto-mode\ndescription: v2\n---\n\nV2 BODY\n");
+      let current = first;
+      const host = createMockHost();
+      pstackExtension(host.api, {
+        skillFileResolver: () => ({ skillFile: current, skillDir: path.dirname(current), usingFallback: true }),
+      });
+      const ctx = host.makeCtx({ hasUI: true, entries: ENABLED });
+      await host.emit("session_start", {}, ctx);
+      expect(injected(await host.emit("before_agent_start", {}, ctx))?.message?.content).toContain("V1 BODY");
+
+      rmSync(first);
+      current = second;
+      const next = injected(await host.emit("before_agent_start", {}, ctx));
+      expect(next?.message?.content).toContain("V2 BODY");
+      expect(next?.message?.content).toContain(path.dirname(second));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("a missing native command path falls back to the local skill prompt", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "omp-pstack-stale-"));
+    try {
+      const skillFile = path.join(dir, "skills", "poteto-mode", "SKILL.md");
+      const stale = path.join(dir, "old", "SKILL.md");
+      mkdirSync(path.dirname(skillFile), { recursive: true });
+      mkdirSync(path.dirname(stale), { recursive: true });
+      writeFileSync(skillFile, "---\nname: poteto-mode\ndescription: test\n---\n\nBODY\n");
+      writeFileSync(stale, "old\n");
+      const host = createMockHost([], {
+        commands: [{ name: "skill:poteto-mode", source: "skill", path: stale }],
+      });
+      pstackExtension(host.api, { skillFile });
+      const ctx = host.makeCtx({ hasUI: true });
+      rmSync(stale);
+
+      expect(await host.emit("input", { text: "/poteto-mode fix the bug" }, ctx)).toBeUndefined();
+      const dispatched = await dispatchLikeHost(host, "/poteto-mode fix the bug", ctx);
+      expect(dispatched.kind).toBe("command");
+      expect(host.sentCustom).toHaveLength(1);
+      expect((host.sentCustom[0]?.message.details as SkillPromptDetails).path).toBe(skillFile);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("skill cache notices a same-mtime size change", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "omp-pstack-cache-"));
+    try {
+      const skillFile = path.join(dir, "skills", "poteto-mode", "SKILL.md");
+      mkdirSync(path.dirname(skillFile), { recursive: true });
+      writeFileSync(skillFile, "---\nname: poteto-mode\ndescription: test\n---\n\nA\n");
+      const host = createMockHost();
+      pstackExtension(host.api, { skillFile });
+      const ctx = host.makeCtx({ hasUI: true, entries: ENABLED });
+      await host.emit("session_start", {}, ctx);
+      expect(injected(await host.emit("before_agent_start", {}, ctx))?.message?.content).toContain("A");
+
+      const stats = statSync(skillFile);
+      writeFileSync(skillFile, "---\nname: poteto-mode\ndescription: test\n---\n\nBB\n");
+      utimesSync(skillFile, stats.atime, stats.mtime);
+      expect(injected(await host.emit("before_agent_start", {}, ctx))?.message?.content).toContain("BB");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

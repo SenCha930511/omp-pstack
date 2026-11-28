@@ -17,6 +17,13 @@
 - Removed pi-mimir tracking from the sync config, workflow, scripts, README, and tests while keeping its MIT attribution in `NOTICE.md`.
 - Added `.gitattributes` with `* text=auto eol=lf` so byte-level blob checks agree across Windows and POSIX checkouts.
 
+### Poteto Mode paths
+
+- Added `extensions/pstack/install.ts` to resolve the skill file from the loaded package, then a project-scoped plugin link, then the user-scoped link. A fallback must realpath into the same marketplace's cache entry and carry the expected package and skill names.
+- Sticky and one-shot reads re-resolve the anchor on every read, so an upgrade in the middle of a session is picked up on the next turn. The skill cache now keys on file, mtime, and size.
+- Native command discovery ignores a stale command path and falls back to the local skill prompt.
+- Added resolver tests for project-over-user precedence, marketplace mismatch, wrong package or skill names, escaping links, legacy `PI_CONFIG_DIR`, and missing `cwd`.
+
 ## 0.3.3 - 2026-11-27
 
 ### Poteto Mode
