@@ -37,7 +37,7 @@
     },
     {
       "path": "extensions/pstack/install.ts",
-      "sha256": "9207b134ea262b31516ba7d38937289eb3c43a282eb46f9a384ff7a8ef20d9e0"
+      "sha256": "c467451ca5ab2b5acdcdbcaccb1981c457a8310b6a5e760b717a5de195e053cc"
     },
     {
       "path": "extensions/pstack/interaction.ts",
@@ -48,8 +48,16 @@
       "sha256": "dcd0c465c0dfc17f386245adc29194ad72670aeb60d4e5fea135ccd847bca18f"
     },
     {
+      "path": "scripts/command-probe.mjs",
+      "sha256": "7e9a2aa1509d7bdaa73ae4f35465c6c22620cad9a7d56079cb2eba571f775991"
+    },
+    {
       "path": "scripts/install-proof.mjs",
-      "sha256": "10a0ae3eb9e75ceff32ad928bc465989df7d2a2b5901c6de523f2466b4a4cae2"
+      "sha256": "6fac36b631c13f34aacc7f6d73fa8bd984dc5408b9b78d9c61739cdb57d8e755"
+    },
+    {
+      "path": "scripts/omp-command.mjs",
+      "sha256": "2cb1c67d679c0b96cebe986ea5dcfbfed941ece80a8fd8f51c17b3c033dc2528"
     },
     {
       "path": "scripts/proof-install.mjs",
@@ -65,7 +73,7 @@
     },
     {
       "path": "scripts/verify-install.mjs",
-      "sha256": "3d0ca7a62d1c338af660feb24fb9a29dac40fd68e67aee8e5ba14b6499b8a3e8"
+      "sha256": "b373dd6b3306c7db91a0666f8608d9250134033f5efa174d107039129026bec9"
     },
     {
       "path": "skills/architect/SKILL.md",

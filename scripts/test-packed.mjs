@@ -54,7 +54,7 @@ const runNpm = (args, options) => {
   return execute(resolved.command, resolved.args, {
     ...options,
     windowsHide: true,
-    windowsVerbatimArguments: process.platform === "win32",
+    windowsVerbatimArguments: resolved.batch,
   });
 };
 
@@ -204,7 +204,7 @@ try {
     timeout: 120_000,
     maxBuffer: 4 * 1024 * 1024,
     windowsHide: true,
-    windowsVerbatimArguments: process.platform === "win32",
+    windowsVerbatimArguments: linkProbe.batch,
   });
 
   const listProbe = resolveCommandProbe(ompCommand, ["plugin", "list", "--json"]);
@@ -214,7 +214,7 @@ try {
     timeout: 120_000,
     maxBuffer: 4 * 1024 * 1024,
     windowsHide: true,
-    windowsVerbatimArguments: process.platform === "win32",
+    windowsVerbatimArguments: listProbe.batch,
   });
   const discovery = await verifyInstall({
     sourceRoot: root,
@@ -246,7 +246,7 @@ try {
     timeout: 120_000,
     maxBuffer: 4 * 1024 * 1024,
     windowsHide: true,
-    windowsVerbatimArguments: process.platform === "win32",
+    windowsVerbatimArguments: modelsProbe.batch,
   });
   assert.ok(!catalog.stderr.includes("Failed to load extension"), `OMP reported extension load failure:\n${catalog.stderr}`);
   const parsed = JSON.parse(catalog.stdout);

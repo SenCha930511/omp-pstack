@@ -200,6 +200,27 @@ describe("resolvePotetoSkill", () => {
     expect(anchor.skillFile).toBe(path.join(checkout, "skills", "poteto-mode", "SKILL.md"));
   });
 
+  test("finds a project .omp above the git root", () => {
+    const base = makeTemp("omp-pstack-install-");
+    const pluginsRoot = path.join(base, "user");
+    const loaded = makeCacheRoot({ pluginsRoot, version: "0.3.3" });
+    const projectCache = makeCacheRoot({ pluginsRoot, version: "0.4.0" });
+    const work = path.join(base, "work");
+    const repo = path.join(work, "repo");
+    fs.mkdirSync(path.join(repo, ".git"), { recursive: true });
+    const plugins = path.join(work, ".omp", "plugins");
+    fs.mkdirSync(plugins, { recursive: true });
+    fs.writeFileSync(
+      path.join(plugins, "installed_plugins.json"),
+      `${JSON.stringify({ version: 2, plugins: {} })}\n`,
+    );
+    linkDirectory(projectCache, path.join(plugins, "node_modules", "omp-pstack"));
+    removeSkill(loaded);
+
+    const anchor = resolvePotetoSkill({ loadedRoot: loaded, cwd: path.join(repo, "src") });
+    expect(anchor.skillFile).toBe(skillPath(projectCache));
+  });
+
   test("uses a legacy PI_CONFIG_DIR project install when .omp is absent", () => {
     const base = makeTemp("omp-pstack-install-");
     const pluginsRoot = path.join(base, "user");

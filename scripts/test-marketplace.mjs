@@ -25,7 +25,7 @@ async function runCommand(file, args, options = {}) {
       timeout: 120_000,
       maxBuffer: 8 * 1024 * 1024,
       windowsHide: true,
-      windowsVerbatimArguments: process.platform === "win32",
+      windowsVerbatimArguments: probe.batch,
       ...options,
     });
     return { code: 0, stdout: result.stdout, stderr: result.stderr };

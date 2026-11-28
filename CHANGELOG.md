@@ -8,6 +8,7 @@
 - Added `scripts/verify-install.mjs`, a shared discovery validator used by the packed-tarball and marketplace tests. It runs in an isolated home with host XDG, profile, and config overrides removed.
 - Added `scripts/test-marketplace.mjs`, which covers local add, install, list, update, force reinstall, the same-name runtime conflict, and the uninstall-then-install migration offline.
 - Documented the marketplace tree-cache copy, version-only upgrade comparison, and the one-runtime-package-per-scope rule in `README.md`, `AGENT-INSTALL.md`, and `poteto-help`.
+- Child processes now use verbatim Windows arguments only for `.cmd` wrappers, so paths with spaces and multiline `bun -e` scripts stay intact.
 
 ### Upstream sync
 
@@ -16,6 +17,8 @@
 - Rewrote `sync-upstream.mjs` and `sync-ack.mjs` around the manifest. Clean syncs advance the manifest pin and `cursor.lastSyncedSha` together; syncs with manual work stage copied files under `pending` and hold the baseline until ack.
 - Removed pi-mimir tracking from the sync config, workflow, scripts, README, and tests while keeping its MIT attribution in `NOTICE.md`.
 - Added `.gitattributes` with `* text=auto eol=lf` so byte-level blob checks agree across Windows and POSIX checkouts.
+- Excluded-skill changes require an explicit `sync:ack --exclude`, and the sync workflow runs the live commit/tree/blob inventory check.
+- Clean syncs drop manifest entries for files deleted upstream and keep a `localOnly` record when the local file remains.
 
 ### Poteto Mode paths
 
@@ -23,6 +26,7 @@
 - Sticky and one-shot reads re-resolve the anchor on every read, so an upgrade in the middle of a session is picked up on the next turn. The skill cache now keys on file, mtime, and size.
 - Native command discovery ignores a stale command path and falls back to the local skill prompt.
 - Added resolver tests for project-over-user precedence, marketplace mismatch, wrong package or skill names, escaping links, legacy `PI_CONFIG_DIR`, and missing `cwd`.
+- Project `.omp` discovery continues above the nearest git root, so an ancestor project install wins over the user link.
 
 ### Guides
 
@@ -37,6 +41,7 @@
 - Added `proof:install` to regenerate it and `test:proof` to validate the schema, canonical `package.json` hash, inputs, and live discovery without writing.
 - `npm run check` now runs the read-only proof check, and release verification checks the proof package version against the tarball.
 - Added proof unit tests for changed bytes, missing files, version drift, unknown schema, forged counts, and the `gitHead`/`devDependencies` canonicalization rule.
+- The proof inputs include the command-resolution helpers used by the generator and verifier.
 
 ## 0.3.3 - 2026-11-27
 

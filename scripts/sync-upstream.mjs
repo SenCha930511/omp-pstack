@@ -226,6 +226,7 @@ function buildReport(config, summary, cursorCommits) {
   const hasManual =
     summary.manualAdaptedSkills.length > 0 ||
     summary.blockedCursorSkills.length > 0 ||
+    summary.excludedChanges.length > 0 ||
     summary.removedUpstreamSkills.length > 0 ||
     summary.manualOtherFiles.length > 0;
 
@@ -257,6 +258,16 @@ function buildReport(config, summary, cursorCommits) {
         );
       }
       lines.push("");
+    }
+    if (summary.excludedChanges.length > 0) {
+      lines.push("**Excluded skills changed upstream (review and acknowledge):**");
+      for (const item of summary.excludedChanges) {
+        lines.push(`- ${formatCodeSpan(item.name)}: ${item.files.map((f) => formatCodeSpan(f)).join(", ")}`);
+      }
+      lines.push(
+        "  - Acknowledge with `sync:ack --exclude <skill> --reason <text>` after confirming the new file stays out.",
+        "",
+      );
     }
     if (summary.removedUpstreamSkills.length > 0) {
       lines.push(
@@ -408,6 +419,7 @@ export function syncUpstream(options) {
   const updatedSkills = [];
   const manualAdaptedSkills = [];
   const blockedCursorSkills = [];
+  const excludedChanges = [];
 
   const sources = [...upstreamTree.keys()].sort();
   for (const source of sources) {
@@ -421,7 +433,13 @@ export function syncUpstream(options) {
     const localBlob = localExists ? gitBlobSha(fs.readFileSync(localPath)) : undefined;
     const same = localExists && localBlob === upstreamEntry.blob;
     if (same) continue;
-    if (excluded.has(skill)) continue;
+    if (excluded.has(skill)) {
+      const entry = manifest.entries.find((candidate) => candidate.source === source);
+      if (!entry || entry.blob !== upstreamEntry.blob || entry.mode !== upstreamEntry.mode) {
+        addSkillFile(excludedChanges, skill, source);
+      }
+      continue;
+    }
 
     const changed = !hasChangedFile || changedSources.has(source) || !localExists;
     if (adapted.has(skill)) {
@@ -476,6 +494,7 @@ export function syncUpstream(options) {
   const hasManualCursorItems =
     manualAdaptedSkills.length > 0 ||
     blockedCursorSkills.length > 0 ||
+    excludedChanges.length > 0 ||
     removedUpstreamSkills.length > 0 ||
     manualOtherFiles.length > 0;
   const mode = hasAutoChanges ? "pr" : hasManualCursorItems ? "issue" : "none";
@@ -488,8 +507,8 @@ export function syncUpstream(options) {
       files: item.files,
       matches: item.matches,
     })),
+    ...excludedChanges.map((item) => ({ kind: "excluded", skill: item.name, files: item.files })),
     ...removedUpstreamSkills.map((skill) => ({ kind: "removed", skill })),
-    ...manualOtherFiles.map((file) => ({ kind: "other", file })),
   ];
 
   const summary = {
@@ -503,6 +522,7 @@ export function syncUpstream(options) {
     copiedFiles: copiedVerbatim.map((entry) => entry.target),
     manualAdaptedSkills,
     blockedCursorSkills,
+    excludedChanges,
     removedUpstreamSkills,
     manualOtherFiles,
     pending: mode === "pr" && hasManualCursorItems,

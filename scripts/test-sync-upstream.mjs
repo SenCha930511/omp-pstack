@@ -321,6 +321,11 @@ test("mixed sync stages pending copies and ack resolves them", () => {
   const pendingCheck = checkUpstream({ root, cursorDir: upstream.dir });
   assert.equal(pendingCheck.ok, true, pendingCheck.errors.join("\n"));
 
+  assert.throws(
+    () => ackUpstream({ root, cursorDir: upstream.dir, adapt: ["how"], adaptOnly: true }),
+    /--adapt-only cannot run while upstream.json has pending copies/,
+  );
+
   ackUpstream({ root, cursorDir: upstream.dir, cursor: head.sha, adapt: ["how"], reason: "Ported for omp." });
   const manifest = readManifest(root);
   assert.equal(manifest.pending, undefined);
@@ -546,6 +551,45 @@ test("adapt-only records the skill without advancing the baseline", () => {
   assert.equal(readConfig(root).cursor.lastSyncedSha, upstream.sha);
   assert.equal(fs.readFileSync(path.join(root, "upstream.json"), "utf8"), manifestBefore);
   assert.ok(readConfig(root).cursor.adaptedSkills.includes("blocked"));
+  const check = checkUpstream({ root, cursorDir: upstream.dir });
+  assert.equal(check.ok, true, check.errors.join("\n"));
+});
+
+test("excluded skill changes wait for an explicit ack", () => {
+  const upstream = makeUpstream({
+    "pstack/skills/make-bot-ui/SKILL.md": "bot ui\n",
+    "pstack/skills/keep/SKILL.md": "keep\n",
+  });
+  const root = createRoot({
+    upstream,
+    localFiles: { "skills/keep/SKILL.md": "keep\n" },
+    excludedSkills: ["make-bot-ui"],
+  });
+  const head = advance(upstream, {
+    write: { "pstack/skills/make-bot-ui/notes.md": "new\n" },
+  });
+  const changed = writeChanged(root, upstream, upstream.sha, head.sha);
+  const { summary } = syncUpstream({
+    root,
+    cursorDir: upstream.dir,
+    cursorSha: head.sha,
+    cursorChangedFile: changed,
+  });
+
+  assert.equal(summary.mode, "issue");
+  assert.equal(summary.excludedChanges.length, 1);
+  assert.equal(readConfig(root).cursor.lastSyncedSha, upstream.sha);
+
+  ackUpstream({
+    root,
+    cursorDir: upstream.dir,
+    cursor: head.sha,
+    exclude: ["make-bot-ui"],
+    reason: "Keep the bot UI workflow out of this fork.",
+  });
+  const manifest = readManifest(root);
+  assert.equal(entryBySource(manifest, "pstack/skills/make-bot-ui/notes.md").rule, "excluded");
+  assert.ok(readConfig(root).cursor.excludedSkills.includes("make-bot-ui"));
   const check = checkUpstream({ root, cursorDir: upstream.dir });
   assert.equal(check.ok, true, check.errors.join("\n"));
 });

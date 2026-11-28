@@ -14,7 +14,9 @@ export const EXTRA_INPUTS = [
   "extensions/pstack/index.ts",
   "extensions/pstack/install.ts",
   "extensions/pstack/interaction.ts",
+  "scripts/command-probe.mjs",
   "scripts/install-proof.mjs",
+  "scripts/omp-command.mjs",
   "scripts/proof-install.mjs",
   "scripts/test-install-proof.mjs",
   "scripts/verify-install-proof.mjs",
@@ -27,7 +29,7 @@ const runNpm = (args, options) => {
   return execute(resolved.command, resolved.args, {
     ...options,
     windowsHide: true,
-    windowsVerbatimArguments: process.platform === "win32",
+    windowsVerbatimArguments: resolved.batch,
   });
 };
 
@@ -106,7 +108,7 @@ export async function registerInstall({ root, installedRoot, home, agentDir, cwd
     timeout: 120_000,
     maxBuffer: 4 * 1024 * 1024,
     windowsHide: true,
-    windowsVerbatimArguments: process.platform === "win32",
+    windowsVerbatimArguments: probe.batch,
   });
 }
 

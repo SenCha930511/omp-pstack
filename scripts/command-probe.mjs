@@ -7,7 +7,7 @@ export function quoteBatchArgument(value) {
 
 export function resolveCommandProbe(file, args = [], platform = process.platform) {
   if (platform !== "win32" || !/\.(?:cmd|bat)$/iu.test(file)) {
-    return { command: file, args: [...args] };
+    return { command: file, args: [...args], batch: false };
   }
   if (/["%\r\n]/u.test(file)) {
     throw new Error("Windows batch executable paths may not contain quotes, percent signs, or newlines");
@@ -15,5 +15,6 @@ export function resolveCommandProbe(file, args = [], platform = process.platform
   return {
     command: process.env.ComSpec ?? "cmd.exe",
     args: ["/d", "/s", "/e:on", "/v:off", "/c", `call "${file}"`, ...args.map(quoteBatchArgument)],
+    batch: true,
   };
 }

@@ -177,7 +177,6 @@ function findProjectLocation(cwd: string): ProjectLocation | undefined {
     }
     const legacy = legacyProjectConfigDir(dir);
     if (legacy) return { root: dir, configDir: legacy };
-    if (gitRoot !== undefined && normalizeForCompare(dir) === normalizeForCompare(gitRoot)) break;
     if (path.dirname(dir) === dir) break;
   }
 

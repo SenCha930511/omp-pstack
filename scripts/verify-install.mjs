@@ -128,7 +128,7 @@ export async function verifyInstall({
         timeout: 120_000,
         maxBuffer: 8 * 1024 * 1024,
         windowsHide: true,
-        windowsVerbatimArguments: process.platform === "win32",
+        windowsVerbatimArguments: probe.batch,
       }));
     } catch (error) {
       const detail = [error.stdout, error.stderr].filter(Boolean).join("\n").trim();

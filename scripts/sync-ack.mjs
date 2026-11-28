@@ -18,7 +18,7 @@ import {
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const USAGE =
-  "Usage: node scripts/sync-ack.mjs --cursor-dir <dir> [--cursor <sha>] [--adapt <skill> ...] [--adapt-only] [--reason <text>] [--tests <path> ...] [--root <dir>]";
+  "Usage: node scripts/sync-ack.mjs --cursor-dir <dir> [--cursor <sha>] [--adapt <skill> ...] [--exclude <skill> ...] [--adapt-only] [--reason <text>] [--tests <path> ...] [--root <dir>]";
 const SHA_PATTERN = /^[0-9a-f]{40}$/;
 const SAFE_SKILL_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
 const DEFAULT_TESTS = ["tests/skills.test.mjs"];
@@ -29,13 +29,13 @@ function parseArgs(argv) {
     cursor: undefined,
     cursorDir: undefined,
     adapt: [],
+    exclude: [],
     adaptOnly: false,
     reason: undefined,
-    tests: [],
   };
   const seen = new Set();
   const singleFlags = new Set(["--root", "--cursor", "--cursor-dir", "--reason"]);
-  const multiFlags = new Set(["--adapt", "--tests"]);
+  const multiFlags = new Set(["--adapt", "--exclude", "--tests"]);
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--adapt-only") {
@@ -59,6 +59,7 @@ function parseArgs(argv) {
     else if (argument === "--cursor-dir") options.cursorDir = path.resolve(value);
     else if (argument === "--reason") options.reason = value.trim();
     else if (argument === "--adapt") options.adapt.push(value.trim());
+    else if (argument === "--exclude") options.exclude.push(value.trim());
     else options.tests.push(value.trim());
   }
   if (!options.cursorDir) throw new Error("--cursor-dir is required");
@@ -68,6 +69,9 @@ function parseArgs(argv) {
     }
     if (options.adapt.length === 0) {
       throw new Error("--adapt-only requires at least one --adapt <skill>");
+    }
+    if (options.exclude.length > 0) {
+      throw new Error("--adapt-only cannot be combined with --exclude");
     }
   }
   return options;
@@ -184,6 +188,27 @@ function reclassifySkill({
   }
 }
 
+function excludeSkill({ root, manifest, skill, upstreamTree, sourcePrefix, reason }) {
+  const sources = [...upstreamTree.keys()].filter((source) => source.startsWith(`${sourcePrefix}${skill}/`));
+  if (sources.length === 0) throw new Error(`excluded skill does not exist upstream: ${skill}`);
+  for (const source of sources.sort()) {
+    const target = targetForSource(source);
+    if (fs.existsSync(path.join(root, target))) {
+      throw new Error(`excluded skill file exists locally: ${target}`);
+    }
+    const upstreamEntry = upstreamTree.get(source);
+    const existing = manifest.entries.find((entry) => entry.source === source);
+    replaceEntry(manifest.entries, {
+      source,
+      target,
+      blob: upstreamEntry.blob,
+      mode: upstreamEntry.mode,
+      rule: "excluded",
+      reason: reason ?? existing?.reason ?? `Excluded upstream file in ${skill}.`,
+    });
+  }
+}
+
 function verifyPendingCopies({ root, pending }) {
   if (!Array.isArray(pending.copiedVerbatim)) return;
   for (const item of pending.copiedVerbatim) {
@@ -218,6 +243,7 @@ export function ackUpstream({
   cursor,
   cursorDir,
   adapt = [],
+  exclude = [],
   adaptOnly = false,
   reason,
   tests = [],
@@ -236,12 +262,17 @@ export function ackUpstream({
   const tree = resolveCommit(resolvedCursorDir, `${head}:${config.cursor.path.replace(/^\/+|\/+$/g, "")}/skills`);
 
   const adaptedSkills = new Set(config.cursor.adaptedSkills ?? []);
+  const excludedSkills = new Set(config.cursor.excludedSkills ?? []);
   const requested = adapt.map(validateSkillName);
+  const requestedExcluded = exclude.map(validateSkillName);
   if (adaptOnly && cursor !== undefined) {
     throw new Error("--adapt-only cannot be combined with --cursor");
   }
   if (adaptOnly && requested.length === 0) {
     throw new Error("--adapt-only requires at least one --adapt <skill>");
+  }
+  if (adaptOnly && requestedExcluded.length > 0) {
+    throw new Error("--adapt-only cannot be combined with --exclude");
   }
 
   const sourcePrefix = `${config.cursor.path.replace(/^\/+|\/+$/g, "")}/skills/`;
@@ -253,6 +284,9 @@ export function ackUpstream({
   const reasons = reason ? [reason] : [];
 
   let resolvedSkills = new Set(requested);
+  if (adaptOnly && manifest.pending) {
+    throw new Error("--adapt-only cannot run while upstream.json has pending copies; run a full ack");
+  }
   if (manifest.pending) {
     const pending = manifest.pending;
     if (pending.commit !== head) {
@@ -286,6 +320,17 @@ export function ackUpstream({
           throw new Error(`blocked skill still unresolved; port it and pass --adapt ${item.skill}`);
         }
         resolvedSkills.add(item.skill);
+      } else if (item.kind === "excluded") {
+        excludeSkill({
+          root: repositoryRoot,
+          manifest,
+          skill: item.skill,
+          upstreamTree,
+          sourcePrefix,
+          reason,
+        });
+        excludedSkills.add(item.skill);
+        adaptedSkills.delete(item.skill);
       } else if (item.kind === "removed") {
         for (const file of collectFiles(path.join(repositoryRoot, "skills", item.skill), repositoryRoot)) {
           addLocalOnly(
@@ -311,12 +356,27 @@ export function ackUpstream({
         tests,
       });
     }
+    for (const skill of requestedExcluded) {
+      excludeSkill({
+        root: repositoryRoot,
+        manifest,
+        skill,
+        upstreamTree,
+        sourcePrefix,
+        reason,
+      });
+      excludedSkills.add(skill);
+      adaptedSkills.delete(skill);
+    }
 
     reconcileRemoved({ root: repositoryRoot, manifest, upstreamTree, reason });
     manifest.source = { ...manifest.source, commit: pending.commit, tree: pending.tree };
     delete manifest.pending;
     manifest.entries = sortEntries(manifest.entries);
-    config.cursor.adaptedSkills = [...adaptedSkills].sort();
+    config.cursor.excludedSkills = [...excludedSkills].sort();
+    config.cursor.adaptedSkills = [...adaptedSkills]
+      .filter((skill) => !excludedSkills.has(skill))
+      .sort();
     config.cursor.lastSyncedSha = pending.commit;
     validateAndWrite({
       root: repositoryRoot,
@@ -337,6 +397,21 @@ export function ackUpstream({
   }
 
   for (const skill of resolvedSkills) adaptedSkills.add(skill);
+  if (!adaptOnly) {
+    for (const skill of requestedExcluded) {
+      excludeSkill({
+        root: repositoryRoot,
+        manifest,
+        skill,
+        upstreamTree,
+        sourcePrefix,
+        reason,
+      });
+      excludedSkills.add(skill);
+      adaptedSkills.delete(skill);
+    }
+    resolvedSkills = new Set([...resolvedSkills].filter((skill) => !excludedSkills.has(skill)));
+  }
 
   if (!adaptOnly) {
     for (const skill of resolvedSkills) {
@@ -355,7 +430,10 @@ export function ackUpstream({
     manifest.entries = sortEntries(manifest.entries);
     config.cursor.lastSyncedSha = head;
   }
-  config.cursor.adaptedSkills = [...adaptedSkills].sort();
+  config.cursor.excludedSkills = [...excludedSkills].sort();
+  config.cursor.adaptedSkills = [...adaptedSkills]
+    .filter((skill) => !excludedSkills.has(skill))
+    .sort();
   validateAndWrite({
     root: repositoryRoot,
     cursorDir: resolvedCursorDir,
@@ -375,6 +453,7 @@ if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === SCRIPT_PA
     const result = ackUpstream(options);
     if (!options.adaptOnly) console.log(`cursor.lastSyncedSha: ${result.cursor}`);
     if (options.adapt.length > 0) console.log(`cursor.adaptedSkills added: ${options.adapt.join(", ")}`);
+    if (options.exclude.length > 0) console.log(`cursor.excludedSkills added: ${options.exclude.join(", ")}`);
     if (result.pending) console.log("pending ack incomplete");
   } catch (error) {
     console.error(USAGE);
