@@ -337,6 +337,7 @@ export function run(argv, hooks = {}) {
   }
   console.log(`Bumped ${plan.current} -> ${options.version} across ${plan.declarations} version declarations in ${written.length} files.`);
   for (const edit of written) console.log(`- ${edit.relative}`);
+  console.log("Next: run `npm run proof:install` and commit proofs/install.json.");
   return 0;
 }
 
