@@ -39,6 +39,7 @@ function isForbiddenPath(file) {
   if (file.startsWith("tests/") || file.startsWith("scripts/") || file.startsWith(".github/")) return true;
   if (file.startsWith(".omp-plugin/")) return true;
   if (file.startsWith("docs/")) return true;
+  if (file.startsWith("proofs/")) return true;
   if (file.startsWith("skills/statechart/scripts/test/")) return true;
   if (file.startsWith("skills/") && file.endsWith(".test.ts")) return true;
   if (file.startsWith("node_modules/") || file.includes("/node_modules/")) return true;

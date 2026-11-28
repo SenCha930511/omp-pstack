@@ -76,7 +76,7 @@ jobs:
           TAG: ${{ inputs.tag }}
           HOME: ${{ runner.temp }}/omp-home
           USERPROFILE: ${{ runner.temp }}/omp-home
-        run: node scripts/verify-release-tarball.mjs --directory dist --tag "$TAG" --head "$(git rev-parse HEAD)" --test-packed
+        run: node scripts/verify-release-tarball.mjs --directory dist --tag "$TAG" --head "$(git rev-parse HEAD)" --proof proofs/install.json --test-packed
 
       - name: Upload the release tarball
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

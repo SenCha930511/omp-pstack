@@ -31,6 +31,13 @@
 - Added `docs:check` and `test:docs`; the link checker now covers every Markdown file under `docs/`.
 - Updated `NOTICE.md` with the guide and image provenance and corrected the autonomy and `comment-sicko` tool descriptions.
 
+### Install proof
+
+- Added `proofs/install.json`, a bounded install proof with SHA-256 for every packed file plus the generator, verifier, shared validator, and extension load graph.
+- Added `proof:install` to regenerate it and `test:proof` to validate the schema, canonical `package.json` hash, inputs, and live discovery without writing.
+- `npm run check` now runs the read-only proof check, and release verification checks the proof package version against the tarball.
+- Added proof unit tests for changed bytes, missing files, version drift, unknown schema, forged counts, and the `gitHead`/`devDependencies` canonicalization rule.
+
 ## 0.3.3 - 2026-11-27
 
 ### Poteto Mode
