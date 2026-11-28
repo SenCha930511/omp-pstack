@@ -69,6 +69,32 @@ test("accepts matching versions and extracts release notes", () => {
   assert.equal(fs.readFileSync(notes, "utf8"), "- Added release verification.\n");
 });
 
+test("accepts an Unreleased section before the version heading", () => {
+  const dir = createFixture({
+    "CHANGELOG.md": [
+      "# Changelog",
+      "",
+      "## Unreleased",
+      "",
+      "- Next work.",
+      "",
+      "## 0.2.0 - 2026-11-26",
+      "",
+      "- Added release verification.",
+      "",
+      "## 0.1.0 - 2026-11-25",
+      "",
+      "- Initial release.",
+      "",
+    ].join("\n"),
+  });
+  const notes = path.join(dir, "notes.md");
+  assert.equal(runCheck(["--root", dir]).status, 0);
+  const rel = runCheck(["--root", dir, "--release", "--tag", "v0.2.0", "--notes-output", notes]);
+  assert.equal(rel.status, 0, rel.stderr);
+  assert.equal(fs.readFileSync(notes, "utf8"), "- Added release verification.\n");
+});
+
 test("accepts em-dash changelog headings and ignores fenced blocks and HTML comments", () => {
   const dir = createFixture({
     "CHANGELOG.md": [
