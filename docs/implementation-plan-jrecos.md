@@ -661,5 +661,7 @@ Project > user 的 fixture 同時裝舊 user cache 與新 project cache，驗證
 | PR-03 指南與生成式索引 | `cdd460c` |
 | PR-04 安裝證據 | `dacec7c` |
 | Changelog Unreleased 支援 | `237637d` |
+| Sync 刪除清理 | `c592761` |
+| Reviewer 修正（Windows 參數、excluded sync、live inventory、proof 依賴、project scope） | `4380c15` |
 
-本地 `npm run check` 通過。CI 與 GitHub branch install smoke 待推送後執行。本文件的驗收 checkbox 保留為原始規劃紀錄，完成狀態以上表與各 commit 的測試為準。
+本地 `npm run check` 通過，包含 live marketplace install、install proof discovery 與完整 tarball 驗證。獨立 Reviewer 的 high/medium findings 已修正。CI 與 GitHub branch install smoke 待推送後執行。本文件的驗收 checkbox 保留為原始規劃紀錄，完成狀態以上表與各 commit 的測試為準。
