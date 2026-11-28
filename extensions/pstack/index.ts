@@ -2,13 +2,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext, InputEvent, SkillPromptDetails } from "@oh-my-pi/pi-coding-agent";
+import { resolvePotetoSkill, type Anchor } from "./install.js";
 import { preferredAskTool } from "./interaction.js";
 
 const MODE_ENTRY = "pstack-mode";
 const CONTEXT_TYPE = "pstack-mode-context";
 const SKILL_NAME = "poteto-mode";
 const SKILL_PROMPT_TYPE = "skill-prompt";
-const SKILL_FILE = path.join(packageRoot(), "skills/poteto-mode/SKILL.md");
+const LOADED_ROOT = packageRoot();
 const STATUS_TEXT = "pstack: poteto mode";
 const USAGE = [
   "/poteto-mode <task>          one-shot",
@@ -36,6 +37,7 @@ type ParsedCommand =
 
 type ExtensionOptions = {
   skillFile?: string;
+  skillFileResolver?: (options: { loadedRoot: string; cwd?: string }) => Anchor;
 };
 
 function packageRoot(): string {
@@ -73,10 +75,13 @@ function parsePotetoCommand(rawArgs: string): ParsedCommand {
 }
 
 export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
-  const skillFile = options.skillFile ?? SKILL_FILE;
-  const skillDir = path.dirname(skillFile);
+  const fixedAnchor: Anchor | undefined = options.skillFile
+    ? { skillFile: options.skillFile, skillDir: path.dirname(options.skillFile), usingFallback: false }
+    : undefined;
+  const resolver = options.skillFileResolver ?? resolvePotetoSkill;
+  let anchor = fixedAnchor ?? resolver({ loadedRoot: LOADED_ROOT });
   let potetoMode = false;
-  let cachedSkill: { mtimeMs: number; body: string } | undefined;
+  let cachedSkill: { skillFile: string; mtimeMs: number; size: number; body: string } | undefined;
   let cachedContext: { content: string; message: ContextMessage } | undefined;
   let pendingOneShotImages: { task: string; images: AttachedImages } | undefined;
 
@@ -84,24 +89,65 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     if (ctx.hasUI) ctx.ui.notify(message, type);
   }
 
-  function readSkillBody(): string | undefined {
+  function realpathIfExists(value: string): string | undefined {
     try {
-      const { mtimeMs } = fs.statSync(skillFile);
-      if (cachedSkill?.mtimeMs === mtimeMs) return cachedSkill.body;
-      const body = fs.readFileSync(skillFile, "utf8").replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
-      cachedSkill = { mtimeMs, body };
-      return body;
+      return fs.realpathSync.native(value);
     } catch {
-      cachedSkill = undefined;
       return undefined;
     }
   }
 
+  function refreshAnchor(ctx?: ExtensionContext): Anchor {
+    if (fixedAnchor) return fixedAnchor;
+    const next = resolver({ loadedRoot: LOADED_ROOT, cwd: ctx?.cwd });
+    if (next.skillFile !== anchor.skillFile && fs.existsSync(next.skillFile)) {
+      anchor = next;
+    }
+    return anchor;
+  }
+
+  function readSkillBody(ctx?: ExtensionContext): string | undefined {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const current = refreshAnchor(ctx);
+      try {
+        const stats = fs.statSync(current.skillFile);
+        if (
+          cachedSkill &&
+          cachedSkill.skillFile === current.skillFile &&
+          cachedSkill.mtimeMs === stats.mtimeMs &&
+          cachedSkill.size === stats.size
+        ) {
+          return cachedSkill.body;
+        }
+        const body = fs.readFileSync(current.skillFile, "utf8").replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+        cachedSkill = {
+          skillFile: current.skillFile,
+          mtimeMs: stats.mtimeMs,
+          size: stats.size,
+          body,
+        };
+        return body;
+      } catch {
+        cachedSkill = undefined;
+        if (attempt === 0 && !fixedAnchor) {
+          const next = resolver({ loadedRoot: LOADED_ROOT, cwd: ctx?.cwd });
+          if (next.skillFile !== current.skillFile && fs.existsSync(next.skillFile)) {
+            anchor = next;
+            continue;
+          }
+        }
+        return undefined;
+      }
+    }
+    return undefined;
+  }
+
   function buildContextPayload(ctx: ExtensionContext, body: string): string {
+    const current = refreshAnchor(ctx);
     const lines = [
       "[PSTACK POTETO MODE]",
-      `Skill file: ${skillFile}`,
-      `Skill directory: ${skillDir}`,
+      `Skill file: ${current.skillFile}`,
+      `Skill directory: ${current.skillDir}`,
       "Resolve relative paths in this skill against the skill directory.",
       "Other pstack skills are registered. Invoke them with /skill:<name> or read skill://<name>; all but setup-pstack are hidden from the model catalog.",
     ];
@@ -165,6 +211,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
 
   function restorePotetoMode(ctx: ExtensionContext): void {
     pendingOneShotImages = undefined;
+    refreshAnchor(ctx);
     if (isSubagent(ctx)) {
       potetoMode = false;
       return;
@@ -183,8 +230,8 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   }
 
   function enableMode(ctx: ExtensionContext): boolean {
-    if (readSkillBody() === undefined) {
-      notify(ctx, `pstack skill file not found at ${skillFile}`, "error");
+    if (readSkillBody(ctx) === undefined) {
+      notify(ctx, `pstack skill file not found at ${refreshAnchor(ctx).skillFile}`, "error");
       return false;
     }
     if (potetoMode) {
@@ -207,21 +254,33 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     notify(ctx, "Poteto Mode sticky disabled for this session.");
   }
 
-  function findSkillCommandName(): string | undefined {
+  function findSkillCommandName(ctx: ExtensionContext): string | undefined {
     if (typeof pi.getCommands !== "function") return undefined;
-    const targetPath = path.resolve(skillFile);
+    const current = refreshAnchor(ctx);
+    const targetPath = path.resolve(current.skillFile);
+    const targetReal = realpathIfExists(targetPath);
     const commands = pi.getCommands();
-    const byPath = commands.find(
-      (cmd) => cmd.source === "skill" && cmd.path !== undefined && path.resolve(cmd.path) === targetPath,
-    );
-    if (byPath) return byPath.name;
-    const byName = commands.find(
-      (cmd) => cmd.source === "skill" && cmd.name === "skill:poteto-mode" && cmd.path === undefined,
-    );
-    return byName?.name;
+    for (const cmd of commands) {
+      if (cmd.source !== "skill") continue;
+      if (cmd.path !== undefined) {
+        const commandPath = path.resolve(cmd.path);
+        if (!fs.existsSync(commandPath)) continue;
+        if (commandPath === targetPath) return cmd.name;
+        const commandReal = realpathIfExists(commandPath);
+        if (targetReal !== undefined && commandReal === targetReal) return cmd.name;
+        continue;
+      }
+      if (cmd.name === "skill:poteto-mode") return cmd.name;
+    }
+    return undefined;
   }
 
-  function buildOneShotSkillPrompt(body: string, task: string): { text: string; details: SkillPromptDetails } {
+  function buildOneShotSkillPrompt(
+    ctx: ExtensionContext,
+    body: string,
+    task: string,
+  ): { text: string; details: SkillPromptDetails } {
+    const current = refreshAnchor(ctx);
     const trimmedBody = body.replace(/\r\n?/g, "\n").trim();
     const trimmedTask = task.trim();
     const text = [
@@ -231,7 +290,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
       "",
       "---",
       "",
-      `[Skill directory: ${skillDir}]`,
+      `[Skill directory: ${current.skillDir}]`,
       "Resolve relative paths in this skill (e.g. `scripts/foo.js`, `templates/config.yaml`) against this absolute directory; read referenced assets and templates; run scripts with the terminal tool when skill instructions call for it.",
       `User: ${trimmedTask}`,
     ].join("\n");
@@ -239,7 +298,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
       text,
       details: {
         name: SKILL_NAME,
-        path: skillFile,
+        path: current.skillFile,
         args: trimmedTask,
         lineCount: trimmedBody ? trimmedBody.split("\n").length : 0,
       },
@@ -257,12 +316,12 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
   }
 
   async function sendOneShotSkill(ctx: ExtensionContext, task: string, images?: AttachedImages): Promise<void> {
-    const body = readSkillBody();
+    const body = readSkillBody(ctx);
     if (body === undefined) {
-      notify(ctx, `pstack skill file not found at ${skillFile}`, "error");
+      notify(ctx, `pstack skill file not found at ${refreshAnchor(ctx).skillFile}`, "error");
       return;
     }
-    const built = buildOneShotSkillPrompt(body, task);
+    const built = buildOneShotSkillPrompt(ctx, body, task);
     const content =
       images && images.length > 0 ? [{ type: "text" as const, text: built.text }, ...images] : built.text;
     // In print/json modes, print-mode.ts calls session.waitForIdle() immediately after
@@ -360,7 +419,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
     if (potetoMode) {
       return { text: parsed.task };
     }
-    const skillCommand = findSkillCommandName();
+    const skillCommand = findSkillCommandName(ctx);
     if (skillCommand) {
       return { text: `/${skillCommand} ${parsed.task}` };
     }
@@ -372,7 +431,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
 
   pi.on("before_agent_start", (event, ctx) => {
     if (isSubagent(ctx) || !potetoMode || event.reason === "revive") return;
-    const body = readSkillBody();
+    const body = readSkillBody(ctx);
     if (body === undefined) return;
     const content = buildContextPayload(ctx, body);
     if (hasContextMessage(ctx, content)) return;
@@ -397,7 +456,7 @@ export default function (pi: ExtensionAPI, options: ExtensionOptions = {}) {
       if (contextIndices.length === 0) return;
       return { messages: event.messages.filter((message) => !isContextMessage(message)) };
     }
-    const body = readSkillBody();
+    const body = readSkillBody(ctx);
     if (body === undefined) {
       if (contextIndices.length === 0) return;
       return { messages: event.messages.filter((message) => !isContextMessage(message)) };

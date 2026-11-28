@@ -58,6 +58,7 @@ const root = path.resolve(import.meta.dir, "..");
 const graph = scanGraph(path.join(root, "extensions", "pstack", "index.ts"), root);
 assert.deepEqual(graph.files, [
   "extensions/pstack/index.ts",
+  "extensions/pstack/install.ts",
   "extensions/pstack/interaction.ts",
 ]);
 assert.deepEqual(

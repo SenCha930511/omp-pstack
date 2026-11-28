@@ -64,7 +64,7 @@
     "check:upstream": "node scripts/check-upstream.mjs",
     "release:bump": "node scripts/bump-release.mjs",
     "test:skills": "node --test tests/*.test.mjs",
-    "test:extension": "bun test tests/extension.test.ts",
+    "test:extension": "bun test tests/extension.test.ts tests/install.test.ts",
     "test:graph": "bun scripts/test-load-graph.ts",
     "test:release-scripts": "node --test scripts/test-check-release-versions.mjs scripts/test-bump-release.mjs scripts/test-verify-release-tarball.mjs",
     "test:sync-script": "node --test scripts/test-sync-upstream.mjs scripts/test-upstream-range.mjs scripts/test-sync-ack.mjs scripts/test-check-upstream.mjs",

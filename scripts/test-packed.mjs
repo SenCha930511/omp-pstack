@@ -20,6 +20,7 @@ const REQUIRED_FILES = [
   "agents/comment-sicko.md",
   "agents/poteto-agent.md",
   "extensions/pstack/index.ts",
+  "extensions/pstack/install.ts",
   "extensions/pstack/interaction.ts",
   "package.json",
   "skills/poteto-mode/SKILL.md",
