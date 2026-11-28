@@ -4,7 +4,7 @@
   "command": "npm run proof:install",
   "package": {
     "name": "omp-pstack",
-    "version": "0.3.3"
+    "version": "0.3.4"
   },
   "inputs": [
     {
@@ -45,7 +45,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "dcd0c465c0dfc17f386245adc29194ad72670aeb60d4e5fea135ccd847bca18f"
+      "sha256": "b4ba52420b1ed2c10bfe820d01a9ca7eb1348317227ba3d12002575c316b0803"
     },
     {
       "path": "scripts/command-probe.mjs",
