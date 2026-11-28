@@ -647,3 +647,19 @@ Project > user 的 fixture 同時裝舊 user cache 與新 project cache，驗證
 ## 暫停點
 
 這份計畫不代表已開始實作。等待操作者選擇 PR-01 或明確告訴執行順序，再建立 branch、測試、程式與後續 Reviewer 審查。
+
+## 實作狀態
+
+實作已完成於 `feat/jrecos-plan-implementation`，尚未發布或 merge。
+
+| 工作 | Commit |
+|---|---|
+| 計畫文件 | `f0b7685` |
+| PR-01 marketplace 與共用安裝驗證 | `c97c56b` |
+| PR-02 Cursor-only manifest 與 sync 重寫 | `8c4aa86` |
+| PR-05 mode 路徑修復 | `147f003` |
+| PR-03 指南與生成式索引 | `cdd460c` |
+| PR-04 安裝證據 | `dacec7c` |
+| Changelog Unreleased 支援 | `237637d` |
+
+本地 `npm run check` 通過。CI 與 GitHub branch install smoke 待推送後執行。本文件的驗收 checkbox 保留為原始規劃紀錄，完成狀態以上表與各 commit 的測試為準。
