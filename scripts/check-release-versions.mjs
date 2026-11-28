@@ -124,18 +124,19 @@ function parseChangelog(root, problems) {
     problems.push("CHANGELOG.md: must start with # Changelog");
   }
   const headings = lines.filter(({ line }) => /^##(?!#)/.test(line));
-  const first = headings[0];
+  const firstIndex = headings.findIndex(({ line }) => !/^## Unreleased$/.test(line));
+  const first = firstIndex >= 0 ? headings[firstIndex] : undefined;
   if (!first) {
-    problems.push("CHANGELOG.md: missing a ## version heading");
+    problems.push("CHANGELOG.md: missing a ## X.Y.Z - YYYY-MM-DD heading");
     return undefined;
   }
   const match = first.line.match(CHANGELOG_HEADING);
   if (!match) {
-    problems.push("CHANGELOG.md: first ## heading must be ## X.Y.Z - YYYY-MM-DD (or —)");
+    problems.push("CHANGELOG.md: first non-Unreleased ## heading must be ## X.Y.Z - YYYY-MM-DD (or —)");
   } else {
     const date = new Date(`${match[2]}T00:00:00.000Z`);
     if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== match[2]) {
-      problems.push("CHANGELOG.md: first ## heading must contain a valid YYYY-MM-DD date");
+      problems.push("CHANGELOG.md: first version heading must contain a valid YYYY-MM-DD date");
     }
   }
   return { rawLines, headings, first, match };
@@ -149,16 +150,20 @@ function checkRelease(root, options, expected, problems) {
   if (!changelog) return;
   const { rawLines, headings, first, match } = changelog;
   if (match && expected && match[1] !== expected) {
-    problems.push(`CHANGELOG.md: first ## heading is ${match[1]}, expected ${expected}`);
+    problems.push(`CHANGELOG.md: first version heading is ${match[1]}, expected ${expected}`);
   }
+  const firstIndex = headings.indexOf(first);
   if (expected) {
     const escaped = expected.replaceAll(".", "\\.");
     const targetHeading = new RegExp(`^## ${escaped}(?:\\s|$)`);
-    if (headings.slice(1).some(({ line }) => targetHeading.test(line))) {
+    if (headings.slice(firstIndex + 1).some(({ line }) => targetHeading.test(line))) {
       problems.push(`CHANGELOG.md: duplicate heading for target version ${expected}`);
     }
   }
-  const sectionLines = rawLines.slice(first.rawIndex + 1, headings[1]?.rawIndex);
+  const nextHeading = headings
+    .slice(firstIndex + 1)
+    .find(({ line }) => CHANGELOG_HEADING.test(line));
+  const sectionLines = rawLines.slice(first.rawIndex + 1, nextHeading?.rawIndex);
   while (sectionLines.length > 0 && sectionLines[0].trim() === "") sectionLines.shift();
   while (sectionLines.length > 0 && sectionLines[sectionLines.length - 1].trim() === "") sectionLines.pop();
   const body = sectionLines.join("\n");
