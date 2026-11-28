@@ -218,6 +218,35 @@ test("clean sync advances the config and manifest pins in one PR", () => {
   assert.equal(check.ok, true, check.errors.join("\n"));
 });
 
+test("clean sync drops manifest entries for files deleted upstream and locally", () => {
+  const upstream = makeUpstream({
+    "pstack/skills/old/SKILL.md": "old\n",
+    "pstack/skills/keep/SKILL.md": "keep old\n",
+  });
+  const root = createRoot({
+    upstream,
+    localFiles: { "skills/old/SKILL.md": "old\n", "skills/keep/SKILL.md": "keep old\n" },
+  });
+  const head = advance(upstream, {
+    write: { "pstack/skills/keep/SKILL.md": "keep new\n" },
+    remove: ["pstack/skills/old/SKILL.md"],
+  });
+  fs.rmSync(path.join(root, "skills/old"), { recursive: true, force: true });
+  const changed = writeChanged(root, upstream, upstream.sha, head.sha);
+  const { summary } = syncUpstream({
+    root,
+    cursorDir: upstream.dir,
+    cursorSha: head.sha,
+    cursorChangedFile: changed,
+  });
+
+  assert.equal(summary.mode, "pr");
+  assert.equal(summary.pending, false);
+  assert.equal(entryBySource(readManifest(root), "pstack/skills/old/SKILL.md"), undefined);
+  const check = checkUpstream({ root, cursorDir: upstream.dir });
+  assert.equal(check.ok, true, check.errors.join("\n"));
+});
+
 test("adapted-only updates hold the baseline until ack", () => {
   const upstream = makeUpstream({ "pstack/skills/how/SKILL.md": "upstream how\n" });
   const root = createRoot({

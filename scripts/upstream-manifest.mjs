@@ -78,3 +78,10 @@ export function entryForTarget(entries, target) {
 export function entryForSource(entries, source) {
   return entries.find((entry) => entry.source === source);
 }
+
+
+export function addLocalOnly(manifest, target, reason) {
+  const list = Array.isArray(manifest.localOnly) ? manifest.localOnly : [];
+  if (!list.some((item) => item.target === target)) list.push({ target, reason });
+  manifest.localOnly = list.sort((a, b) => (a.target < b.target ? -1 : a.target > b.target ? 1 : 0));
+}

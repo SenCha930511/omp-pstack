@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import {
   UPSTREAM_SCHEMA,
   UPSTREAM_SOURCE_PREFIX,
+  addLocalOnly,
   collectFiles,
   gitBlobSha,
   readManifest,
@@ -519,11 +520,29 @@ export function syncUpstream(options) {
           unresolved,
         };
       } else {
+        const upstreamSources = new Set(upstreamTree.keys());
         const bySource = new Map(manifest.entries.map((entry) => [entry.source, entry]));
         for (const copied of copiedVerbatim) {
           bySource.set(copied.source, { ...copied, rule: "verbatim" });
         }
-        manifest.entries = sortEntries([...bySource.values()]);
+        const kept = [];
+        for (const entry of bySource.values()) {
+          if (upstreamSources.has(entry.source)) {
+            kept.push(entry);
+            continue;
+          }
+          if (fs.existsSync(path.join(root, entry.target))) {
+            addLocalOnly(
+              manifest,
+              entry.target,
+              `Kept locally after upstream removed ${entry.source}.`,
+            );
+          }
+        }
+        manifest.entries = sortEntries(kept);
+        manifest.localOnly = (manifest.localOnly ?? []).filter((item) =>
+          fs.existsSync(path.join(root, item.target)),
+        );
         manifest.source = {
           ...manifest.source,
           commit: options.cursorSha,

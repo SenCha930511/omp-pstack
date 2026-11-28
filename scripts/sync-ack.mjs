@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkUpstream } from "./check-upstream.mjs";
 import {
+  addLocalOnly,
   collectFiles,
   gitBlobSha,
   localFileMode,
@@ -112,11 +113,7 @@ function replaceEntry(entries, entry) {
   else entries.push(entry);
 }
 
-function addLocalOnly(manifest, target, reason) {
-  const list = Array.isArray(manifest.localOnly) ? manifest.localOnly : [];
-  if (!list.some((item) => item.target === target)) list.push({ target, reason });
-  manifest.localOnly = list.sort((a, b) => (a.target < b.target ? -1 : a.target > b.target ? 1 : 0));
-}
+
 
 function reconcileRemoved({ root, manifest, upstreamTree, reason }) {
   const sources = new Set(upstreamTree.keys());
