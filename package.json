@@ -1,6 +1,6 @@
 {
   "name": "omp-pstack",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "pstack skills, Poteto Mode, and bundled agents for omp (oh-my-pi). omp-only fork of @casualjim/pi-pstack.",
   "license": "MIT",
   "author": "SenCha930511",
