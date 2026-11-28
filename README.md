@@ -18,24 +18,68 @@ no `subagent` tool registration.
 
 ## Install
 
-From the marketplace:
+From this repo's own marketplace:
+
+```sh
+omp plugin marketplace add SenCha930511/omp-pstack
+omp plugin install omp-pstack@omp-pstack
+```
+
+`marketplace add` reads the catalog from the repository tree OMP fetches. It
+does not track your working checkout, and `"./"` does not re-fetch latest
+`main` on every install. To pick up catalog changes, update the marketplace
+first:
+
+```sh
+omp plugin marketplace update omp-pstack
+omp plugin upgrade omp-pstack@omp-pstack
+```
+
+OMP compares version numbers. If the catalog head has new commits but
+`package.json` still carries the installed version, `upgrade` treats it as
+current. For an unreleased head, reinstall the same version explicitly:
+
+```sh
+omp plugin install omp-pstack@omp-pstack --force
+```
+
+The marketplace path copies the whole catalog tree into OMP's plugin cache,
+including tests, scripts, docs, and guide images. npm's `files` whitelist does
+not apply to a marketplace install. The npm tarball still contains only the
+published files.
+
+The external catalog at
+[`SenCha930511/omp-marketplace`](https://github.com/SenCha930511/omp-marketplace)
+and the published npm package remain supported:
 
 ```sh
 omp plugin marketplace add SenCha930511/omp-marketplace
 omp plugin install omp-pstack@sencha930511
-```
-
-The marketplace catalog lives at
-[`SenCha930511/omp-marketplace`](https://github.com/SenCha930511/omp-marketplace).
-Its `omp-pstack` entry points at the `v0.3.3` GitHub tag.
-
-Or install the published npm package directly:
-
-```sh
 omp plugin install npm:omp-pstack
 ```
 
-To pin this version, use `omp plugin install npm:omp-pstack@0.3.3`.
+To pin the npm version, use `omp plugin install npm:omp-pstack@0.3.3`.
+
+### Switching install sources
+
+One OMP install scope can have only one runtime package named `omp-pstack`.
+npm, the `sencha930511` marketplace entry, and the `omp-pstack` marketplace
+entry cannot coexist there. OMP rejects the second install with:
+
+```text
+Runtime package name "omp-pstack" conflicts with installed plugin "..."
+```
+
+Uninstall the current entry before installing from another source:
+
+```sh
+omp plugin uninstall omp-pstack@sencha930511
+omp plugin install omp-pstack@omp-pstack
+```
+
+For an npm install, uninstall `omp-pstack` first. Restart OMP after the switch,
+then check `/skill:poteto-mode` and the hide mode in
+[AGENT-INSTALL.md](AGENT-INSTALL.md).
 
 For local development:
 

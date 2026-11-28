@@ -105,6 +105,7 @@ test("poteto-help documents the sticky commands, recipes, install, and reframe",
   assert.match(text, /\/poteto-mode sticky \[task\]/);
   assert.match(text, /\/poteto-mode off/);
   assert.match(text, /\/poteto-mode status/);
+  assert.match(text, /omp plugin install omp-pstack@omp-pstack/);
   assert.match(text, /omp plugin install omp-pstack@sencha930511/);
 
   const recipes = readFileSync(join(skillsDir, "poteto-help", "references", "recipes.md"), "utf8");

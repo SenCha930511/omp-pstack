@@ -1,0 +1,11 @@
+{
+  "name": "omp-pstack",
+  "owner": { "name": "SenCha930511" },
+  "plugins": [
+    {
+      "name": "omp-pstack",
+      "source": "./",
+      "description": "pstack skills, Poteto Mode, and bundled agents for omp (oh-my-pi)."
+    }
+  ]
+}

@@ -21,16 +21,18 @@ omp 19.2 or newer. Node 22 or newer for npm installs.
 
 ## 2. Install
 
-Marketplace:
+This repo's marketplace:
+
+```sh
+omp plugin marketplace add SenCha930511/omp-pstack
+omp plugin install omp-pstack@omp-pstack
+```
+
+External marketplace or npm:
 
 ```sh
 omp plugin marketplace add SenCha930511/omp-marketplace
 omp plugin install omp-pstack@sencha930511
-```
-
-npm:
-
-```sh
 omp plugin install npm:omp-pstack@0.3.3
 ```
 
@@ -48,24 +50,42 @@ omp plugin list
 
 `omp-pstack` must be listed at 0.3.3 or newer.
 
+Only one runtime package named `omp-pstack` can exist in one OMP install scope.
+If another source is already installed, OMP reports a runtime package name
+conflict. Uninstall the current entry before installing from another source.
+Restart OMP after the switch.
+
 ## 3. Upgrade an existing install
 
-A 0.2.0 entry is the old file-path build. Adding an existing marketplace, or
-installing an already-installed plugin without force, fails, so use the upgrade
-path.
-
-Marketplace:
+The marketplace caches the catalog tree at fetch time. Update the catalog
+before upgrading:
 
 ```sh
-omp plugin marketplace update sencha930511
-omp plugin upgrade omp-pstack@sencha930511
+omp plugin marketplace update omp-pstack
+omp plugin upgrade omp-pstack@omp-pstack
 ```
 
-npm:
+OMP compares version numbers. When the catalog head has new commits but the
+version did not change, `upgrade` reports it current. Reinstall the same
+version explicitly for an unreleased head:
+
+```sh
+omp plugin install omp-pstack@omp-pstack --force
+```
+
+The older `sencha930511` entry uses the same commands with that marketplace
+name. npm:
 
 ```sh
 omp plugin install npm:omp-pstack@0.3.3 --force
 ```
+
+The marketplace install copies the whole catalog tree into the plugin cache,
+including tests, scripts, docs, and guide images. npm's `files` whitelist does
+not apply there.
+
+A 0.2.0 entry is the old file-path build. Installing an already-installed
+plugin without force fails, so use the upgrade path above.
 
 On the first request after resuming, the extension replaces a stored payload
 that differs from the current one.
