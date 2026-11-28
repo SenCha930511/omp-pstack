@@ -9,6 +9,14 @@
 - Added `scripts/test-marketplace.mjs`, which covers local add, install, list, update, force reinstall, the same-name runtime conflict, and the uninstall-then-install migration offline.
 - Documented the marketplace tree-cache copy, version-only upgrade comparison, and the one-runtime-package-per-scope rule in `README.md`, `AGENT-INSTALL.md`, and `poteto-help`.
 
+### Upstream sync
+
+- Added `upstream.json`, a per-file manifest with `verbatim`, `local`, and `excluded` rules plus a git blob and mode for every upstream `pstack/skills` file.
+- Added `scripts/check-upstream.mjs` and `check:upstream` for offline verification; `--cursor-dir` additionally checks the real upstream commit, tree, blob, and mode.
+- Rewrote `sync-upstream.mjs` and `sync-ack.mjs` around the manifest. Clean syncs advance the manifest pin and `cursor.lastSyncedSha` together; syncs with manual work stage copied files under `pending` and hold the baseline until ack.
+- Removed pi-mimir tracking from the sync config, workflow, scripts, README, and tests while keeping its MIT attribution in `NOTICE.md`.
+- Added `.gitattributes` with `* text=auto eol=lf` so byte-level blob checks agree across Windows and POSIX checkouts.
+
 ## 0.3.3 - 2026-11-27
 
 ### Poteto Mode

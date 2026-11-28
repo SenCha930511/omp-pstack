@@ -1,24 +1,40 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkUpstream } from "./check-upstream.mjs";
+import {
+  collectFiles,
+  gitBlobSha,
+  localFileMode,
+  readManifest,
+  readSyncConfig,
+  sortEntries,
+  targetForSource,
+  writeManifest,
+  writeSyncConfig,
+} from "./upstream-manifest.mjs";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const USAGE =
-  "Usage: node scripts/sync-ack.mjs (--cursor <sha> [--pi-mimir <sha>] [--adapt <skill> ...] | --adapt-only --adapt <skill> ...) [--root <dir>]";
+  "Usage: node scripts/sync-ack.mjs --cursor-dir <dir> [--cursor <sha>] [--adapt <skill> ...] [--adapt-only] [--reason <text>] [--tests <path> ...] [--root <dir>]";
 const SHA_PATTERN = /^[0-9a-f]{40}$/;
 const SAFE_SKILL_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
+const DEFAULT_TESTS = ["tests/skills.test.mjs"];
 
 function parseArgs(argv) {
   const options = {
     root: path.resolve(path.dirname(SCRIPT_PATH), ".."),
     cursor: undefined,
-    piMimir: undefined,
+    cursorDir: undefined,
     adapt: [],
     adaptOnly: false,
+    reason: undefined,
+    tests: [],
   };
   const seen = new Set();
-  const singleFlags = new Set(["--root", "--cursor", "--pi-mimir"]);
-  const multiFlags = new Set(["--adapt"]);
+  const singleFlags = new Set(["--root", "--cursor", "--cursor-dir", "--reason"]);
+  const multiFlags = new Set(["--adapt", "--tests"]);
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--adapt-only") {
@@ -39,18 +55,19 @@ function parseArgs(argv) {
     index += 1;
     if (argument === "--root") options.root = path.resolve(value);
     else if (argument === "--cursor") options.cursor = value.trim();
-    else if (argument === "--pi-mimir") options.piMimir = value.trim();
-    else options.adapt.push(value.trim());
+    else if (argument === "--cursor-dir") options.cursorDir = path.resolve(value);
+    else if (argument === "--reason") options.reason = value.trim();
+    else if (argument === "--adapt") options.adapt.push(value.trim());
+    else options.tests.push(value.trim());
   }
+  if (!options.cursorDir) throw new Error("--cursor-dir is required");
   if (options.adaptOnly) {
-    if (options.cursor !== undefined || options.piMimir !== undefined) {
-      throw new Error("--adapt-only cannot be combined with --cursor or --pi-mimir");
+    if (options.cursor !== undefined) {
+      throw new Error("--adapt-only cannot be combined with --cursor");
     }
     if (options.adapt.length === 0) {
       throw new Error("--adapt-only requires at least one --adapt <skill>");
     }
-  } else if (!options.cursor) {
-    throw new Error("--cursor is required unless --adapt-only is set");
   }
   return options;
 }
@@ -61,60 +78,307 @@ function assertSha(flag, sha) {
   }
 }
 
-function validateAdaptedSkill(root, rawSkill) {
+function validateSkillName(rawSkill) {
   const skill = rawSkill.trim();
   if (!skill) throw new Error("--adapt requires a nonempty skill name");
   if (!SAFE_SKILL_NAME.test(skill) || skill === "." || skill === "..") {
     throw new Error(`invalid skill name for --adapt: ${skill}`);
   }
-  const skillFile = path.join(root, "skills", skill, "SKILL.md");
-  if (!fs.existsSync(skillFile)) {
-    throw new Error(`adapted skill does not exist locally: skills/${skill}/SKILL.md`);
-  }
   return skill;
 }
 
-export function ackUpstream({ root, cursor, piMimir, adapt = [], adaptOnly = false }) {
-  if (adaptOnly) {
-    if (cursor !== undefined || piMimir !== undefined) {
-      throw new Error("--adapt-only cannot be combined with --cursor or --pi-mimir");
+function resolveCommit(cursorDir, revision) {
+  return execFileSync("git", ["-C", cursorDir, "rev-parse", revision], { encoding: "utf8" }).trim();
+}
+
+function readUpstreamTree(cursorDir, commit, sourcePath) {
+  const output = execFileSync("git", ["-C", cursorDir, "ls-tree", "-r", commit, "--", sourcePath], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const entries = new Map();
+  for (const line of output.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const match = /^(\d{6}) blob ([0-9a-f]{40})\t(.+)$/.exec(line);
+    if (!match) continue;
+    entries.set(match[3], { mode: match[1], blob: match[2] });
+  }
+  return entries;
+}
+
+function replaceEntry(entries, entry) {
+  const index = entries.findIndex((candidate) => candidate.source === entry.source);
+  if (index >= 0) entries[index] = entry;
+  else entries.push(entry);
+}
+
+function addLocalOnly(manifest, target, reason) {
+  const list = Array.isArray(manifest.localOnly) ? manifest.localOnly : [];
+  if (!list.some((item) => item.target === target)) list.push({ target, reason });
+  manifest.localOnly = list.sort((a, b) => (a.target < b.target ? -1 : a.target > b.target ? 1 : 0));
+}
+
+function reconcileRemoved({ root, manifest, upstreamTree, reason }) {
+  const sources = new Set(upstreamTree.keys());
+  const removed = manifest.entries.filter((entry) => !sources.has(entry.source));
+  if (removed.length === 0) return;
+  for (const entry of removed) {
+    if (fs.existsSync(path.join(root, entry.target))) {
+      addLocalOnly(
+        manifest,
+        entry.target,
+        reason ?? `Kept locally after upstream removed ${entry.source}.`,
+      );
     }
-    if (adapt.length === 0) {
-      throw new Error("--adapt-only requires at least one --adapt <skill>");
+  }
+  const removedSources = new Set(removed.map((entry) => entry.source));
+  manifest.entries = manifest.entries.filter((entry) => !removedSources.has(entry.source));
+}
+
+function reclassifySkill({
+  root,
+  manifest,
+  skill,
+  upstreamTree,
+  sourcePrefix,
+  reason,
+  tests,
+}) {
+  const sources = [...upstreamTree.keys()].filter((source) => source.startsWith(`${sourcePrefix}${skill}/`));
+  if (sources.length === 0) throw new Error(`adapted skill does not exist upstream: ${skill}`);
+
+  for (const source of sources.sort()) {
+    const target = targetForSource(source);
+    const localPath = path.join(root, target);
+    if (!fs.existsSync(localPath)) {
+      throw new Error(`adapted skill file is missing locally: ${target}`);
     }
-  } else {
-    if (!cursor) throw new Error("--cursor is required unless --adapt-only is set");
-    assertSha("--cursor", cursor);
-    if (piMimir !== undefined) assertSha("--pi-mimir", piMimir);
+    const upstreamEntry = upstreamTree.get(source);
+    const existing = manifest.entries.find((entry) => entry.source === source);
+    const localBlob = gitBlobSha(fs.readFileSync(localPath));
+    if (localBlob === upstreamEntry.blob) {
+      replaceEntry(manifest.entries, {
+        source,
+        target,
+        blob: upstreamEntry.blob,
+        mode: upstreamEntry.mode,
+        rule: "verbatim",
+      });
+      continue;
+    }
+    const finalReason = reason ?? existing?.reason;
+    const finalTests = tests.length > 0 ? tests : existing?.tests ?? DEFAULT_TESTS;
+    if (!finalReason) throw new Error(`local entry needs --reason: ${target}`);
+    replaceEntry(manifest.entries, {
+      source,
+      target,
+      blob: upstreamEntry.blob,
+      mode: upstreamEntry.mode,
+      rule: "local",
+      reason: finalReason,
+      tests: finalTests,
+    });
   }
 
-  const configPath = path.join(root, ".github", "upstream-sync.json");
-  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  if (piMimir !== undefined && !config.piMimir) {
-    throw new Error("--pi-mimir requires piMimir in .github/upstream-sync.json");
+  const targets = new Set(sources.map((source) => targetForSource(source)));
+  for (const file of collectFiles(path.join(root, "skills", skill), root)) {
+    if (targets.has(file.relative)) continue;
+    addLocalOnly(manifest, file.relative, reason ?? "Local-only file kept after upstream removal.");
   }
+}
+
+function verifyPendingCopies({ root, pending }) {
+  if (!Array.isArray(pending.copiedVerbatim)) return;
+  for (const item of pending.copiedVerbatim) {
+    const targetPath = path.join(root, item.target);
+    if (!fs.existsSync(targetPath)) {
+      throw new Error(`pending copied file is missing: ${item.target}`);
+    }
+    const blob = gitBlobSha(fs.readFileSync(targetPath));
+    if (blob !== item.blob) {
+      throw new Error(`pending copied file ${item.target} has blob ${blob}, expected ${item.blob}`);
+    }
+    const mode = localFileMode(targetPath);
+    if (mode !== undefined && mode !== item.mode) {
+      throw new Error(`pending copied file ${item.target} has mode ${mode}, expected ${item.mode}`);
+    }
+  }
+}
+
+function validateAndWrite({ root, cursorDir, configPath, manifestPath, configBackup, manifestBackup, config, manifest }) {
+  writeSyncConfig(root, config);
+  writeManifest(root, manifest);
+  const result = checkUpstream({ root, cursorDir });
+  if (!result.ok) {
+    fs.writeFileSync(configPath, configBackup, "utf8");
+    fs.writeFileSync(manifestPath, manifestBackup, "utf8");
+    throw new Error(`ack would leave an invalid manifest:\n${result.errors.join("\n")}`);
+  }
+}
+
+export function ackUpstream({
+  root,
+  cursor,
+  cursorDir,
+  adapt = [],
+  adaptOnly = false,
+  reason,
+  tests = [],
+}) {
+  const repositoryRoot = path.resolve(root);
+  const configPath = path.join(repositoryRoot, ".github", "upstream-sync.json");
+  const manifestPath = path.join(repositoryRoot, "upstream.json");
+  const configBackup = fs.readFileSync(configPath, "utf8");
+  const manifestBackup = fs.readFileSync(manifestPath, "utf8");
+  const config = JSON.parse(configBackup);
+  const manifest = JSON.parse(manifestBackup);
+
+  if (!cursorDir) throw new Error("--cursor-dir is required");
+  const resolvedCursorDir = path.resolve(cursorDir);
+  const head = resolveCommit(resolvedCursorDir, "HEAD");
+  const tree = resolveCommit(resolvedCursorDir, `${head}:${config.cursor.path.replace(/^\/+|\/+$/g, "")}/skills`);
+
+  const adaptedSkills = new Set(config.cursor.adaptedSkills ?? []);
+  const requested = adapt.map(validateSkillName);
+  if (adaptOnly && cursor !== undefined) {
+    throw new Error("--adapt-only cannot be combined with --cursor");
+  }
+  if (adaptOnly && requested.length === 0) {
+    throw new Error("--adapt-only requires at least one --adapt <skill>");
+  }
+
+  const sourcePrefix = `${config.cursor.path.replace(/^\/+|\/+$/g, "")}/skills/`;
+  const upstreamTree = readUpstreamTree(
+    resolvedCursorDir,
+    head,
+    `${config.cursor.path.replace(/^\/+|\/+$/g, "")}/skills`,
+  );
+  const reasons = reason ? [reason] : [];
+
+  let resolvedSkills = new Set(requested);
+  if (manifest.pending) {
+    const pending = manifest.pending;
+    if (pending.commit !== head) {
+      throw new Error(`pending.commit ${pending.commit} does not match clone HEAD ${head}`);
+    }
+    if (cursor !== undefined && cursor !== pending.commit) {
+      throw new Error(`--cursor ${cursor} does not match pending.commit ${pending.commit}`);
+    }
+    if (pending.tree !== tree) {
+      throw new Error(`pending.tree ${pending.tree} does not match clone tree ${tree}`);
+    }
+    verifyPendingCopies({ root: repositoryRoot, pending });
+    for (const item of pending.copiedVerbatim ?? []) {
+      replaceEntry(manifest.entries, {
+        source: item.source,
+        target: item.target,
+        blob: item.blob,
+        mode: item.mode,
+        rule: "verbatim",
+      });
+    }
+
+    for (const item of pending.unresolved ?? []) {
+      if (item.kind === "adapted") {
+        if (!adaptedSkills.has(item.skill) && !requested.includes(item.skill)) {
+          throw new Error(`adapted skill still unresolved; pass --adapt ${item.skill}`);
+        }
+        resolvedSkills.add(item.skill);
+      } else if (item.kind === "blocked") {
+        if (!requested.includes(item.skill)) {
+          throw new Error(`blocked skill still unresolved; port it and pass --adapt ${item.skill}`);
+        }
+        resolvedSkills.add(item.skill);
+      } else if (item.kind === "removed") {
+        for (const file of collectFiles(path.join(repositoryRoot, "skills", item.skill), repositoryRoot)) {
+          addLocalOnly(
+            manifest,
+            file.relative,
+            reason ?? `Kept locally after upstream removed ${item.skill}.`,
+          );
+        }
+      } else if (item.kind === "other" && reasons.length === 0) {
+        throw new Error(`other upstream file needs review; pass --reason after porting: ${item.file}`);
+      }
+    }
+
+    for (const skill of resolvedSkills) {
+      adaptedSkills.add(skill);
+      reclassifySkill({
+        root: repositoryRoot,
+        manifest,
+        skill,
+        upstreamTree,
+        sourcePrefix,
+        reason,
+        tests,
+      });
+    }
+
+    reconcileRemoved({ root: repositoryRoot, manifest, upstreamTree, reason });
+    manifest.source = { ...manifest.source, commit: pending.commit, tree: pending.tree };
+    delete manifest.pending;
+    manifest.entries = sortEntries(manifest.entries);
+    config.cursor.adaptedSkills = [...adaptedSkills].sort();
+    config.cursor.lastSyncedSha = pending.commit;
+    validateAndWrite({
+      root: repositoryRoot,
+      cursorDir: resolvedCursorDir,
+      configPath,
+      manifestPath,
+      configBackup,
+      manifestBackup,
+      config,
+      manifest,
+    });
+    return { cursor: pending.commit, tree: pending.tree, skills: [...resolvedSkills].sort(), pending: false };
+  }
+
+  if (cursor !== undefined) {
+    assertSha("--cursor", cursor);
+    if (cursor !== head) throw new Error(`--cursor ${cursor} does not match clone HEAD ${head}`);
+  }
+
+  for (const skill of resolvedSkills) adaptedSkills.add(skill);
 
   if (!adaptOnly) {
-    config.cursor.lastSyncedSha = cursor;
-    if (piMimir !== undefined) config.piMimir.lastCheckedSha = piMimir;
-  }
-  if (adapt.length > 0) {
-    const merged = new Set(config.cursor.adaptedSkills ?? []);
-    for (const rawSkill of adapt) {
-      merged.add(validateAdaptedSkill(root, rawSkill));
+    for (const skill of resolvedSkills) {
+      reclassifySkill({
+        root: repositoryRoot,
+        manifest,
+        skill,
+        upstreamTree,
+        sourcePrefix,
+        reason,
+        tests,
+      });
     }
-    config.cursor.adaptedSkills = [...merged].sort();
+    reconcileRemoved({ root: repositoryRoot, manifest, upstreamTree, reason });
+    manifest.source = { ...manifest.source, commit: head, tree };
+    manifest.entries = sortEntries(manifest.entries);
+    config.cursor.lastSyncedSha = head;
   }
-  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  config.cursor.adaptedSkills = [...adaptedSkills].sort();
+  validateAndWrite({
+    root: repositoryRoot,
+    cursorDir: resolvedCursorDir,
+    configPath,
+    manifestPath,
+    configBackup,
+    manifestBackup,
+    config,
+    manifest,
+  });
+  return { cursor: adaptOnly ? config.cursor.lastSyncedSha : head, tree, skills: [...resolvedSkills].sort(), pending: false };
 }
 
 if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === SCRIPT_PATH) {
   try {
-    const { root, cursor, piMimir, adapt, adaptOnly } = parseArgs(process.argv.slice(2));
-    ackUpstream({ root, cursor, piMimir, adapt, adaptOnly });
-    if (!adaptOnly) console.log(`cursor.lastSyncedSha: ${cursor}`);
-    if (!adaptOnly && piMimir !== undefined) console.log(`piMimir.lastCheckedSha: ${piMimir}`);
-    if (adapt.length > 0) console.log(`cursor.adaptedSkills added: ${adapt.join(", ")}`);
+    const options = parseArgs(process.argv.slice(2));
+    const result = ackUpstream(options);
+    if (!options.adaptOnly) console.log(`cursor.lastSyncedSha: ${result.cursor}`);
+    if (options.adapt.length > 0) console.log(`cursor.adaptedSkills added: ${options.adapt.join(", ")}`);
+    if (result.pending) console.log("pending ack incomplete");
   } catch (error) {
     console.error(USAGE);
     console.error(error.message);

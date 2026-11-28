@@ -237,12 +237,24 @@ tests, and clean tarball installation against `omp`. Use
 ### Upstream sync
 
 `.github/workflows/upstream-sync.yml` runs daily to track
-[`cursor/plugins/pstack`](https://github.com/cursor/plugins/tree/main/pstack)
-and [`casualjim/pi-mimir`](https://github.com/casualjim/pi-mimir) using the
-manifest in [`.github/upstream-sync.json`](.github/upstream-sync.json). Unadapted
-and new skills without Cursor-only syntax are synced automatically into a PR;
-changes to adapted skills, blocked skills, or extension/agent files are flagged
-for manual porting. After porting, record the synced SHAs (and any newly adapted
-blocked skills) with `npm run sync:ack -- --cursor <sha> [--pi-mimir <sha>] [--adapt <skill> ...]`,
-or record individual adapted skills before finishing everything with
-`npm run sync:ack -- --adapt-only --adapt <skill>`.
+[`cursor/plugins/pstack`](https://github.com/cursor/plugins/tree/main/pstack).
+[`upstream.json`](upstream.json) classifies every upstream file as `verbatim`,
+`local`, or `excluded`, and [`.github/upstream-sync.json`](.github/upstream-sync.json)
+records the baseline commit and the adapted skill list. `npm run check:upstream`
+verifies the manifest offline and, when given a clone, against the real upstream
+tree.
+
+Unadapted files without Cursor-only syntax are copied automatically. A clean
+sync updates the manifest pin and `cursor.lastSyncedSha` in the same PR. When
+manual porting remains, the copied files and unresolved items are staged under
+`upstream.json` `pending`, and the baseline pin stays put so the next run keeps
+tracking them. After porting, run:
+
+```sh
+npm run sync:ack -- --cursor-dir <resolved-clone> [--cursor <sha>] [--adapt <skill> ...] [--reason <text>] [--tests <path>]
+```
+
+The ack verifies the clone HEAD and skills tree, accepts the pending copies,
+reclassifies the adapted skills, and advances the manifest and config together.
+Use `--adapt-only --adapt <skill>` to record a partial port without advancing
+the baseline.

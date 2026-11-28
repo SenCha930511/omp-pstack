@@ -40,7 +40,7 @@ jobs:
           up_dir="$RUNNER_TEMP/upstream"
           scripts_dir="$RUNNER_TEMP/sync-scripts"
           mkdir -p "$up_dir" "$scripts_dir"
-          cp scripts/upstream-range.mjs scripts/sync-upstream.mjs "$scripts_dir/"
+          cp scripts/upstream-range.mjs scripts/sync-upstream.mjs scripts/upstream-manifest.mjs scripts/upstream-patterns.mjs "$scripts_dir/"
 
           branch="chore/upstream-sync"
           existing_pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --state open --json number --jq '.[0].number // empty')
@@ -83,34 +83,6 @@ jobs:
 
           node "$scripts_dir/upstream-range.mjs" --repo-dir "$up_dir/cursor-plugins" --base "$cursor_base" --head "$cursor_head" --path "$cursor_path" --base-label "cursor.lastSyncedSha" --commits-output "$up_dir/cursor-commits.json" --changed-output "$up_dir/cursor-changed.txt"
 
-          : > "$up_dir/pi-mimir-sha.txt"
-          : > "$up_dir/pi-mimir-error.txt"
-          printf '[]\n' > "$up_dir/pi-mimir-commits.json"
-          : > "$up_dir/pi-mimir-changed.txt"
-
-          has_pi_mimir=$(node -p 'Boolean(require("./.github/upstream-sync.json").piMimir)')
-          if [ "$has_pi_mimir" = "true" ]; then
-            pi_repo=$(node -p 'require("./.github/upstream-sync.json").piMimir.repo')
-            pi_branch=$(node -p 'require("./.github/upstream-sync.json").piMimir.branch')
-            pi_base=$(node -p 'require("./.github/upstream-sync.json").piMimir.lastCheckedSha')
-
-            git clone --branch "$pi_branch" --single-branch --filter=blob:none --no-checkout \
-              "https://github.com/${pi_repo}.git" "$up_dir/pi-mimir"
-            pi_head=$(git -C "$up_dir/pi-mimir" rev-parse HEAD)
-            printf '%s\n' "$pi_head" > "$up_dir/pi-mimir-sha.txt"
-
-            pi_path_args=()
-            while IFS= read -r watch_path; do
-              [ -z "$watch_path" ] && continue
-              pi_path_args+=(--path "$watch_path")
-            done < <(node -e 'for (const p of require("./.github/upstream-sync.json").piMimir.watchPaths) console.log(p);')
-
-            if ! err_msg=$(node "$scripts_dir/upstream-range.mjs" --repo-dir "$up_dir/pi-mimir" --base "$pi_base" --head "$pi_head" "${pi_path_args[@]}" --base-label "piMimir.lastCheckedSha" --commits-output "$up_dir/pi-mimir-commits.json" --changed-output "$up_dir/pi-mimir-changed.txt" 2>&1); then
-              printf '%s\n' "$err_msg" | tail -n 1 > "$up_dir/pi-mimir-error.txt"
-              printf '[]\n' > "$up_dir/pi-mimir-commits.json"
-              : > "$up_dir/pi-mimir-changed.txt"
-            fi
-          fi
 
       - name: Run upstream sync
         env:
@@ -120,23 +92,15 @@ jobs:
           up_dir="$RUNNER_TEMP/upstream"
           scripts_dir="$RUNNER_TEMP/sync-scripts"
           cursor_sha=$(tr -d '[:space:]' < "$up_dir/cursor-sha.txt")
-          pi_sha=$(tr -d '[:space:]' < "$up_dir/pi-mimir-sha.txt")
           args=(
             --root "$GITHUB_WORKSPACE"
             --cursor-dir "$up_dir/cursor-plugins"
             --cursor-sha "$cursor_sha"
             --cursor-changed-file "$up_dir/cursor-changed.txt"
             --cursor-commits-file "$up_dir/cursor-commits.json"
-            --pi-mimir-commits-file "$up_dir/pi-mimir-commits.json"
             --report-output "$up_dir/report.md"
             --summary-json "$up_dir/summary.json"
           )
-          if [ -n "$pi_sha" ]; then
-            args+=(--pi-mimir-sha "$pi_sha")
-          fi
-          if [ -s "$up_dir/pi-mimir-error.txt" ]; then
-            args+=(--pi-mimir-error-file "$up_dir/pi-mimir-error.txt")
-          fi
           if [ "$DRY_RUN" = "true" ]; then
             args+=(--dry-run)
           fi

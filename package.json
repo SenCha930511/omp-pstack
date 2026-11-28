@@ -61,18 +61,20 @@
   "scripts": {
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "check:versions": "node scripts/check-release-versions.mjs",
+    "check:upstream": "node scripts/check-upstream.mjs",
     "release:bump": "node scripts/bump-release.mjs",
     "test:skills": "node --test tests/*.test.mjs",
     "test:extension": "bun test tests/extension.test.ts",
     "test:graph": "bun scripts/test-load-graph.ts",
     "test:release-scripts": "node --test scripts/test-check-release-versions.mjs scripts/test-bump-release.mjs scripts/test-verify-release-tarball.mjs",
-    "test:sync-script": "node --test scripts/test-sync-upstream.mjs scripts/test-upstream-range.mjs scripts/test-sync-ack.mjs",
+    "test:sync-script": "node --test scripts/test-sync-upstream.mjs scripts/test-upstream-range.mjs scripts/test-sync-ack.mjs scripts/test-check-upstream.mjs",
+    "test:upstream-manifest": "node --test scripts/test-check-upstream.mjs",
     "sync:ack": "node scripts/sync-ack.mjs",
     "test:packed": "node scripts/test-packed.mjs",
     "test:marketplace": "node scripts/test-marketplace.mjs",
     "test": "npm run test:skills && npm run test:extension",
     "pack:check": "npm pack --dry-run",
-    "check": "npm run typecheck && npm run check:versions && npm run test:skills && npm run test:extension && npm run test:graph && npm run test:release-scripts && npm run test:sync-script && npm run test:packed && npm run test:marketplace",
+    "check": "npm run typecheck && npm run check:versions && npm run check:upstream && npm run test:skills && npm run test:extension && npm run test:graph && npm run test:release-scripts && npm run test:sync-script && npm run test:packed && npm run test:marketplace",
     "prepublishOnly": "npm run check"
   }
 }

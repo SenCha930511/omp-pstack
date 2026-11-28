@@ -1,111 +1,25 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  UPSTREAM_SCHEMA,
+  UPSTREAM_SOURCE_PREFIX,
+  collectFiles,
+  gitBlobSha,
+  readManifest,
+  readSyncConfig,
+  sortEntries,
+  targetForSource,
+  writeManifest,
+  writeSyncConfig,
+} from "./upstream-manifest.mjs";
+import { findForbiddenReferences } from "./upstream-patterns.mjs";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const SAFE_SKILL_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
 const USAGE =
-  "Usage: node scripts/sync-upstream.mjs --cursor-dir <dir> --cursor-sha <sha> [--root <dir>] [--cursor-changed-file <file>] [--cursor-commits-file <file>] [--pi-mimir-sha <sha>] [--pi-mimir-commits-file <file>] [--pi-mimir-error-file <file>] [--report-output <file>] [--summary-json <file>] [--dry-run]";
-
-const FORBIDDEN_PATTERNS = [
-  { label: "~/.cursor/", regex: /~\/\.cursor\// },
-  { label: "subagent_type", regex: /\bsubagent_type\b/ },
-  { label: "cloud_base_branch", regex: /\bcloud_base_branch\b/ },
-  { label: "pstack-models.mdc", regex: /pstack-models\.mdc/ },
-  { label: 'environment: "cloud"', regex: /environment:\s*"cloud"/ },
-  { label: "AskQuestion", regex: /\bAskQuestion\b/ },
-  { label: "agent-transcripts/", regex: /agent-transcripts\// },
-  { label: "cursor-team-kit", regex: /cursor-team-kit/ },
-  { label: "generalPurpose", regex: /\bgeneralPurpose\b/ },
-  { label: "/visualize", regex: /\/visualize\b/ },
-  { label: "plugins/cache/", regex: /plugins\/cache\// },
-];
-
-export function parseArgs(argv) {
-  const options = {
-    root: path.resolve(path.dirname(SCRIPT_PATH), ".."),
-    cursorDir: undefined,
-    cursorSha: undefined,
-    cursorChangedFile: undefined,
-    cursorCommitsFile: undefined,
-    piMimirSha: undefined,
-    piMimirCommitsFile: undefined,
-    piMimirErrorFile: undefined,
-    reportOutput: undefined,
-    summaryJson: undefined,
-    dryRun: false,
-  };
-  const seen = new Set();
-  const valueFlags = new Set([
-    "--root",
-    "--cursor-dir",
-    "--cursor-sha",
-    "--cursor-changed-file",
-    "--cursor-commits-file",
-    "--pi-mimir-sha",
-    "--pi-mimir-commits-file",
-    "--pi-mimir-error-file",
-    "--report-output",
-    "--summary-json",
-  ]);
-  for (let index = 0; index < argv.length; index += 1) {
-    const argument = argv[index];
-    if (argument === "--dry-run") {
-      if (seen.has(argument)) throw new Error("--dry-run may be supplied only once");
-      seen.add(argument);
-      options.dryRun = true;
-      continue;
-    }
-    if (!valueFlags.has(argument)) {
-      throw new Error(`unknown argument: ${argument}`);
-    }
-    if (seen.has(argument)) throw new Error(`${argument} may be supplied only once`);
-    seen.add(argument);
-    const value = argv[index + 1];
-    if (!value || value.startsWith("--")) throw new Error(`${argument} requires a nonempty value`);
-    index += 1;
-    if (argument === "--root") options.root = path.resolve(value);
-    else if (argument === "--cursor-dir") options.cursorDir = path.resolve(value);
-    else if (argument === "--cursor-sha") options.cursorSha = value.trim();
-    else if (argument === "--cursor-changed-file") options.cursorChangedFile = path.resolve(value);
-    else if (argument === "--cursor-commits-file") options.cursorCommitsFile = path.resolve(value);
-    else if (argument === "--pi-mimir-sha") options.piMimirSha = value.trim();
-    else if (argument === "--pi-mimir-commits-file") options.piMimirCommitsFile = path.resolve(value);
-    else if (argument === "--pi-mimir-error-file") options.piMimirErrorFile = path.resolve(value);
-    else if (argument === "--report-output") options.reportOutput = path.resolve(value);
-    else options.summaryJson = path.resolve(value);
-  }
-  if (!options.cursorDir) throw new Error("--cursor-dir is required");
-  if (!options.cursorSha) throw new Error("--cursor-sha is required");
-  return options;
-}
-
-function listDirectories(dir) {
-  if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
-}
-
-function collectFiles(dir, base = dir) {
-  if (!fs.existsSync(dir)) return [];
-  const results = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === ".DS_Store") continue;
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...collectFiles(fullPath, base));
-    } else if (entry.isFile()) {
-      results.push({
-        relative: path.relative(base, fullPath).replaceAll("\\", "/"),
-        fullPath,
-      });
-    }
-  }
-  return results.sort((a, b) => (a.relative < b.relative ? -1 : a.relative > b.relative ? 1 : 0));
-}
+  "Usage: node scripts/sync-upstream.mjs --cursor-dir <dir> --cursor-sha <sha> [--root <dir>] [--cursor-changed-file <file>] [--cursor-commits-file <file>] [--report-output <file>] [--summary-json <file>] [--dry-run]";
 
 const BINARY_EXTENSIONS = new Set([
   ".png",
@@ -133,9 +47,63 @@ const BINARY_EXTENSIONS = new Set([
   ".woff2",
 ]);
 
-function isExecutable(filePath) {
-  if (process.platform === "win32") return false;
-  return (fs.statSync(filePath).mode & 0o111) !== 0;
+export function parseArgs(argv) {
+  const options = {
+    root: path.resolve(path.dirname(SCRIPT_PATH), ".."),
+    cursorDir: undefined,
+    cursorSha: undefined,
+    cursorChangedFile: undefined,
+    cursorCommitsFile: undefined,
+    reportOutput: undefined,
+    summaryJson: undefined,
+    dryRun: false,
+  };
+  const seen = new Set();
+  const valueFlags = new Set([
+    "--root",
+    "--cursor-dir",
+    "--cursor-sha",
+    "--cursor-changed-file",
+    "--cursor-commits-file",
+    "--report-output",
+    "--summary-json",
+  ]);
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index];
+    if (argument === "--dry-run") {
+      if (seen.has(argument)) throw new Error("--dry-run may be supplied only once");
+      seen.add(argument);
+      options.dryRun = true;
+      continue;
+    }
+    if (!valueFlags.has(argument)) {
+      throw new Error(`unknown argument: ${argument}`);
+    }
+    if (seen.has(argument)) throw new Error(`${argument} may be supplied only once`);
+    seen.add(argument);
+    const value = argv[index + 1];
+    if (!value || value.startsWith("--")) throw new Error(`${argument} requires a nonempty value`);
+    index += 1;
+    if (argument === "--root") options.root = path.resolve(value);
+    else if (argument === "--cursor-dir") options.cursorDir = path.resolve(value);
+    else if (argument === "--cursor-sha") options.cursorSha = value.trim();
+    else if (argument === "--cursor-changed-file") options.cursorChangedFile = path.resolve(value);
+    else if (argument === "--cursor-commits-file") options.cursorCommitsFile = path.resolve(value);
+    else if (argument === "--report-output") options.reportOutput = path.resolve(value);
+    else options.summaryJson = path.resolve(value);
+  }
+  if (!options.cursorDir) throw new Error("--cursor-dir is required");
+  if (!options.cursorSha) throw new Error("--cursor-sha is required");
+  return options;
+}
+
+function listDirectories(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
 }
 
 function shouldScanFile(file) {
@@ -146,43 +114,13 @@ function shouldScanFile(file) {
   return !buf.subarray(0, 8192).includes(0);
 }
 
-function directoriesMatch(dirA, dirB) {
-  if (!fs.existsSync(dirA) || !fs.existsSync(dirB)) return false;
-  const filesA = collectFiles(dirA);
-  const filesB = collectFiles(dirB);
-  if (filesA.length !== filesB.length) return false;
-  for (let index = 0; index < filesA.length; index += 1) {
-    if (filesA[index].relative !== filesB[index].relative) return false;
-    if (isExecutable(filesA[index].fullPath) !== isExecutable(filesB[index].fullPath)) return false;
-    const bytesA = fs.readFileSync(filesA[index].fullPath);
-    const bytesB = fs.readFileSync(filesB[index].fullPath);
-    if (!bytesA.equals(bytesB)) return false;
-  }
-  return true;
-}
-
-function replaceDirectory(srcDir, destDir) {
-  fs.rmSync(destDir, { recursive: true, force: true });
-  fs.mkdirSync(destDir, { recursive: true });
-  for (const file of collectFiles(srcDir)) {
-    const target = path.join(destDir, file.relative);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(file.fullPath, target);
-    if (process.platform !== "win32") {
-      fs.chmodSync(target, isExecutable(file.fullPath) ? 0o755 : 0o644);
-    }
-  }
-}
-
 export function scanForbiddenReferences(skillDir) {
   const matches = [];
   for (const file of collectFiles(skillDir)) {
     if (!shouldScanFile(file)) continue;
-    const content = fs.readFileSync(file.fullPath, "utf8");
-    for (const pattern of FORBIDDEN_PATTERNS) {
-      if (pattern.regex.test(content)) {
-        matches.push({ file: file.relative, pattern: pattern.label });
-      }
+    const text = fs.readFileSync(file.fullPath, "utf8");
+    for (const match of findForbiddenReferences(text)) {
+      matches.push({ file: file.relative, pattern: match.pattern });
     }
   }
   return matches;
@@ -272,17 +210,23 @@ function buildReport(config, summary, cursorCommits) {
     if (summary.updatedSkills.length > 0) {
       lines.push(`- **Updated skills**: ${summary.updatedSkills.map((s) => `\`${s}\``).join(", ")}`);
     }
-    lines.push("");
+    lines.push(
+      `- **Files copied verbatim**: ${summary.copiedFiles.length}`,
+      "",
+      summary.pending
+        ? "These files are staged in `upstream.json` under `pending.copiedVerbatim` until `sync:ack` accepts them."
+        : "These files and the new `upstream.json` pin land in this PR together.",
+      "",
+    );
   }
 
   const safeBlockedSkills = summary.blockedCursorSkills.filter((item) => SAFE_SKILL_NAME.test(item.name));
   const unsafeBlockedSkills = summary.blockedCursorSkills.filter((item) => !SAFE_SKILL_NAME.test(item.name));
-  const hasManualCursorItems =
+  const hasManual =
     summary.manualAdaptedSkills.length > 0 ||
     summary.blockedCursorSkills.length > 0 ||
     summary.removedUpstreamSkills.length > 0 ||
     summary.manualOtherFiles.length > 0;
-  const hasManual = hasManualCursorItems || summary.piMimirCommits.length > 0 || Boolean(summary.piMimirError);
 
   if (hasManual) {
     lines.push("### Manual Porting Required", "");
@@ -302,8 +246,8 @@ function buildReport(config, summary, cursorCommits) {
       if (safeBlockedSkills.length > 0) {
         const adaptFlags = safeBlockedSkills.map((item) => `--adapt ${item.name}`).join(" ");
         lines.push(
-          "  - To record a partial port before finishing everything, run `npm run sync:ack -- --adapt-only --adapt <skill>` (updates `adaptedSkills` without advancing `cursor.lastSyncedSha`).",
-          `  - Once all manual items are ported, include \`${adaptFlags}\` in the global \`sync:ack\` command below.`,
+          "  - After porting, pass these skills to `sync:ack` as adapted:",
+          `    \`${adaptFlags}\``,
         );
       }
       if (unsafeBlockedSkills.length > 0) {
@@ -314,7 +258,10 @@ function buildReport(config, summary, cursorCommits) {
       lines.push("");
     }
     if (summary.removedUpstreamSkills.length > 0) {
-      lines.push(`**Skills removed upstream (kept locally):** ${summary.removedUpstreamSkills.map((s) => formatCodeSpan(s)).join(", ")}`, "");
+      lines.push(
+        `**Skills removed upstream (kept locally):** ${summary.removedUpstreamSkills.map((s) => formatCodeSpan(s)).join(", ")}`,
+        "",
+      );
     }
     if (summary.manualOtherFiles.length > 0) {
       lines.push("**Other upstream files changed (review for omp relevance):**");
@@ -323,45 +270,20 @@ function buildReport(config, summary, cursorCommits) {
       }
       lines.push("");
     }
-    if (!summary.piMimirError && summary.piMimirCommits.length > 0) {
-      const piRepo = config.piMimir?.repo ?? "casualjim/pi-mimir";
-      lines.push(`**\`${piRepo}\` extension/agent updates:**`, "", formatCommitList(summary.piMimirCommits, piRepo), "");
-    }
-    if (summary.piMimirError) {
-      const piRepo = config.piMimir?.repo ?? "casualjim/pi-mimir";
-      const headNote = summary.piMimirSha ? ` at \`${summary.piMimirSha.slice(0, 7)}\`` : "";
-      lines.push(
-        `**\`${piRepo}\` range check failed (review manually; \`piMimir.lastCheckedSha\` was not advanced):**`,
-        "",
-        `- Error${headNote}: ${formatCodeSpan(summary.piMimirError)}`,
-        "- Do not pass `--pi-mimir` until the range error is resolved and verified manually.",
-        "",
-      );
-    }
   }
 
   if (summary.mode === "issue" || (summary.mode === "pr" && hasManual)) {
     const adaptFlags =
       safeBlockedSkills.length > 0 ? safeBlockedSkills.map((item) => ` --adapt ${item.name}`).join("") : "";
-    const piMimirTargetSha = summary.piMimirError ? undefined : summary.piMimirCommits[0]?.sha;
-    const piMimirArg = piMimirTargetSha ? ` --pi-mimir ${piMimirTargetSha}` : "";
-    const hasAckableManualItems =
-      hasManualCursorItems || (!summary.piMimirError && summary.piMimirCommits.length > 0);
-    const suffix = summary.mode === "issue" ? " and close this issue." : " after porting all manual items above.";
     lines.push("### After porting", "");
-    if (hasAckableManualItems) {
-      lines.push(`Run \`npm run sync:ack -- --cursor ${summary.cursorSha}${piMimirArg}${adaptFlags}\`${suffix}`);
-      if (summary.piMimirError) {
-        lines.push(
-          "Note: `--pi-mimir` was omitted because the `pi-mimir` range check failed; update `piMimir.lastCheckedSha` separately after verifying the range.",
-        );
-      }
-    } else {
-      lines.push(
-        `Resolve the \`pi-mimir\` range error manually, inspect any missed commits, and then run \`npm run sync:ack -- --cursor ${summary.cursorSha} --pi-mimir <verified-sha>\`${summary.mode === "issue" ? " and close this issue." : "."}`,
-      );
-    }
-    lines.push("");
+    lines.push(
+      `Run \`npm run sync:ack -- --cursor-dir <resolved-clone> --cursor ${summary.cursorSha}${adaptFlags} [--reason <text>] [--tests <path>]\` and close this ${summary.mode === "issue" ? "issue" : "PR"}.`,
+    );
+    lines.push(
+      "- `--reason` and `--tests` are required for any newly localized file. Reuse the reason for a skill's files or pass one per ack run.",
+      "- The ack verifies the clone HEAD and skills tree, accepts the pending copied files, reclassifies the adapted skills, advances the manifest and `cursor.lastSyncedSha` together, and clears `pending`.",
+      "",
+    );
   }
 
   if (summary.mode === "pr") {
@@ -370,9 +292,13 @@ function buildReport(config, summary, cursorCommits) {
       "",
       "- Note: If this PR was opened with the default `GITHUB_TOKEN`, GitHub Actions prevents it from triggering PR CI workflows automatically. Close and reopen the PR (or push an amendment commit / set `UPSTREAM_SYNC_TOKEN`) to trigger the required checks.",
     );
-    if (hasManualCursorItems) {
+    if (hasManual) {
       lines.push(
-        `- \`cursor.lastSyncedSha\` was intentionally left at \`${oldShort}\` so remaining manual items stay tracked until \`sync:ack\` runs.`,
+        `- \`cursor.lastSyncedSha\` and \`upstream.json source.commit\` stay at \`${oldShort}\` until \`sync:ack\` runs.`,
+      );
+    } else {
+      lines.push(
+        `- \`cursor.lastSyncedSha\` and \`upstream.json source.commit\` advance together to \`${summary.shortSha}\`.`,
       );
     }
     lines.push("");
@@ -381,157 +307,233 @@ function buildReport(config, summary, cursorCommits) {
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
+function readUpstreamTree(cursorDir, commit, sourcePath) {
+  const output = execFileSync("git", ["-C", cursorDir, "ls-tree", "-r", commit, "--", sourcePath], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const entries = new Map();
+  for (const line of output.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const match = /^(\d{6}) blob ([0-9a-f]{40})\t(.+)$/.exec(line);
+    if (!match) continue;
+    entries.set(match[3], { mode: match[1], blob: match[2] });
+  }
+  return entries;
+}
+
+function readUpstreamBlob(cursorDir, blob) {
+  return execFileSync("git", ["-C", cursorDir, "cat-file", "blob", blob], {
+    maxBuffer: 64 * 1024 * 1024,
+  });
+}
+
+function resolveCommit(cursorDir, revision) {
+  return execFileSync("git", ["-C", cursorDir, "rev-parse", revision], { encoding: "utf8" }).trim();
+}
+
+function skillNameOf(source, sourcePrefix) {
+  return source.slice(sourcePrefix.length).split("/")[0];
+}
+
+function addSkillFile(list, skill, source) {
+  let item = list.find((candidate) => candidate.name === skill);
+  if (!item) {
+    item = { name: skill, files: [] };
+    list.push(item);
+  }
+  if (!item.files.includes(source)) item.files.push(source);
+}
+
+function addBlockedMatch(list, skill, source, matches) {
+  let item = list.find((candidate) => candidate.name === skill);
+  if (!item) {
+    item = { name: skill, files: [], matches: [] };
+    list.push(item);
+  }
+  if (!item.files.includes(source)) item.files.push(source);
+  for (const match of matches) {
+    item.matches.push({ file: source, pattern: match.pattern });
+  }
+}
+
 export function syncUpstream(options) {
-  const configPath = path.join(options.root, ".github", "upstream-sync.json");
-  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  const cursorPath = config.cursor.path.replace(/^\/+|\/+$/g, "");
+  const root = path.resolve(options.root);
+  const configPath = path.join(root, ".github", "upstream-sync.json");
+  const config = readSyncConfig(root);
+  const manifest = readManifest(root);
+  if (manifest.schema !== UPSTREAM_SCHEMA) {
+    throw new Error(`upstream.json schema must be ${UPSTREAM_SCHEMA}`);
+  }
+  if (manifest.source?.commit !== config.cursor?.lastSyncedSha) {
+    throw new Error(
+      `baseline mismatch: upstream.json source.commit ${manifest.source?.commit} must equal cursor.lastSyncedSha ${config.cursor?.lastSyncedSha}`,
+    );
+  }
+
+  const cursorPath = String(config.cursor.path).replace(/^\/+|\/+$/g, "");
+  const sourcePrefix = `${cursorPath}/skills/`;
   const excluded = new Set(config.cursor.excludedSkills ?? []);
   const adapted = new Set(config.cursor.adaptedSkills ?? []);
 
-  const upstreamSkillsDir = path.join(options.cursorDir, cursorPath, "skills");
-  if (!fs.existsSync(upstreamSkillsDir)) {
-    throw new Error(`upstream skills directory not found: ${upstreamSkillsDir}`);
+  if (!options.cursorDir) throw new Error("--cursor-dir is required");
+  const cursorDir = path.resolve(options.cursorDir);
+  const head = resolveCommit(cursorDir, "HEAD");
+  if (head !== options.cursorSha) {
+    throw new Error(`cursor clone HEAD ${head} does not match --cursor-sha ${options.cursorSha}`);
   }
-  const localSkillsDir = path.join(options.root, "skills");
+  const tree = resolveCommit(cursorDir, `${options.cursorSha}:${cursorPath}/skills`);
+  const upstreamTree = readUpstreamTree(cursorDir, options.cursorSha, `${cursorPath}/skills`);
 
   const changedEntries = parseChangedEntries(options.cursorChangedFile);
   const hasChangedFile = Boolean(options.cursorChangedFile && fs.existsSync(options.cursorChangedFile));
-  const cursorCommits = readJsonOptional(options.cursorCommitsFile, []);
-  const piMimirCommits = readJsonOptional(options.piMimirCommitsFile, []);
-  const piMimirError =
-    options.piMimirErrorFile && fs.existsSync(options.piMimirErrorFile)
-      ? fs.readFileSync(options.piMimirErrorFile, "utf8").trim() || undefined
-      : undefined;
-
-  const upstreamSkillNames = listDirectories(upstreamSkillsDir);
-  const upstreamSkillSet = new Set(upstreamSkillNames);
-  const localSkillNames = listDirectories(localSkillsDir);
-  const localSkillSet = new Set(localSkillNames);
-
-  const skillsPrefix = `${cursorPath}/skills/`;
-  const cursorPrefix = `${cursorPath}/`;
-
-  function skillChangedFiles(skillName) {
-    const skillPrefix = `${skillsPrefix}${skillName}/`;
-    const matched = new Set();
-    for (const entry of changedEntries) {
-      if (entry.path.startsWith(skillPrefix)) matched.add(entry.path);
-      if (entry.oldPath?.startsWith(skillPrefix)) matched.add(entry.oldPath);
-    }
-    return [...matched].sort();
-  }
-
-  const removedUpstreamSkillSet = new Set();
+  const changedSources = new Set();
   for (const entry of changedEntries) {
-    if (entry.status === "D" && entry.path.startsWith(skillsPrefix)) {
-      const skillName = entry.path.slice(skillsPrefix.length).split("/")[0];
-      if (skillName && !excluded.has(skillName) && !upstreamSkillSet.has(skillName) && localSkillSet.has(skillName)) {
-        removedUpstreamSkillSet.add(skillName);
-      }
-    }
-    if (entry.status === "R" && entry.oldPath?.startsWith(skillsPrefix)) {
-      const oldSkillName = entry.oldPath.slice(skillsPrefix.length).split("/")[0];
-      if (oldSkillName && !excluded.has(oldSkillName) && !upstreamSkillSet.has(oldSkillName) && localSkillSet.has(oldSkillName)) {
-        removedUpstreamSkillSet.add(oldSkillName);
-      }
-    }
+    if (entry.path) changedSources.add(entry.path);
+    if (entry.oldPath) changedSources.add(entry.oldPath);
   }
-  const removedUpstreamSkills = [...removedUpstreamSkillSet].sort();
+  const cursorCommits = readJsonOptional(options.cursorCommitsFile, []);
 
+  const localSkillsDir = path.join(root, "skills");
+  const baselineSkills = new Set(
+    manifest.entries.map((entry) => skillNameOf(entry.source, sourcePrefix)).filter(Boolean),
+  );
+  const upstreamSkills = new Set(
+    [...upstreamTree.keys()].map((source) => skillNameOf(source, sourcePrefix)).filter(Boolean),
+  );
+
+  const copiedVerbatim = [];
   const addedSkills = [];
   const updatedSkills = [];
   const manualAdaptedSkills = [];
   const blockedCursorSkills = [];
 
-  for (const name of upstreamSkillNames) {
-    if (excluded.has(name)) continue;
-    const upstreamSkill = path.join(upstreamSkillsDir, name);
-    const localSkill = path.join(localSkillsDir, name);
-    const existsLocally = fs.existsSync(localSkill);
+  const sources = [...upstreamTree.keys()].sort();
+  for (const source of sources) {
+    const skill = skillNameOf(source, sourcePrefix);
+    if (!skill) continue;
+    const target = targetForSource(source);
+    const upstreamEntry = upstreamTree.get(source);
+    const localPath = path.join(root, target);
+    const localExists = fs.existsSync(localPath);
+    const upstreamBytes = readUpstreamBlob(cursorDir, upstreamEntry.blob);
+    const localBlob = localExists ? gitBlobSha(fs.readFileSync(localPath)) : undefined;
+    const same = localExists && localBlob === upstreamEntry.blob;
+    if (same) continue;
+    if (excluded.has(skill)) continue;
 
-    if (adapted.has(name)) {
-      const matching = skillChangedFiles(name);
-      if (!existsLocally) {
-        manualAdaptedSkills.push({
-          name,
-          files: matching.length > 0 ? matching : [`${skillsPrefix}${name} (missing locally)`],
-        });
-      } else if (matching.length > 0) {
-        manualAdaptedSkills.push({ name, files: matching });
-      }
+    const changed = !hasChangedFile || changedSources.has(source) || !localExists;
+    if (adapted.has(skill)) {
+      if (changed) addSkillFile(manualAdaptedSkills, skill, source);
       continue;
     }
 
-    if (existsLocally && directoriesMatch(upstreamSkill, localSkill)) {
+    const ext = path.extname(source).toLowerCase();
+    const binary = BINARY_EXTENSIONS.has(ext) || upstreamBytes.subarray(0, 8192).includes(0);
+    const matches = binary ? [] : findForbiddenReferences(upstreamBytes.toString("utf8"));
+    if (matches.length > 0) {
+      if (changed) addBlockedMatch(blockedCursorSkills, skill, source, matches);
       continue;
     }
-
-    const forbiddenMatches = scanForbiddenReferences(upstreamSkill);
-    if (forbiddenMatches.length > 0) {
-      if (!existsLocally || !hasChangedFile || skillChangedFiles(name).length > 0) {
-        blockedCursorSkills.push({ name, matches: forbiddenMatches });
-      }
-      continue;
-    }
-
-    if (existsLocally) updatedSkills.push(name);
-    else addedSkills.push(name);
 
     if (!options.dryRun) {
-      replaceDirectory(upstreamSkill, localSkill);
+      fs.mkdirSync(path.dirname(localPath), { recursive: true });
+      fs.writeFileSync(localPath, upstreamBytes);
+      if (process.platform !== "win32") {
+        fs.chmodSync(localPath, upstreamEntry.mode === "100755" ? 0o755 : 0o644);
+      }
+    }
+    copiedVerbatim.push({ source, target, blob: upstreamEntry.blob, mode: upstreamEntry.mode });
+    if (localExists) {
+      if (!updatedSkills.includes(skill)) updatedSkills.push(skill);
+    } else if (!addedSkills.includes(skill)) {
+      addedSkills.push(skill);
     }
   }
 
+  const removedUpstreamSkills = [...baselineSkills]
+    .filter(
+      (skill) =>
+        !upstreamSkills.has(skill) &&
+        !excluded.has(skill) &&
+        fs.existsSync(path.join(localSkillsDir, skill)),
+    )
+    .sort();
+
   const manualOtherFileSet = new Set();
+  const cursorPrefix = `${cursorPath}/`;
   for (const entry of changedEntries) {
     for (const candidate of [entry.path, entry.oldPath]) {
-      if (!candidate || !candidate.startsWith(cursorPrefix) || candidate.startsWith(skillsPrefix)) continue;
-      const rel = candidate.slice(cursorPrefix.length);
-      if (!isPackagingPath(rel)) manualOtherFileSet.add(candidate);
+      if (!candidate || !candidate.startsWith(cursorPrefix) || candidate.startsWith(sourcePrefix)) continue;
+      const relative = candidate.slice(cursorPrefix.length);
+      if (!isPackagingPath(relative)) manualOtherFileSet.add(candidate);
     }
   }
   const manualOtherFiles = [...manualOtherFileSet].sort();
 
-  const hasAutoChanges = addedSkills.length > 0 || updatedSkills.length > 0;
+  const hasAutoChanges = copiedVerbatim.length > 0;
   const hasManualCursorItems =
     manualAdaptedSkills.length > 0 ||
     blockedCursorSkills.length > 0 ||
     removedUpstreamSkills.length > 0 ||
     manualOtherFiles.length > 0;
-  const hasManualItems = hasManualCursorItems || piMimirCommits.length > 0 || Boolean(piMimirError);
+  const mode = hasAutoChanges ? "pr" : hasManualCursorItems ? "issue" : "none";
 
-  const mode = hasAutoChanges ? "pr" : hasManualItems ? "issue" : "none";
+  const unresolved = [
+    ...manualAdaptedSkills.map((item) => ({ kind: "adapted", skill: item.name, files: item.files })),
+    ...blockedCursorSkills.map((item) => ({
+      kind: "blocked",
+      skill: item.name,
+      files: item.files,
+      matches: item.matches,
+    })),
+    ...removedUpstreamSkills.map((skill) => ({ kind: "removed", skill })),
+    ...manualOtherFiles.map((file) => ({ kind: "other", file })),
+  ];
 
   const summary = {
     mode,
     cursorSha: options.cursorSha,
     shortSha: options.cursorSha.slice(0, 7),
+    cursorTree: tree,
     cursorShaAdvanced: mode === "pr" && !hasManualCursorItems && !options.dryRun,
-    piMimirSha: options.piMimirSha ?? null,
-    piMimirError: piMimirError ?? null,
     addedSkills,
     updatedSkills,
+    copiedFiles: copiedVerbatim.map((entry) => entry.target),
     manualAdaptedSkills,
     blockedCursorSkills,
     removedUpstreamSkills,
     manualOtherFiles,
-    piMimirCommits,
+    pending: mode === "pr" && hasManualCursorItems,
   };
 
   const report = buildReport(config, summary, cursorCommits);
 
-  if (mode === "pr" && !options.dryRun) {
-    let configChanged = false;
-    if (!hasManualCursorItems) {
-      config.cursor.lastSyncedSha = options.cursorSha;
-      configChanged = true;
-    }
-    if (options.piMimirSha && piMimirCommits.length === 0 && !piMimirError && config.piMimir) {
-      config.piMimir.lastCheckedSha = options.piMimirSha;
-      configChanged = true;
-    }
-    if (configChanged) {
-      fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  if (!options.dryRun) {
+    if (mode === "pr") {
+      if (hasManualCursorItems) {
+        manifest.pending = {
+          commit: options.cursorSha,
+          tree,
+          copiedVerbatim,
+          unresolved,
+        };
+      } else {
+        const bySource = new Map(manifest.entries.map((entry) => [entry.source, entry]));
+        for (const copied of copiedVerbatim) {
+          bySource.set(copied.source, { ...copied, rule: "verbatim" });
+        }
+        manifest.entries = sortEntries([...bySource.values()]);
+        manifest.source = {
+          ...manifest.source,
+          commit: options.cursorSha,
+          tree,
+        };
+        delete manifest.pending;
+        config.cursor.lastSyncedSha = options.cursorSha;
+        writeSyncConfig(root, config);
+      }
+      writeManifest(root, manifest);
     }
   }
 
@@ -552,7 +554,7 @@ if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === SCRIPT_PA
     const options = parseArgs(process.argv.slice(2));
     const { summary } = syncUpstream(options);
     console.log(
-      `Upstream sync (${summary.mode}): +${summary.addedSkills.length} added, ~${summary.updatedSkills.length} updated, ${summary.manualAdaptedSkills.length} adapted changed, ${summary.blockedCursorSkills.length} blocked.`,
+      `Upstream sync (${summary.mode}): +${summary.addedSkills.length} added, ~${summary.updatedSkills.length} updated, ${summary.manualAdaptedSkills.length} adapted changed, ${summary.blockedCursorSkills.length} blocked, ${summary.copiedFiles.length} files copied.`,
     );
   } catch (error) {
     console.error(USAGE);

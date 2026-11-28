@@ -26,14 +26,5 @@
       "swarm",
       "teach"
     ]
-  },
-  "piMimir": {
-    "repo": "casualjim/pi-mimir",
-    "branch": "main",
-    "watchPaths": [
-      "packages/pi-pstack/extensions",
-      "packages/pi-pstack/agents"
-    ],
-    "lastCheckedSha": "4bb74426d0b6cf27c49c34d833591bb6fbd3e1df"
   }
 }
