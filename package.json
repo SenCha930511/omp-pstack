@@ -74,9 +74,12 @@
     "sync:ack": "node scripts/sync-ack.mjs",
     "test:packed": "node scripts/test-packed.mjs",
     "test:marketplace": "node scripts/test-marketplace.mjs",
+    "proof:install": "node scripts/proof-install.mjs",
+    "test:proof": "node scripts/verify-install-proof.mjs --discovery",
+    "test:proof-script": "node --test scripts/test-install-proof.mjs",
     "test": "npm run test:skills && npm run test:extension",
     "pack:check": "npm pack --dry-run",
-    "check": "npm run typecheck && npm run check:versions && npm run check:upstream && npm run docs:check && npm run test:skills && npm run test:docs && npm run test:extension && npm run test:graph && npm run test:release-scripts && npm run test:sync-script && npm run test:packed && npm run test:marketplace",
+    "check": "npm run typecheck && npm run check:versions && npm run check:upstream && npm run docs:check && npm run test:skills && npm run test:docs && npm run test:extension && npm run test:graph && npm run test:release-scripts && npm run test:sync-script && npm run test:proof-script && npm run test:proof && npm run test:packed && npm run test:marketplace",
     "prepublishOnly": "npm run check"
   }
 }

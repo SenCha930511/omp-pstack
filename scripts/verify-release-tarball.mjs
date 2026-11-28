@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_NAME = "omp-pstack";
-const USAGE = "Usage: node scripts/verify-release-tarball.mjs --directory <dir> --tag <vX.Y.Z> --head <commit> [--name <name>] [--github-env <file>] [--test-packed]";
+const USAGE = "Usage: node scripts/verify-release-tarball.mjs --directory <dir> --tag <vX.Y.Z> --head <commit> [--name <name>] [--github-env <file>] [--proof <file>] [--test-packed]";
 
 function parseArgs(argv) {
   const options = {
@@ -13,6 +13,7 @@ function parseArgs(argv) {
     head: undefined,
     name: DEFAULT_NAME,
     githubEnv: undefined,
+    proof: undefined,
     testPacked: false,
   };
   const seen = new Set();
@@ -24,7 +25,7 @@ function parseArgs(argv) {
       options.testPacked = true;
       continue;
     }
-    if (!["--directory", "--tag", "--head", "--name", "--github-env"].includes(argument)) {
+    if (!["--directory", "--tag", "--head", "--name", "--github-env", "--proof"].includes(argument)) {
       throw new Error(`unknown argument: ${argument}`);
     }
     if (seen.has(argument)) throw new Error(`${argument} may be supplied only once`);
@@ -36,6 +37,7 @@ function parseArgs(argv) {
     else if (argument === "--tag") options.tag = value;
     else if (argument === "--head") options.head = value;
     else if (argument === "--name") options.name = value;
+    else if (argument === "--proof") options.proof = value;
     else options.githubEnv = value;
   }
   if (!options.directory) throw new Error("--directory is required");
@@ -76,6 +78,21 @@ function verifyMetadata(metadata, options) {
   }
 }
 
+function verifyProof(proofPath, metadata) {
+  const proof = JSON.parse(fs.readFileSync(proofPath, "utf8"));
+  if (proof?.ok !== true) throw new Error(`install proof at ${proofPath} is not ok`);
+  if (proof?.package?.name !== metadata.name) {
+    throw new Error(
+      `install proof name is ${JSON.stringify(proof?.package?.name)}, expected ${JSON.stringify(metadata.name)}`,
+    );
+  }
+  if (proof?.package?.version !== metadata.version) {
+    throw new Error(
+      `install proof version is ${JSON.stringify(proof?.package?.version)}, expected ${JSON.stringify(metadata.version)}`,
+    );
+  }
+}
+
 function appendGitHubEnv(file, metadata, tarball) {
   fs.appendFileSync(file, `TARBALL=${tarball}\nNAME=${metadata.name}\nVERSION=${metadata.version}\n`);
 }
@@ -94,6 +111,7 @@ function main() {
     const tarball = findTarball(options.directory);
     const metadata = readPackageMetadata(tarball);
     verifyMetadata(metadata, options);
+    if (options.proof) verifyProof(options.proof, metadata);
     if (options.testPacked) {
       const testPacked = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "test-packed.mjs");
       execFileSync(process.execPath, [testPacked, "--tarball", path.resolve(tarball)], { stdio: "inherit" });

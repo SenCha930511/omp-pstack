@@ -85,3 +85,38 @@ test("rejects mismatched name, tag, gitHead, and unexpected tarball counts", () 
     1,
   );
 });
+
+test("verifies the committed proof version when --proof is given", () => {
+  const head = "0123456789abcdef0123456789abcdef01234567";
+  const { dir, out } = createTarballFixture({
+    name: "omp-pstack",
+    version: "0.1.0",
+    gitHead: head,
+  });
+  const proofPath = path.join(dir, "proof.json");
+  fs.writeFileSync(
+    proofPath,
+    JSON.stringify({ ok: true, package: { name: "omp-pstack", version: "0.1.0" } }),
+  );
+  assert.equal(
+    spawnSync(
+      process.execPath,
+      [SCRIPT, "--directory", out, "--tag", "v0.1.0", "--head", head, "--proof", proofPath],
+      { encoding: "utf8" },
+    ).status,
+    0,
+  );
+
+  fs.writeFileSync(
+    proofPath,
+    JSON.stringify({ ok: true, package: { name: "omp-pstack", version: "0.2.0" } }),
+  );
+  assert.equal(
+    spawnSync(
+      process.execPath,
+      [SCRIPT, "--directory", out, "--tag", "v0.1.0", "--head", head, "--proof", proofPath],
+      { encoding: "utf8" },
+    ).status,
+    1,
+  );
+});
