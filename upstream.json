@@ -1,0 +1,3756 @@
+{
+  "schema": "omp-pstack.upstream/1",
+  "source": {
+    "repository": "https://github.com/cursor/plugins",
+    "path": "pstack/skills",
+    "commit": "9e278fe4d4ecd8bfe98b1b79bf4be662efb338cc",
+    "tree": "3b48b656de7e9af6edd4f0faf7ef6f9908a435af"
+  },
+  "entries": [
+    {
+      "source": "pstack/skills/architect/SKILL.md",
+      "target": "skills/architect/SKILL.md",
+      "blob": "0c1a1338ff46497bf9086abab9dd9c44d244cd66",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/arena/SKILL.md",
+      "target": "skills/arena/SKILL.md",
+      "blob": "e908a7c6221cdb06d381b4621e265745955d4b2d",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Replaced Cursor model-rule slugs and cloud/background spawns with omp task panel models, per-call model gating, and local subagents.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/automate-me/SKILL.md",
+      "target": "skills/automate-me/SKILL.md",
+      "blob": "d22dd320f0638ea7adc90cee58a3a0fa6e07201f",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Replaced Cursor transcripts, AskQuestion, and create-skill references with omp archive, ask, and Agent Skills authoring.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/benchmark-checklist/SKILL.md",
+      "target": "skills/benchmark-checklist/SKILL.md",
+      "blob": "88546fa684c003625a13d61b975ced97b8fcb90e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/blast-radius/SKILL.md",
+      "target": "skills/blast-radius/SKILL.md",
+      "blob": "1f5c95140597b8aa42fadf165e1aa0bca01639ff",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/bro/SKILL.md",
+      "target": "skills/bro/SKILL.md",
+      "blob": "b1701b778639c08bfc306291d70170c525c66a68",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/correct/SKILL.md",
+      "target": "skills/correct/SKILL.md",
+      "blob": "c45e06f48a0982ae19f92c6e83a8cd05988097a3",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/create-formal-verification-skill/SKILL.md",
+      "target": "skills/create-formal-verification-skill/SKILL.md",
+      "blob": "92f7aa4fa966b857dd7fcc994b3c59650767c878",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/create-verification-skill/SKILL.md",
+      "target": "skills/create-verification-skill/SKILL.md",
+      "blob": "140d033a001e8d27acd14b06004506c43053b199",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Moved generated verification skills from .cursor/skills to omp .omp/skills and switched command references to /skill:.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/create-verification-skill/references/feature-map-example/README.md",
+      "target": "skills/create-verification-skill/references/feature-map-example/README.md",
+      "blob": "fb64570cfab3bbe672fe80925651933ebd57aa33",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/create-verification-skill/references/feature-map-example/create-note.md",
+      "target": "skills/create-verification-skill/references/feature-map-example/create-note.md",
+      "blob": "21357566b69223a503d6780a04fb90ce540eae22",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/create-verification-skill/references/feature-map-example/search.md",
+      "target": "skills/create-verification-skill/references/feature-map-example/search.md",
+      "blob": "1f8e57d3aaf19cf27a9464d55fa72e46bcbc8b0f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/figure-it-out/SKILL.md",
+      "target": "skills/figure-it-out/SKILL.md",
+      "blob": "625a53c4d8be54dcca071952859aeaa1e0ccff9c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/how/SKILL.md",
+      "target": "skills/how/SKILL.md",
+      "blob": "dbddbecf2a911a5216c3a611f20bf95db809a938",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp scout instead of a readonly generalPurpose Task subagent.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/in-your-own-words/SKILL.md",
+      "target": "skills/in-your-own-words/SKILL.md",
+      "blob": "4b2a476a9017863032c8dba9d12f0a2026943292",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/interrogate/SKILL.md",
+      "target": "skills/interrogate/SKILL.md",
+      "blob": "169f5b478f4cb53a4c5ab6046576034b4b07cfe8",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task agents and per-call panel models instead of generalPurpose and Cursor role rules.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/ketchup-video/SKILL.md",
+      "target": "skills/ketchup-video/SKILL.md",
+      "blob": "c0c614288dea9f413a418064d7e7d37791dd9e5e",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses the ketchup skill by name and /skill: command syntax instead of Cursor slash commands.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/ketchup/SKILL.md",
+      "target": "skills/ketchup/SKILL.md",
+      "blob": "9eef27f92f8029137a7bfa7378305b075df9dc4f",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Replaced Cursor /bro and /visualize references with omp skill links, inline SVG, and available visualization tools.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/maintain-formal-verification-skill/SKILL.md",
+      "target": "skills/maintain-formal-verification-skill/SKILL.md",
+      "blob": "5d2f7f2228a3b771ca5b03124fc265ddfc53c5fc",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/maintain-verification-skill/SKILL.md",
+      "target": "skills/maintain-verification-skill/SKILL.md",
+      "blob": "a2680b91fead45a0b4963d8c367a854956bea59d",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp .omp/skills roots and scout subagents instead of Cursor paths and readonly generalPurpose agents.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/make-bot-ui/SKILL.md",
+      "target": "skills/make-bot-ui/SKILL.md",
+      "blob": "446342ca35a46af771271e0cd901354a61997589",
+      "mode": "100644",
+      "rule": "excluded",
+      "reason": "Cursor-only bot UI workflow; omp routines are out of scope for this fork."
+    },
+    {
+      "source": "pstack/skills/no-comments/SKILL.md",
+      "target": "skills/no-comments/SKILL.md",
+      "blob": "1789564454c627cb8d4ee8580822d7e368cef122",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task with agent comment-sicko and /skill: command references instead of Task/subagent_type and bare commands.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-help/SKILL.md",
+      "target": "skills/poteto-help/SKILL.md",
+      "blob": "11bc4e47429373201c4edd371c4fbcfe428c33ab",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Rewritten for omp installation, /skill: commands, task model routing, and omp plugin cache paths; removed Cursor and Claude Code install paths.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-help/references/prompting.md",
+      "target": "skills/poteto-help/references/prompting.md",
+      "blob": "6b72b2e6081fdb78a3261bd77cf7334596d1ee20",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses /skill: command syntax for recall, how, why, and teach.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-help/references/recipes.md",
+      "target": "skills/poteto-help/references/recipes.md",
+      "blob": "cc7a4e6828f5bfc3bcbf5954876358074718f45c",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses /poteto-mode sticky and /skill: command syntax instead of Cursor slash commands.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/SKILL.md",
+      "target": "skills/poteto-mode/SKILL.md",
+      "blob": "82a1941713eb18905b93f7c5b2004664f6722898",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Adapted the operating contract to omp task batching, agent/model routing, todo, and the /poteto-mode sticky commands.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "target": "skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "blob": "8c5a55a44f5e95bba92f652da0ac87e941c49538",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Replaced Cursor-specific skill authoring steps with omp /skill: syntax and host-native commands.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/autonomous-run.md",
+      "target": "skills/poteto-mode/playbooks/autonomous-run.md",
+      "blob": "853f9ecad2531610c4df1d8caf3621cb29240d6d",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task and session state instead of Cursor subagent and VM assumptions.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/autopilot-full.md",
+      "target": "skills/poteto-mode/playbooks/autopilot-full.md",
+      "blob": "be91d5ac4108da00f1a9626d7af9892b2a2361eb",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task batches, session state, and decision logs instead of Cursor VM and root-store wording.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/autopilot-stack.md",
+      "target": "skills/poteto-mode/playbooks/autopilot-stack.md",
+      "blob": "2cca41205ce59089b2a61f9691e0f46c572a0e04",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/babysit.md",
+      "target": "skills/poteto-mode/playbooks/babysit.md",
+      "blob": "0685ac21d6a88edbc77d53dd2e5576ea2e3e6f8a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/bug-fix.md",
+      "target": "skills/poteto-mode/playbooks/bug-fix.md",
+      "blob": "0e9e734ed6e940a7ac512befb73f03bb7e6a150c",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task delegation and todo instead of Cursor Task/subagent_type.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/eval.md",
+      "target": "skills/poteto-mode/playbooks/eval.md",
+      "blob": "5e5762500dec34b63219c9002161215fb45ec438",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task agents and /skill: syntax instead of Cursor Task roles.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/feature.md",
+      "target": "skills/poteto-mode/playbooks/feature.md",
+      "blob": "27d76a56eb074ed1d8910b289b318d1aa0b80c0a",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task delegation and todo instead of Cursor Task/subagent_type.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/hillclimb.md",
+      "target": "skills/poteto-mode/playbooks/hillclimb.md",
+      "blob": "dbcff8f923eab39976bb2e34b89b328d4385e825",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task delegation instead of Cursor Task/subagent_type.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/investigation.md",
+      "target": "skills/poteto-mode/playbooks/investigation.md",
+      "blob": "854d56f69388e24d0d9262cb6b545e1484873ca1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "target": "skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "blob": "8ddcfc7aec9ab5fc5962b1037d58880e09ca7307",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/opening-a-pr.md",
+      "target": "skills/poteto-mode/playbooks/opening-a-pr.md",
+      "blob": "e7367ed4cc37c48caafcc1b20d1a66146e22976c",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp gh/CLI conventions and /skill: syntax instead of Cursor commands.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/pause-safely.md",
+      "target": "skills/poteto-mode/playbooks/pause-safely.md",
+      "blob": "9d1c5f8303976fff40de099f7f28185909430c11",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/perf-issue.md",
+      "target": "skills/poteto-mode/playbooks/perf-issue.md",
+      "blob": "f5264c29516b7c6b63369369f58e07c8db5c0773",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task delegation and todo instead of Cursor Task/subagent_type.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/prototype.md",
+      "target": "skills/poteto-mode/playbooks/prototype.md",
+      "blob": "18bedc7e9249d180f9198d5b4b13e3817d41d281",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/refactoring.md",
+      "target": "skills/poteto-mode/playbooks/refactoring.md",
+      "blob": "d4db06bb057f7b8a7df68d90896d9078a0656938",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task delegation and todo instead of Cursor Task/subagent_type.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/runtime-forensics.md",
+      "target": "skills/poteto-mode/playbooks/runtime-forensics.md",
+      "blob": "8364ce4f1e7b0fd006f06c4bd0f70f68a902cdaf",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/session-pickup.md",
+      "target": "skills/poteto-mode/playbooks/session-pickup.md",
+      "blob": "fcde2b226265e3597b9ca8681864aa7e0868e464",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp session history and worktree commands instead of Cursor session paths.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/shipping.md",
+      "target": "skills/poteto-mode/playbooks/shipping.md",
+      "blob": "8f7e7b9ffbfce6eb81bd0a5eb363a086188d4223",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task delegation and gh commands instead of Cursor-specific wording.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/trace-forensics.md",
+      "target": "skills/poteto-mode/playbooks/trace-forensics.md",
+      "blob": "2aec6f16451cc939348ac65fb90aaa77d431cefa",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/visual-parity.md",
+      "target": "skills/poteto-mode/playbooks/visual-parity.md",
+      "blob": "248830ec74a593fc22143a842026388f92f1b9f4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "target": "skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "blob": "5ea9079b61ffc258aa713eb571eda7c2932bd81c",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp session-pins.json, archive.grep, and host session state instead of Cursor sidebar state.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/references/bugbot-triage.md",
+      "target": "skills/poteto-mode/references/bugbot-triage.md",
+      "blob": "b2fc7d35712783707607cf2f39752885c8d5105c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/bootstrap.ts",
+      "target": "skills/poteto-mode/scripts/bootstrap.ts",
+      "blob": "d9c63e2007449a80000abe75ecaf7f2a0bd5826b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/bun.lock",
+      "target": "skills/poteto-mode/scripts/bun.lock",
+      "blob": "65f0c662f300a0f72b319ca93ea18f56219c2581",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/package.json",
+      "target": "skills/poteto-mode/scripts/package.json",
+      "blob": "b79dbf4b5cc4b42de781d70899545de0e83da2c1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/cli.test.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/cli.test.ts",
+      "blob": "0656b413e6c180858ca42981105944c45caf9dca",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/cli.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/cli.ts",
+      "blob": "ec8a2f27c5ac24866b699e6395e7d1f32e595068",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts",
+      "blob": "84ccf596b01e03e7fb77e73ea82ec3b1738026ad",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/github.test.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/github.test.ts",
+      "blob": "4e58938389bb8ac6f3728aea65c56e30ed047a5e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/github.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/github.ts",
+      "blob": "123a33b19f807cff4c641fff3d44f9a02ba449e0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/policy.test.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/policy.test.ts",
+      "blob": "966b7536754602e2550bf7245eed2124af623b76",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/policy.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/policy.ts",
+      "blob": "8179f2d8ba5bf675feb3b1449161360827031518",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/render.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/render.ts",
+      "blob": "0e935839357335f24ab1bbc193d761495646ea99",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/tsconfig.json",
+      "target": "skills/poteto-mode/scripts/watch-pr/tsconfig.json",
+      "blob": "477af90b05cbd24fcf974fd73cf331d5ac7379cc",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/types.compile.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/types.compile.ts",
+      "blob": "1b53279c7f3e5da55703ed17d6ad0616254c5751",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/types.ts",
+      "target": "skills/poteto-mode/scripts/watch-pr/types.ts",
+      "blob": "60b9abcac983fc0a4319428c1be145dc110a8cc5",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/watch-pr",
+      "target": "skills/poteto-mode/scripts/watch-pr/watch-pr",
+      "blob": "99807d577c3b006cfe6ee9e149cf2914bfd4afd6",
+      "mode": "100755",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/poteto-mode/scripts/worktree-audit.sh",
+      "target": "skills/poteto-mode/scripts/worktree-audit.sh",
+      "blob": "47e08919d7b08c32923a7bdaaa70b17ca708f5f6",
+      "mode": "100755",
+      "rule": "local",
+      "reason": "Rewritten for omp session transcripts, additionalDirectories, and jq/rg/node fallbacks while keeping title-first headers.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/poteto-mode/worker.md",
+      "target": "skills/poteto-mode/worker.md",
+      "blob": "213fd63a4a03acf6ddb8a72429f6032b31f9b746",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-attack-the-premise/SKILL.md",
+      "target": "skills/principle-attack-the-premise/SKILL.md",
+      "blob": "5ee25b02e701ca3e304122248a412d2372ab097c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-boundary-discipline/SKILL.md",
+      "target": "skills/principle-boundary-discipline/SKILL.md",
+      "blob": "95b2209ce7d15ddbca7c2bf6ef3626ffdc8d595e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-build-the-lever/SKILL.md",
+      "target": "skills/principle-build-the-lever/SKILL.md",
+      "blob": "8f9b5a931b10839ad5ef71ce43d5411c2c7a1f6b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-encode-lessons-in-structure/SKILL.md",
+      "target": "skills/principle-encode-lessons-in-structure/SKILL.md",
+      "blob": "4a96f77fe70e36cb030f9c5efa142f66877bf58a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-exhaust-the-design-space/SKILL.md",
+      "target": "skills/principle-exhaust-the-design-space/SKILL.md",
+      "blob": "395a0839126bb231430a9c9da02ebab5422557d5",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-experience-first/SKILL.md",
+      "target": "skills/principle-experience-first/SKILL.md",
+      "blob": "5ea51741302cf3af4cc0b90ec70815bd3208dbf2",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-explain-the-number/SKILL.md",
+      "target": "skills/principle-explain-the-number/SKILL.md",
+      "blob": "7ff00fcf8805872cfb500308ed2bdf5fdd5d6b8b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-fix-root-causes/SKILL.md",
+      "target": "skills/principle-fix-root-causes/SKILL.md",
+      "blob": "b5e41168eb5944f583cf1d225e39552a48473dfe",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-foundational-thinking/SKILL.md",
+      "target": "skills/principle-foundational-thinking/SKILL.md",
+      "blob": "4571b23e34a5037d44c152d966e37650450c9724",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-guard-the-context-window/SKILL.md",
+      "target": "skills/principle-guard-the-context-window/SKILL.md",
+      "blob": "0a1d3cfcf4539fe048887174000fecbf2fa40e81",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-laziness-protocol/SKILL.md",
+      "target": "skills/principle-laziness-protocol/SKILL.md",
+      "blob": "016c3c7c8dfffd995c1a02135a62248e6625879b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-make-operations-idempotent/SKILL.md",
+      "target": "skills/principle-make-operations-idempotent/SKILL.md",
+      "blob": "7c61fe4b203bfae1de7db570af4c57fd0ba0a3d3",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "target": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "blob": "57ddd7b27d06ba4ee9e2d3811880476a18b88df6",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-minimize-reader-load/SKILL.md",
+      "target": "skills/principle-minimize-reader-load/SKILL.md",
+      "blob": "19dd4876d6e92c04caa2729d37ac87ac126d20ed",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-model-the-domain/SKILL.md",
+      "target": "skills/principle-model-the-domain/SKILL.md",
+      "blob": "88ba012f47bd51b2db0758c657610d56f871e1ba",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-never-block-on-the-human/SKILL.md",
+      "target": "skills/principle-never-block-on-the-human/SKILL.md",
+      "blob": "4f59bdc69f79d536b30b0014a563ed3be05b8b62",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-outcome-oriented-execution/SKILL.md",
+      "target": "skills/principle-outcome-oriented-execution/SKILL.md",
+      "blob": "c49be0bc74783f0dee013101365ae09b2abb48a2",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-prove-it-works/SKILL.md",
+      "target": "skills/principle-prove-it-works/SKILL.md",
+      "blob": "1c293b3c3ad0f7cb021858b17e7588d30a0a1acb",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-redesign-from-first-principles/SKILL.md",
+      "target": "skills/principle-redesign-from-first-principles/SKILL.md",
+      "blob": "5ca5246cbb0fa08884ce17b0d22c117ae1ad67b8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "target": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "blob": "6a4c3b876b694097a12003996588f557d2b55d0e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-sequence-verifiable-units/SKILL.md",
+      "target": "skills/principle-sequence-verifiable-units/SKILL.md",
+      "blob": "3998185a29f287f6f30f0909c98ac4e2af5ddb97",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-subtract-before-you-add/SKILL.md",
+      "target": "skills/principle-subtract-before-you-add/SKILL.md",
+      "blob": "b8740ba6f06922d8e7ef3b23f9fb16e0fc4a876f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-test-behavior-not-implementation/SKILL.md",
+      "target": "skills/principle-test-behavior-not-implementation/SKILL.md",
+      "blob": "094b9427aa64294afd64d83e9495a5ee303631e0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/principle-type-system-discipline/SKILL.md",
+      "target": "skills/principle-type-system-discipline/SKILL.md",
+      "blob": "852aab0340246c0d0dfd59ea6be962ce40a31272",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/recall/SKILL.md",
+      "target": "skills/recall/SKILL.md",
+      "blob": "a4ce69d2516715d7205867072d3e00d399fb3419",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Replaced Cursor agent-transcripts paths with omp PI_SESSION_FILE and the eval archive prelude.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/reflect/SKILL.md",
+      "target": "skills/reflect/SKILL.md",
+      "blob": "e7bcc3aa18174a4103fdafdf947c8098cc0d8e16",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp .omp/skills and ~/.omp/agent/skills override roots instead of Cursor skill paths.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/reframe/SKILL.md",
+      "target": "skills/reframe/SKILL.md",
+      "blob": "57a219851a939cfb1ee46ed74b20a5196a983539",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/setup-pstack/SKILL.md",
+      "target": "skills/setup-pstack/SKILL.md",
+      "blob": "7358536071ed21b257da26adc1aec452c3d46466",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Writes omp task.agentModelOverrides, pi-model-sync, and perCallModel routing instead of a Cursor model rule.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/sharpen/SKILL.md",
+      "target": "skills/sharpen/SKILL.md",
+      "blob": "2a03402b704012a626e9351b4db9c05cfd3afd20",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/show-me-your-work/SKILL.md",
+      "target": "skills/show-me-your-work/SKILL.md",
+      "blob": "bf64d5de06efce56152c4a6030a084213c69b228",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Reads omp session files and history:// instead of Cursor agent-transcripts and notes the example is illustration only.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/show-me-your-work/references/decision-log-template.tsv",
+      "target": "skills/show-me-your-work/references/decision-log-template.tsv",
+      "blob": "db220376ecb8c582a6a4f6575a8f26469603a38d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/show-me-your-work/scripts/log.sh",
+      "target": "skills/show-me-your-work/scripts/log.sh",
+      "blob": "052e53b7e1090579eaec1d3d59f7a1cd2f2e452a",
+      "mode": "100755",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/SKILL.md",
+      "target": "skills/statechart/SKILL.md",
+      "blob": "18d653a810dfbb3ea35a6ed88bcfe8cb84f0a893",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/references/render.md",
+      "target": "skills/statechart/references/render.md",
+      "blob": "5ef0519d6f7ae97ef7befceaf174f94f52dd42f5",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/backends/cfg.ts",
+      "target": "skills/statechart/scripts/backends/cfg.ts",
+      "blob": "dec8b2f6671f2d110cd880f7af8d2c714cdf23a3",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/backends/mermaid.ts",
+      "target": "skills/statechart/scripts/backends/mermaid.ts",
+      "blob": "21ad39cb1efe72e4507df5c7599f32596612545f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/backends/plain-text.ts",
+      "target": "skills/statechart/scripts/backends/plain-text.ts",
+      "blob": "1ece33e8c45995493e84bc948ad613fce15481ab",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/backends/report.ts",
+      "target": "skills/statechart/scripts/backends/report.ts",
+      "blob": "62e2a853375a1141491ef54fed8fd0d81a1bcd3c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/config.ts",
+      "target": "skills/statechart/scripts/frontends/config.ts",
+      "blob": "4f6ade5a9a74c8e74a58125dc7a5d035ea2ca36b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/dot.ts",
+      "target": "skills/statechart/scripts/frontends/dot.ts",
+      "blob": "09d5481e70d9cf911dc16ddf655c91c197ff1fac",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/marks.ts",
+      "target": "skills/statechart/scripts/frontends/marks.ts",
+      "blob": "9b1eda59f12861b8fb981d6046741417cd1be667",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/messages.ts",
+      "target": "skills/statechart/scripts/frontends/messages.ts",
+      "blob": "e835b065e775a1b822eede5b1515d0401ce8356b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/spec.ts",
+      "target": "skills/statechart/scripts/frontends/spec.ts",
+      "blob": "3fbe34f1a6b344c56cfd5afba3b90fe9a397c405",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/trace.ts",
+      "target": "skills/statechart/scripts/frontends/trace.ts",
+      "blob": "43387c12b314c343d7a046de2fd095a3950b0026",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/value.ts",
+      "target": "skills/statechart/scripts/frontends/value.ts",
+      "blob": "d73ddec9ee3fa6077c644625002707a96d0938a1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/verdict.ts",
+      "target": "skills/statechart/scripts/frontends/verdict.ts",
+      "blob": "4f2ddd925332773b68918c40e62fc79a3a32571b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/frontends/view.ts",
+      "target": "skills/statechart/scripts/frontends/view.ts",
+      "blob": "ed8a1b5f9f0b4104a901a966bdfd66f13102d5ce",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/ir.ts",
+      "target": "skills/statechart/scripts/ir.ts",
+      "blob": "80fd403fe3c231b0986f239ba8c74a60b52c05f7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/janitor.ts",
+      "target": "skills/statechart/scripts/janitor.ts",
+      "blob": "5e69fb316c9e6bd4bc1de68781b43c345381188b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/kill.ts",
+      "target": "skills/statechart/scripts/kill.ts",
+      "blob": "014d7c35049a8786359264cb4489c0c5e0a7ff1d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/package.json",
+      "target": "skills/statechart/scripts/package.json",
+      "blob": "16bd68507bac879f00d9efb90f6a5df689dbbd3a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/passes/annotate.ts",
+      "target": "skills/statechart/scripts/passes/annotate.ts",
+      "blob": "7d95d4fb57311c26bbbaca42eb283421f56140e0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/passes/label.ts",
+      "target": "skills/statechart/scripts/passes/label.ts",
+      "blob": "cc8c197726137a0875462702e39cd07cbf55d547",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/passes/lift.ts",
+      "target": "skills/statechart/scripts/passes/lift.ts",
+      "blob": "15db7deda016faee9c0da33c2c419be51e528ed6",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/passes/loop-check.ts",
+      "target": "skills/statechart/scripts/passes/loop-check.ts",
+      "blob": "7e5a3825adde46e8a625ad9e167cb0ce6b712174",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/passes/paths.ts",
+      "target": "skills/statechart/scripts/passes/paths.ts",
+      "blob": "632a5c4ae6d6101c89f46803605c09b6a96f9b6f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/passes/reach.ts",
+      "target": "skills/statechart/scripts/passes/reach.ts",
+      "blob": "d5b6a521dc970f888d615d41caf692d0f7bcb2ec",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/passes/region-check.ts",
+      "target": "skills/statechart/scripts/passes/region-check.ts",
+      "blob": "ae499230f5ba441d704386bd24df73cad3c92af7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/passes/regions.ts",
+      "target": "skills/statechart/scripts/passes/regions.ts",
+      "blob": "bb7aea062410be42c25c779ca748c2b52c3e5a82",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/pipeline.ts",
+      "target": "skills/statechart/scripts/pipeline.ts",
+      "blob": "f12a2e07f6e4fe283cfd1b2fc0d3f83dd3d75758",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/run.ts",
+      "target": "skills/statechart/scripts/run.ts",
+      "blob": "45e13dcb4d4ee41d4437ed64e3177fe1a412ae56",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/statechart",
+      "target": "skills/statechart/scripts/statechart",
+      "blob": "7d3aeb8c219bf20aea4cbc321892fca9cbd582f1",
+      "mode": "100755",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/statechart.ts",
+      "target": "skills/statechart/scripts/statechart.ts",
+      "blob": "43ee983edfa7b1fa76ddab07e0e99cba897373b9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/ConfigOracle.java",
+      "target": "skills/statechart/scripts/test/ConfigOracle.java",
+      "blob": "d916e540ba1d23733be5486ac2911252e49f81dc",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/chart.test.ts",
+      "target": "skills/statechart/scripts/test/chart.test.ts",
+      "blob": "95ba9e86ba3f40fbe30b0a926f43bef082137af3",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/charts/Braces.mmd",
+      "target": "skills/statechart/scripts/test/charts/Braces.mmd",
+      "blob": "4cc99ed3082d412117750da757f767475daf63be",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/charts/Escapes.mmd",
+      "target": "skills/statechart/scripts/test/charts/Escapes.mmd",
+      "blob": "6b2de4b7aebfb644700889469c0219d10424afde",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/charts/Phases.mmd",
+      "target": "skills/statechart/scripts/test/charts/Phases.mmd",
+      "blob": "1412a97ef4198500a1c730124c20e9cfc3a934f9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/cli.test.ts",
+      "target": "skills/statechart/scripts/test/cli.test.ts",
+      "blob": "ee80722d6fdbb1e3c091c0c9f6f981636f61a264",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/config-fuzz.test.ts",
+      "target": "skills/statechart/scripts/test/config-fuzz.test.ts",
+      "blob": "88ec2d3d0b09cd85759507aaf786722add1a2cb7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus.test.ts",
+      "target": "skills/statechart/scripts/test/corpus.test.ts",
+      "blob": "90a4104e9b24d3f6144fae69a8ac42ea5251299b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Counter/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/Counter/ChartRun.out",
+      "blob": "87dec2842dcace3f3725ab7e3570d649abb5022e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Counter/Counter.cfg",
+      "target": "skills/statechart/scripts/test/corpus/Counter/Counter.cfg",
+      "blob": "accc477b2e456e9cacee880aa8a579b7f2fb3f7d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Counter/Counter.tla",
+      "target": "skills/statechart/scripts/test/corpus/Counter/Counter.tla",
+      "blob": "c72accbb7b5d4a0fd7302607798f1d5962156e31",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Counter/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/Counter/chart.mmd",
+      "blob": "a65ea8434a27b918dd425548d1664ec02d030ab1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Counter/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/Counter/graph.dot",
+      "blob": "19ef461866782514d24f9bbe8e07a2e40fe4d5c1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Counter/report.md",
+      "target": "skills/statechart/scripts/test/corpus/Counter/report.md",
+      "blob": "76a07da6b47cebf9b629f0f3fe2031603fb9eff0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Counter/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/Counter/sany.out",
+      "blob": "bc0268192dd95ee0e3dd197657b324e780761cec",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Counter/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/Counter/verdict-1.out",
+      "blob": "769fa7cb9a5e69a7d5820309aba8da91edab9ac9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/ChartRun.out",
+      "blob": "4d04f9bfb7af5a34b663b9f98a7c6e8e9f0ca7c8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/CounterAction.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/CounterAction.cfg",
+      "blob": "b1763a8ad02a313c1237039ad0ead0404716d5ec",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/CounterAction.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/CounterAction.tla",
+      "blob": "148b1f3a0d0e7ebb30c00c164c403d6d1f2610fb",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/chart.mmd",
+      "blob": "2142a4553be585c01cea18319acc580f0057f161",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/graph.dot",
+      "blob": "39f2651e18efcdf3da400eb5239175e340f2e6b7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/report.md",
+      "blob": "d468ab4477bd75c9fcbb83540aebff57facceb6b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/sany.out",
+      "blob": "a5c0ae2483c1a80e683adef887854fcc13d91eff",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/verdict-1.out",
+      "blob": "446128703357032b71fbe6c4c5e48651cebb3077",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/verdict-2.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/verdict-2.out",
+      "blob": "232ed26873747dc21e375b725ab4282cae09dc78",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterAction/verdict-3.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterAction/verdict-3.out",
+      "blob": "f49ccadb2c33ec641c935b5dcce5a591a2d46048",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/ChartRun.out",
+      "blob": "abf573b92cd3aec2e2eeb759d954aac4912476b7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/CounterDeadlock.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/CounterDeadlock.cfg",
+      "blob": "64e80fff74246f1c3ad536ca2084e63a9ae1afe0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/CounterDeadlock.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/CounterDeadlock.tla",
+      "blob": "67f26b04c403e2b24e682be5cba8019fbc52f755",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/chart.mmd",
+      "blob": "9190b9fb7514f5af3275b3253e40cfd36289eabc",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/graph.dot",
+      "blob": "19ef461866782514d24f9bbe8e07a2e40fe4d5c1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/report.md",
+      "blob": "d72af35b15cf5275490f6b8944681b1f7506858b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/sany.out",
+      "blob": "87c12d75a5d0cd2487d481ef0a0e83a09bbf8a13",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/verdict-1.out",
+      "blob": "fc41768fce93b978734fd3aaeb60f9ca1a6c8612",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/verdict-2.exit",
+      "blob": "b4de3947675361a7770d29b8982c407b0ec6b2a0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterDeadlock/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterDeadlock/verdict-2.out",
+      "blob": "1680ce4ae6586a7d86259046260f0f06435e98b7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/ChartRun.out",
+      "blob": "fe624fd4f650a8164f527d2f9a0955774dfe3e61",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/CounterFan.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/CounterFan.cfg",
+      "blob": "27e8506dbb0a6da840cffa4a848804f312bf90f3",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/CounterFan.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/CounterFan.tla",
+      "blob": "f2b4e5271068fe343a9d9557b145e6c7acec7c70",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/chart.mmd",
+      "blob": "045aa4218b417aec221f3ad014c56c7c8903fff9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/graph.dot",
+      "blob": "d60e23ac86f212a53dff308f4c0298fb286f1df1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/report.md",
+      "blob": "1090826acf60bd5b1f1803813e3c74ebfa33e273",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/sany.out",
+      "blob": "eac7a21ab606f3d1e092b9a182658f788d94e89f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/verdict-1.out",
+      "blob": "6156d07f95185eb1951650fcebde54d482389faa",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterFan/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterFan/verdict-2.out",
+      "blob": "a60056632dc77ea3338584851486cc7e6be453b0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/ChartRun.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/ChartRun.exit",
+      "blob": "78eb67cee1ab25652fe5c9e29efc173671301400",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/ChartRun.out",
+      "blob": "bc54efe7c1b7595618b41ae1358daad63cc3c251",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/CounterGuard.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/CounterGuard.cfg",
+      "blob": "93c95c10ff801ffcbc5da14bae1b9f4246a21433",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/CounterGuard.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/CounterGuard.tla",
+      "blob": "84b115bef2952e55814fa49d14064e3b506801c4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/chart.mmd",
+      "blob": "11839886fb466f8059e8683c8e886471f6298795",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/graph.dot",
+      "blob": "8312469c683be164474194eb4dfa787597d95f85",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/report.md",
+      "blob": "3f37ac2326595ee790200a8b796dec46521f6dbe",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/sany.out",
+      "blob": "c057222d7b5a33880d417cef92b2bdc7f7dd6514",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/verdict-1.out",
+      "blob": "c3169f0752ff1ab06b0d0bb4b58bde9660c7dbc4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/verdict-2.exit",
+      "blob": "78eb67cee1ab25652fe5c9e29efc173671301400",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterGuard/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterGuard/verdict-2.out",
+      "blob": "ea9327a80672e55ceb70989234dd4abefd724352",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/ChartRun.out",
+      "blob": "6dab5e6f65a2328f257d7ab113577253a2c21f22",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/CounterInitPast.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/CounterInitPast.cfg",
+      "blob": "18a798096dd459b718cf51c5a9a8b6d677c37044",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/CounterInitPast.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/CounterInitPast.tla",
+      "blob": "dfe3125ca4355d205330148d47b6887bcdabb8c1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/chart.mmd",
+      "blob": "e70633f1157c80d8f09cced99b6f381ac4e48414",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/graph.dot",
+      "blob": "5bdffe2b5caf1984f0249589f99fa929330ea93a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/report.md",
+      "blob": "e6c422152821af9499fca3f2b64ed94a65965618",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/sany.out",
+      "blob": "13471a1ab7ca435f685e66df4b2e7b6e47b17f0b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/verdict-1.out",
+      "blob": "e55acaa87b29fecb8f0e3be3525d29848b9ac2c6",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPast/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPast/verdict-2.out",
+      "blob": "ae7dfd0acb2c9ce6bcc36d8acc388c6faece36ac",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPastHolds/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPastHolds/ChartRun.out",
+      "blob": "e8295dd7cc27b793fd56269be2f3596b4433b28a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPastHolds/CounterInitPastHolds.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPastHolds/CounterInitPastHolds.cfg",
+      "blob": "823d31a55438107a7805ef0b92ef0d5da3f835a8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPastHolds/CounterInitPastHolds.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPastHolds/CounterInitPastHolds.tla",
+      "blob": "cb291f044b9b799e6bcb4e294b17a0ab47e88b43",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPastHolds/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPastHolds/chart.mmd",
+      "blob": "b57b606becb0dde9c8ff1bc6ce1835de277c5bc1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPastHolds/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPastHolds/graph.dot",
+      "blob": "5bdffe2b5caf1984f0249589f99fa929330ea93a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPastHolds/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPastHolds/report.md",
+      "blob": "5ad2f21648fe6caa2ebab960deeed49afcc38e5f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPastHolds/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPastHolds/sany.out",
+      "blob": "f4c128b5395a4bcff1d52b3c10b3d6586c2c33d0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInitPastHolds/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInitPastHolds/verdict-1.out",
+      "blob": "b8c8f34dd061f48b210e49bd5014003d902d7fad",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/ChartRun.out",
+      "blob": "bd9932f5cd0aaae9308e121b89892322d54eca7c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/CounterInstance.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/CounterInstance.cfg",
+      "blob": "a73eb3f49699de9a2c9776368d9d1d79ba498529",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/CounterInstance.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/CounterInstance.tla",
+      "blob": "ad5bdcb74c40f03fc0400d1eb0ce10f1c36e8bba",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/CounterSteps.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/CounterSteps.tla",
+      "blob": "1551d5ec4db346e76ef013b90cddb07dd043ecb1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/chart.mmd",
+      "blob": "58eb5e285fcb7c32de4967a656f5a213252aa4ca",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/graph.dot",
+      "blob": "6213bdaec4dd30c1af50e173b4ce62bc87ff7b89",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/report.md",
+      "blob": "ffe2e10de17d69b211a8277cbf346d2ebb3d0e57",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/sany.out",
+      "blob": "2b24bb54b8fcb7e92a23c4dfeb8df4b897d8a0cb",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/verdict-1.exit",
+      "blob": "b1bd38b62a0800a4f6a80c34e21c5acffae52c7e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterInstance/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterInstance/verdict-1.out",
+      "blob": "e880efe7092914a114d2addc76a98ba3c7b276c2",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/ChartRun.out",
+      "blob": "18aedf2894414abbe939f68360d4d2f08f998022",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/CounterJump.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/CounterJump.cfg",
+      "blob": "bb86e2c8cc5621168f4a4a64e4eb50d33b699237",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/CounterJump.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/CounterJump.tla",
+      "blob": "9158973604d69dced60314510ad6dd39c0f9890b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/chart.mmd",
+      "blob": "92d95a38f2343778641c69f500942cf1cc02146d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/graph.dot",
+      "blob": "a60662b180c48f9f3e51725c5ab87702f4325b14",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/report.md",
+      "blob": "b92624593b84eb2a11cdcf0a069f3546d0f9b3f6",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/sany.out",
+      "blob": "92b207093eb1484a0ef0dbb6e6b7938b14a44cc8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/verdict-1.out",
+      "blob": "920247b844f89238b291c643021e2bc22a0e1a4f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterJump/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterJump/verdict-2.out",
+      "blob": "83457e1c6bde2a2e48f85714278fb6a95970aee9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/ChartRun.out",
+      "blob": "11e7ef47867e8d2f056b1ce74d4698f698f7b0e1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/CounterLoop.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/CounterLoop.cfg",
+      "blob": "a73eb3f49699de9a2c9776368d9d1d79ba498529",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/CounterLoop.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/CounterLoop.tla",
+      "blob": "51a6dd2cc62245f93dd1a8ace343475df3866b55",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/chart.mmd",
+      "blob": "9198ee16fe2f14a4541e7541a6a667fbd707b697",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/graph.dot",
+      "blob": "4c4a31e899d8897a871007d9f11673c93dfb2f94",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/report.md",
+      "blob": "db2cb8358dfb5adc37141d9f323e6ae9ceade117",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/sany.out",
+      "blob": "7fc577a326189e64706e6c33ecfa2f1503393164",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/verdict-1.exit",
+      "blob": "b1bd38b62a0800a4f6a80c34e21c5acffae52c7e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterLoop/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterLoop/verdict-1.out",
+      "blob": "114d60ba3e320ef621749a47bb09812cf98b21ee",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/ChartRun.out",
+      "blob": "b99b2956ac43a76c342e94b6d2284515b8b6fc02",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/CounterOrder.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/CounterOrder.cfg",
+      "blob": "cadbd94c6c11b355f17f51a61ef87099fb42d6ed",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/CounterOrder.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/CounterOrder.tla",
+      "blob": "9168efe4ea204dabd327f64ee4581d4ba6c5840b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/chart.mmd",
+      "blob": "7dda491605eedca0200677f67265edecf0f25130",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/graph.dot",
+      "blob": "3943d6aa2c830224e97d65ea784d3ad22cc972a4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/report.md",
+      "blob": "0578eb27de909c45ab5ef56d32262aa6f63fd4b4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/sany.out",
+      "blob": "c0d4cd2165a1dcdfbb6d052d07facfb61c2e16af",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/verdict-1.out",
+      "blob": "981ed353203ceb9fda0b86c11ddc389906b89c49",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/verdict-2.exit",
+      "blob": "b4de3947675361a7770d29b8982c407b0ec6b2a0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterOrder/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterOrder/verdict-2.out",
+      "blob": "8cc5e2d4f92272c7910bc77807cb340591d0ef92",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/ChartRun.out",
+      "blob": "1de92f9b10debbc6ed638dd01db1de427e4ee2fe",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/CounterRules.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/CounterRules.cfg",
+      "blob": "e446955693a3dfb5bcb950548396c1afc46b4241",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/CounterRules.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/CounterRules.tla",
+      "blob": "5cc3ba1f1cab9531b39d144574e7ae30cfb8a663",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/Moves.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/Moves.tla",
+      "blob": "697939d4b33ffbbab7c02b4ccc858a96e2f13c6f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/chart.mmd",
+      "blob": "83f65fd1be26e55bbaf479db4a36608012e239c2",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/graph.dot",
+      "blob": "b9fbd8c57ce94daa6a09a964bfdad9420d0e54ba",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/report.md",
+      "blob": "2c6b305701506ec6ed7cfd7bbaa6ebe8f282d323",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/sany.out",
+      "blob": "2fa0dadff235ddb7b52eddc31d5ed37c4afde198",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/verdict-1.out",
+      "blob": "af93dd028ac57a23027b9970647b92bbddd9bbf4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/verdict-2.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/verdict-2.out",
+      "blob": "5eb734bdabb5fdf59183e1edd29c7c40cad823dc",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/verdict-3.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/verdict-3.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/verdict-3.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/verdict-3.out",
+      "blob": "b1649422a90755680f382b2e3b42b96613d3b4a4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterRules/verdict-4.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterRules/verdict-4.out",
+      "blob": "6421d1d8fc380bc021135e68dac995ac1a303f9a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/ChartRun.out",
+      "blob": "ccb7ba9df755eddc62505f4ce73528f575106783",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/CounterStart.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/CounterStart.cfg",
+      "blob": "76c3fb0615201e903353213b74b5f8c5f65647bb",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/CounterStart.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/CounterStart.tla",
+      "blob": "e701a8b64009098553aa32f5ff82e2f12a07b403",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/chart.mmd",
+      "blob": "ead9269e2405193a20c160011a24c15940c156ef",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/graph.dot",
+      "blob": "00d34c42a93d088a1d67e48bbba8a7d1c9976123",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/report.md",
+      "blob": "d565f6c8fac4d4c44c0894989e0ed01ef01ef3b1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/sany.out",
+      "blob": "e3322a3edd39e50c1b075dcffbfef599cb0b84cd",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/verdict-1.out",
+      "blob": "273f6a9a53fe86b3441393e9565958420c535c38",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStart/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterStart/verdict-2.out",
+      "blob": "8589bfb06807667f63069cf247c43fc8df72ffaa",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStop/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterStop/ChartRun.out",
+      "blob": "27d7d2da037fe2aa038ab9b33752c24407786a63",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStop/CounterStop.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterStop/CounterStop.cfg",
+      "blob": "76c3fb0615201e903353213b74b5f8c5f65647bb",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStop/CounterStop.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterStop/CounterStop.tla",
+      "blob": "15b1224b32f256b49bfd6a9fe099d3bcef746e6f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStop/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterStop/chart.mmd",
+      "blob": "5b17bea12010ae2e3c2073a2cb424bc6c262ef74",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStop/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterStop/graph.dot",
+      "blob": "00d34c42a93d088a1d67e48bbba8a7d1c9976123",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStop/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterStop/report.md",
+      "blob": "3dd1d7e35d2a08892aeabe556260f984333e4123",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStop/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterStop/sany.out",
+      "blob": "70180967286510ba8ac18f497c3285e270435b38",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterStop/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterStop/verdict-1.out",
+      "blob": "fd43d16c353849bb15a9126c95f8e9f2ebc5d49b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/ChartRun.out",
+      "blob": "c5c8e5729b01b33a32f32f664c02f3c3ab226258",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/CounterTie.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/CounterTie.cfg",
+      "blob": "e05d62cfb03aadd5d24632194775c224b7648eb1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/CounterTie.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/CounterTie.tla",
+      "blob": "48e2ebdf1ee8227606184adfdecbf13656ee7349",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/chart.mmd",
+      "blob": "f5a339c11c84dc72eafe4892e263be64928792b8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/graph.dot",
+      "blob": "39f2651e18efcdf3da400eb5239175e340f2e6b7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/report.md",
+      "blob": "df2f7a667ae0700749b33217939d31216712ffd7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/sany.out",
+      "blob": "7f2ea094a143757bd4c4fa346a50009601fcd931",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/verdict-1.out",
+      "blob": "d86c4b795ac1ffe16898f8fd90b46c2ea5234de8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/verdict-2.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/verdict-2.out",
+      "blob": "dfc61e8aa5e2b576bff3525b08a32d1187172a2d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/verdict-3.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/verdict-3.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/verdict-3.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/verdict-3.out",
+      "blob": "b3deb6fe0b890afa6d59c5e6851cb1fc8fa1957a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTie/verdict-4.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTie/verdict-4.out",
+      "blob": "a0e5fe809bc05a6fdf5e689744aae1002d912909",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/ChartRun.out",
+      "blob": "4175494b4970e0c51203135e076403eeffa3d734",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/CounterTieInGraph.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/CounterTieInGraph.cfg",
+      "blob": "98f97b00a14215d2002d71616b1e8e838d722743",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/CounterTieInGraph.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/CounterTieInGraph.tla",
+      "blob": "7716ca0a88b8fc19fac918a8f123aa9efa76cd9b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/chart.mmd",
+      "blob": "190ae24a1e79e427a87e050b51271588fc12cbf9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/graph.dot",
+      "blob": "931dce5aa18499ac19d824ee13834f3d54197807",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/report.md",
+      "blob": "bb60e8ae714a4f2d65b89eba4483eb8a8fc1dc13",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/sany.out",
+      "blob": "ec054808242db7d1746947f95050db2e672d6639",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/verdict-1.out",
+      "blob": "1d977efee52a3bedbcb4873505e291a65830be4c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterTieInGraph/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterTieInGraph/verdict-2.out",
+      "blob": "a4cfefd2489f371b080eb905e83d1292869c5325",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/ChartRun.out",
+      "blob": "d9d16365e43bc2623a0fc99018e9592e1ca5bbf7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/CounterView.cfg",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/CounterView.cfg",
+      "blob": "14229fa59e582bab0f937afda511c5a4facd3533",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/CounterView.tla",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/CounterView.tla",
+      "blob": "7b3f3cf6543d9eb13dac49ad5f06e10152ad6279",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/chart.mmd",
+      "blob": "8b60a051c7a2672ab60607f4215d13dc9b690ad8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/graph.dot",
+      "blob": "39f2651e18efcdf3da400eb5239175e340f2e6b7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/report.md",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/report.md",
+      "blob": "06bc25fa1285b175be2987a91871f46c7e8e46ef",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/sany.out",
+      "blob": "922b7fd110fbb1ab5b4d741b0aec85f510f012eb",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/verdict-1.out",
+      "blob": "7d9e8275a5dac9783086019d7eb7440ebb32b730",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/verdict-2.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/verdict-2.out",
+      "blob": "db0dcde38843ccadc4fd3f4aa3d0ddf14da7bc74",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/verdict-3.exit",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/verdict-3.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/verdict-3.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/verdict-3.out",
+      "blob": "e5e174109dcc9a7784798fe82ba2fcf1f30af5cf",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/verdict-4.out",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/verdict-4.out",
+      "blob": "5531c01d2d039002e3822ca5534f8cb4df7ec6fc",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/CounterView/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/CounterView/view.mjs",
+      "blob": "2f72ecea21a746d09407a6ed9b2c8f993d40c3b7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/ChartRun.out",
+      "blob": "acbd2bda2bdde08c1160fd87b6435cb8cb4dae6c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/DieHard.cfg",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/DieHard.cfg",
+      "blob": "cefff25119959bbef1c313fcf771d1e79657d56d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/DieHard.tla",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/DieHard.tla",
+      "blob": "52dc76c2c9f91d5c7b1b4ef763bd61e2d3959c0f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/chart.mmd",
+      "blob": "7fe3c0ecc8a5d58b9201106de3ae425bf2a4a37f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/graph.dot",
+      "blob": "fafcf3fca9f42e3feeb9511ac22fa0911268a6e4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/report.md",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/report.md",
+      "blob": "c08be40faa37f8d7df92967538faa4d1779cebc1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/sany.out",
+      "blob": "0149b3d9df5df9832f82e44a47ac14cd98b08b7e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/verdict-1.out",
+      "blob": "20145d338d0f68089d31a288e3e93782ccf06893",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/DieHard/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/DieHard/verdict-2.out",
+      "blob": "cd1b7f22e3d772635a1a7b01464c9578e0cc1091",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/ChartRun.out",
+      "blob": "f35d6c82c883997fec534d0095bff01d23e64cb8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/FirstRule.cfg",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/FirstRule.cfg",
+      "blob": "5a874416408b99f75366a9c429d49c4acc73a86d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/FirstRule.tla",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/FirstRule.tla",
+      "blob": "a0e6353178bf9005d20d336821fe5a0aa1229998",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/chart.mmd",
+      "blob": "c364eff2917b4b5703bfa2cdc15c7d4663af55a3",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/graph.dot",
+      "blob": "3b0721e409983954a3a2c8e5083b2d5868446f2e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/report.md",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/report.md",
+      "blob": "412970238c167324dbc20f86a0fbdfec60ab6255",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/sany.out",
+      "blob": "2a648ff2b71d24e244d9405a4fce27bb8e77d556",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/verdict-1.out",
+      "blob": "da83f3ad939d0384e671f34151ed0a15e957fbbd",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/verdict-2.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/verdict-2.out",
+      "blob": "2520b3e5904c6325ffd7369d55d0a43875af5272",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/verdict-3.exit",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/verdict-3.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/verdict-3.out",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/verdict-3.out",
+      "blob": "c1514b60dc2b4dd33b8056d479f804a49f6e7d5c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/verdict-4.exit",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/verdict-4.exit",
+      "blob": "b4de3947675361a7770d29b8982c407b0ec6b2a0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/FirstRule/verdict-4.out",
+      "target": "skills/statechart/scripts/test/corpus/FirstRule/verdict-4.out",
+      "blob": "e19318748b58ba7712f88de6970f970509539019",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/ChartRun.out",
+      "blob": "b0c640583ba1410c84c041905e2b72ec84d8cfab",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/HiddenClock.cfg",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/HiddenClock.cfg",
+      "blob": "7e58ae943d9526b4d453e84238c0f5002e80948e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/HiddenClock.tla",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/HiddenClock.tla",
+      "blob": "baf36377c680a958f88fbacdf56d39038125534b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/chart.mmd",
+      "blob": "78e6754ae9fdb66697644b4c719e34bfe1fb31d8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/graph.dot",
+      "blob": "1087ac95e2ce296b7fa2bf3a74eaf214b340e11a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/report.md",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/report.md",
+      "blob": "061c73f5500abe8c3bf1bc6e51f8eedf0dcc44d8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/sany.out",
+      "blob": "db2f8f586a001e654a27e778b36be23ea02a75e7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/verdict-1.exit",
+      "blob": "b1bd38b62a0800a4f6a80c34e21c5acffae52c7e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/HiddenClock/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/HiddenClock/verdict-1.out",
+      "blob": "52d01fbc6c2f905a6364f588f631067dd009f689",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/Login/ChartRun.out",
+      "blob": "b5e7e98aba9efd52c818d70499a0b6ea31f4be7c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/Login.cfg",
+      "target": "skills/statechart/scripts/test/corpus/Login/Login.cfg",
+      "blob": "514c84e641fea64cce1cfeea28b805ee80514a33",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/Login.tla",
+      "target": "skills/statechart/scripts/test/corpus/Login/Login.tla",
+      "blob": "453215af9946e8de2747d57029a824d3f0537c65",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/Login/chart.mmd",
+      "blob": "547bd3e604b8f7ec7422a1c3006b4d70428f34e4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/Login/graph.dot",
+      "blob": "229abaf8f6440dc69d0e79fabc1746c9ebe21937",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/report.md",
+      "target": "skills/statechart/scripts/test/corpus/Login/report.md",
+      "blob": "096dd7cb67a68a516293c622f314a3e38ce994d4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/Login/sany.out",
+      "blob": "af8bc6f7975591c1f67e7aaabc0496eb0f4f2b25",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/Login/verdict-1.out",
+      "blob": "f74a91c43d6565f1bfe4538806fb9d4b78482508",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Login/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/Login/view.mjs",
+      "blob": "61b5120da1a33bd21b87f1de2ba7a32250e3aa09",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/ChartRun.out",
+      "blob": "f6221e1efee943e4564ff0263418066812ab2e02",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/LoginGuarded.cfg",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/LoginGuarded.cfg",
+      "blob": "b8e4128c949c670da5254ebcb0309fa5910aa969",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/LoginGuarded.tla",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/LoginGuarded.tla",
+      "blob": "4c6d4d4eb94b3fafe87b51ac65b1c79d98fc33a0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/chart.mmd",
+      "blob": "afb69d00ba56faf57c520e7c5eb155eaf669ad45",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/graph.dot",
+      "blob": "68a7023bc5227504af03abe9e7339f50072d6619",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/report.md",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/report.md",
+      "blob": "1f2b2ebd98e9d5ee30f701e29070259f48df740e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/sany.out",
+      "blob": "20d5e4a5a1d7b5c705e6d50bafd997d41585b33a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/verdict-1.out",
+      "blob": "f1f2dd15632140870ed95dd2256f87c665241a92",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginGuarded/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/LoginGuarded/view.mjs",
+      "blob": "f47da36a6ab53eea5c987f87ed0e6a226b94cbd7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/ChartRun.out",
+      "blob": "5072b1e8bfc2cf3e18e669c9a983d7beffa188e4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/LoginParallel.cfg",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/LoginParallel.cfg",
+      "blob": "4d0bd3c81bdd6b9199294c055060100f6edd035b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/LoginParallel.tla",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/LoginParallel.tla",
+      "blob": "1ad1667b835bed0b3fc89578eff48faee3691553",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/chart.mmd",
+      "blob": "add577ee963f5bbfa0e966c65fd02fad3d31fb0c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/graph.dot",
+      "blob": "7e46e55eada3c043ba7b1ac64f84c50aa9e8d824",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/report.md",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/report.md",
+      "blob": "1e8c75b1b5a836feb3523eb36d5a8864809b3032",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/sany.out",
+      "blob": "38297c6ffeafdf4d909c172c9b4e4bdc0e3bc2c8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/verdict-1.out",
+      "blob": "c0f611bdd7ed6a99edc01f4f2acdcad3079be378",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/verdict-2.out",
+      "blob": "0f5c98a6698a44ddde55a198b314a6e02ebdce7a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/LoginParallel/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/LoginParallel/view.mjs",
+      "blob": "f47da36a6ab53eea5c987f87ed0e6a226b94cbd7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/ChartRun.out",
+      "blob": "21b790217edaabd9e7312162b02b6451929cb567",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/MediaPlayer.cfg",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/MediaPlayer.cfg",
+      "blob": "31322ca0f0a4e46cbe2d52f6a0ee8c1e9975cef9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/MediaPlayer.tla",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/MediaPlayer.tla",
+      "blob": "4e4b02d7117a0a48c336563b59eda5fbdfb16d03",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/chart.mmd",
+      "blob": "b75e94dd1e020a359458f3721f504147a47984b9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/graph.dot",
+      "blob": "c183699297118b011e08f24f2fcb99aa526fe548",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/report.md",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/report.md",
+      "blob": "051f70750c6d96ccb9fb010ef225fd73dd0de77d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/sany.out",
+      "blob": "f074d321e6d183444b3c5a1e8e58998ab8367268",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/verdict-1.out",
+      "blob": "4312101cdf93b7408aca9b28c90f61bf39cce884",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/verdict-2.out",
+      "blob": "f87fac119bdde872dd0729590b2b2c65bb3b13ae",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayer/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayer/view.mjs",
+      "blob": "276e21fec5f54c760b9c70cc8fdbc836f3802b9c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/ChartRun.out",
+      "blob": "7385b348ad153091c96f4c99f24f91746344e355",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/MediaPlayerFixed.cfg",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/MediaPlayerFixed.cfg",
+      "blob": "d1743be9fda1b1d507580dc339820dc889e99e39",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/MediaPlayerFixed.tla",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/MediaPlayerFixed.tla",
+      "blob": "27139f152c35f996eb59f37bc8d36bbd0443bc62",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/chart.mmd",
+      "blob": "ab1e4ef168aa403dd24b96c50b1df3e46273335c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/graph.dot",
+      "blob": "a5ea519beee423c2ee44369598df913db82e392f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/report.md",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/report.md",
+      "blob": "3dad98dca298694d82fcdee58650e4c50e127640",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/sany.out",
+      "blob": "23b0edaa34642fe8b30dce09ed55f887eac47fff",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/verdict-1.out",
+      "blob": "a919ca8c22beb3169d7054a4db37b37cbe6ee3c7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerFixed/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerFixed/view.mjs",
+      "blob": "276e21fec5f54c760b9c70cc8fdbc836f3802b9c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/ChartRun.out",
+      "blob": "632b6fa6b928bdfbde2116ca996c3b88aa13f4a9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/MediaPlayer.tla",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/MediaPlayer.tla",
+      "blob": "4e4b02d7117a0a48c336563b59eda5fbdfb16d03",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/MediaPlayerProps.cfg",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/MediaPlayerProps.cfg",
+      "blob": "a3aa6caf6cf143933e7aeac37f679c8bfc897883",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/MediaPlayerProps.tla",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/MediaPlayerProps.tla",
+      "blob": "7291bce507eef12b129bfe9eb3f29fa3da6cd9ad",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/chart.mmd",
+      "blob": "008a152d52c80d7be8eb5facde9c5d96ac9f444a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/graph.dot",
+      "blob": "c183699297118b011e08f24f2fcb99aa526fe548",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/report.md",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/report.md",
+      "blob": "98681ff8c279450cd493e52139a93d46710f97ab",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/sany.out",
+      "blob": "3dbc0429166f6e34096f04a6fd8a2ac450f6beb4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-1.out",
+      "blob": "b2be9190b4d72215291ab909c35d756f0d892398",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-2.out",
+      "blob": "71c88cdbabaffcf4e46d8739e5f7e5a98c90bc28",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-3.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-3.out",
+      "blob": "9add0fabc6a694d0f03c4a3c9b7af61dd98391f6",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-4.exit",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-4.exit",
+      "blob": "b1bd38b62a0800a4f6a80c34e21c5acffae52c7e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-4.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-4.out",
+      "blob": "4e24e1a21db8177eba11f0de96ae98db91e6861b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-5.exit",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-5.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-5.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-5.out",
+      "blob": "f318b72fc79d215c97fa77652a4f8baa1831a594",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-6.out",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/verdict-6.out",
+      "blob": "68ae9cf11e110c81e419133741dec229cbf9d507",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/MediaPlayerProps/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/MediaPlayerProps/view.mjs",
+      "blob": "276e21fec5f54c760b9c70cc8fdbc836f3802b9c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/PickWorker/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/PickWorker/ChartRun.out",
+      "blob": "23c3f60bb4b9962b0b94b6c2052e27a6fe5c8e5d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/PickWorker/PickWorker.cfg",
+      "target": "skills/statechart/scripts/test/corpus/PickWorker/PickWorker.cfg",
+      "blob": "ebfa53e9c21e7e2fad3b714290f42040190bc57d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/PickWorker/PickWorker.tla",
+      "target": "skills/statechart/scripts/test/corpus/PickWorker/PickWorker.tla",
+      "blob": "914dc2b6bb0e41d4d1f4df03b5bbaf23f72d237f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/PickWorker/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/PickWorker/chart.mmd",
+      "blob": "1d044ad68cae5ed9b4ce596b03596db86546067a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/PickWorker/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/PickWorker/graph.dot",
+      "blob": "72e7e24b8ba253ede0685395183828211c0848e9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/PickWorker/report.md",
+      "target": "skills/statechart/scripts/test/corpus/PickWorker/report.md",
+      "blob": "505b488b189ed1d344d410eae4a998fb3cbcab2d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/PickWorker/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/PickWorker/sany.out",
+      "blob": "454e2639b0c7e821db7928fe7e7254048a7b5b42",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/PickWorker/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/PickWorker/verdict-1.out",
+      "blob": "a524316408e37b31d509f36b4c93e1a4a8b7d61a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/ChartRun.out",
+      "blob": "f57a6ebb1f7049a46886574ba878a872c1bd6db8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/Shadow.cfg",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/Shadow.cfg",
+      "blob": "d01d1b8c8738a9a80b016301bd231be2c9bff014",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/Shadow.tla",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/Shadow.tla",
+      "blob": "16204f0662e5602600f79ffa15ab5752f1b6a416",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/ShadowLib.tla",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/ShadowLib.tla",
+      "blob": "ecdaa11f60fed1233844a259d86c14a684f492c7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/ShadowSub.tla",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/ShadowSub.tla",
+      "blob": "36bc01662741ca8fc3a17c2ece47b66990a652ed",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/chart.mmd",
+      "blob": "d84b4d7f217246ceffb12c4265833e9a240f5e20",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/graph.dot",
+      "blob": "3b0721e409983954a3a2c8e5083b2d5868446f2e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/report.md",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/report.md",
+      "blob": "2a68d874d5edf410bbccf9e4004f9741e8e2f7a6",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/sany.out",
+      "blob": "3326567a7ca4a6600507b6dddd9b671cca50e21d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/Shadow/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/Shadow/verdict-1.out",
+      "blob": "8f001abc6ffcd3b0ca9b86d67c0774de2fea7ecb",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/ChartRun.out",
+      "blob": "0d420bcb48ce7536207f636835cc821d05d20ff1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/SpacedNames.cfg",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/SpacedNames.cfg",
+      "blob": "a0df4743315913a449f5347236c7992d06f4d9c3",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/SpacedNames.tla",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/SpacedNames.tla",
+      "blob": "d25f887b04afd74046c021096cf6ba78d4bbadb6",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/chart.mmd",
+      "blob": "998ab69d9a58e7f327470c8b92dd3b7133af593b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/graph.dot",
+      "blob": "9b447cde43848bde6ca52f8cdbb7aa4bc9aba71a",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/report.md",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/report.md",
+      "blob": "88410eb6b4ab158b3b1c6053cd138f2bc55fa88b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/sany.out",
+      "blob": "046371b2720c68a2d4531bfb67a71d89db5bfc62",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/verdict-1.out",
+      "blob": "c0d2006acec6da3a54ac5af8535c94a2fd3e1aa0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/verdict-2.exit",
+      "blob": "b4de3947675361a7770d29b8982c407b0ec6b2a0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/SpacedNames/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/SpacedNames/verdict-2.out",
+      "blob": "13add5fd5e487dc64177b972bc5b36072fb305f9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/ChartRun.out",
+      "blob": "5211d3384f1d1f565ed6fdeea5619d85e1cb63d6",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/TwoPhase.cfg",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/TwoPhase.cfg",
+      "blob": "bbecf5002218920224d95830c738117990045ccf",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/TwoPhase.tla",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/TwoPhase.tla",
+      "blob": "e7504b7bfe17a37b79f4af00d1d2f715ddc21899",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/chart.mmd",
+      "blob": "0cb65843c51dd8aab620f8a5291ee74f20219880",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/graph.dot",
+      "blob": "66cb1a2d55f88ac2f3ee32231a5a724b0c128e96",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/report.md",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/report.md",
+      "blob": "5319d1a992f76c36161e2606ddd6e3c7c7263ef8",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/sany.out",
+      "blob": "291ac638280d2fb145633f1fdd0acdf82846776d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/verdict-1.out",
+      "blob": "65bace05d6847bba05ebb0bd2056f664024a0f4c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/verdict-2.out",
+      "blob": "4536a30bb05e1b98a49194b123cbd2caec642f41",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhase/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhase/view.mjs",
+      "blob": "c8c0cce069ad756075a46d67f6f2a90b8874113d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/ChartRun.out",
+      "blob": "52bd87a04b4afff4cc7c8f11b6b5100da87ba4bd",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/TwoPhaseFixed.cfg",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/TwoPhaseFixed.cfg",
+      "blob": "bbecf5002218920224d95830c738117990045ccf",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/TwoPhaseFixed.tla",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/TwoPhaseFixed.tla",
+      "blob": "9cec1f87ca23424fea63685d010c729e3bb494da",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/chart.mmd",
+      "blob": "78ae397f0115b2897616148c2675a1d40f77cc7e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/graph.dot",
+      "blob": "f79b82c8e815ec41128056e93c0517449fca3e2c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/report.md",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/report.md",
+      "blob": "5b007b5a6bbbb471ada6cbfe11ece1a7b4ddf258",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/sany.out",
+      "blob": "3926f23e49a5e4a375a6c1af3e63eb185c3d56f1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/verdict-1.out",
+      "blob": "790d0918a63648d639a77e1b701e696c79c2db3d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TwoPhaseFixed/view.mjs",
+      "target": "skills/statechart/scripts/test/corpus/TwoPhaseFixed/view.mjs",
+      "blob": "c8c0cce069ad756075a46d67f6f2a90b8874113d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/ChartRun.exit",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/ChartRun.exit",
+      "blob": "dd475631baeff3ce652b97d921c1cc43c917b9e2",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/ChartRun.out",
+      "blob": "51681e080fc79b3a5f47675082754ad3e2daa727",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/TypeGuard.cfg",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/TypeGuard.cfg",
+      "blob": "5c621b4371370780884e4fdef9d4a70266116b76",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/TypeGuard.tla",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/TypeGuard.tla",
+      "blob": "efb5952f04091e0f6120da8853540baf90698ddb",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/chart.mmd",
+      "blob": "68f61ab9012738d1ca7d6ee4bd7a13ef72f6c413",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/graph.dot",
+      "blob": "1ef8e69e9d7164078e5ec8ef89f83d01b2902476",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/report.md",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/report.md",
+      "blob": "014071988b3d273e6e80bc02ec4d981029c6f501",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/sany.out",
+      "blob": "18f6d2a04af169ad1065b59e625df7275433fc2e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/verdict-1.out",
+      "blob": "1e9be9502f219b810c9b0e46c46dfa328e6bf6a0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/verdict-2.exit",
+      "blob": "dd475631baeff3ce652b97d921c1cc43c917b9e2",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/TypeGuard/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/TypeGuard/verdict-2.out",
+      "blob": "0e682f17a7839bb0f16641e45a630b1a7615eccd",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/ChartRun.out",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/ChartRun.out",
+      "blob": "ea07460f3c120ec854186a51c2246719ec07a575",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/UserNoDeadlock.cfg",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/UserNoDeadlock.cfg",
+      "blob": "86617d00fb7f53ebc2eee4bd5f413bc2d1d2cf94",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/UserNoDeadlock.tla",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/UserNoDeadlock.tla",
+      "blob": "e18662ad543ab0239cb6257fdde68955b45e8d9f",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/chart.mmd",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/chart.mmd",
+      "blob": "539790a87bab5bd8ba8d1d150af613264fc516ae",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/graph.dot",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/graph.dot",
+      "blob": "3b0721e409983954a3a2c8e5083b2d5868446f2e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/report.md",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/report.md",
+      "blob": "31274731ca2f0c34b505b9e77d22b8e7b94fae62",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/sany.out",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/sany.out",
+      "blob": "a3c622cb4c7bba0d9994f290bc036e1da35220c2",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/verdict-1.exit",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/verdict-1.exit",
+      "blob": "48082f72f087ce7e6fa75b9c41d7387daecd447b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/verdict-1.out",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/verdict-1.out",
+      "blob": "3f12e86b80f1c5f76374b3b445e758355987f22b",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/verdict-2.exit",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/verdict-2.exit",
+      "blob": "b4de3947675361a7770d29b8982c407b0ec6b2a0",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/corpus/UserNoDeadlock/verdict-2.out",
+      "target": "skills/statechart/scripts/test/corpus/UserNoDeadlock/verdict-2.out",
+      "blob": "972408774099989024edb827f6a1b6f37d8ba385",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/differential.test.ts",
+      "target": "skills/statechart/scripts/test/differential.test.ts",
+      "blob": "c6aff9cadcc724202d7308a93fe2e17cc9aa64f4",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/drawn.ts",
+      "target": "skills/statechart/scripts/test/drawn.ts",
+      "blob": "1290403c9f1a30f8832f8fbf2635482486ffb8f9",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/grid/Grid.cfg",
+      "target": "skills/statechart/scripts/test/grid/Grid.cfg",
+      "blob": "d0ee570affdd4f5c4a26cff74d7fcace15898db1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/grid/Grid.tla",
+      "target": "skills/statechart/scripts/test/grid/Grid.tla",
+      "blob": "362afc474250b6d8892d7feb5b553bca3dc5d9ee",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/grid/sany.out",
+      "target": "skills/statechart/scripts/test/grid/sany.out",
+      "blob": "79e7f1243077292f954650ba757ca13f5565fee1",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/java.ts",
+      "target": "skills/statechart/scripts/test/java.ts",
+      "blob": "b6634ad7ac998851cbce400bf5a52b37ee96ea80",
+      "mode": "100755",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/labels.ts",
+      "target": "skills/statechart/scripts/test/labels.ts",
+      "blob": "82497246cf25f2f11892c1ecca2a7a33cf36ef75",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/messages.test.ts",
+      "target": "skills/statechart/scripts/test/messages.test.ts",
+      "blob": "4e0d3c358809a2c3b17a171b3e4601f3f2790992",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/pipeline.test.ts",
+      "target": "skills/statechart/scripts/test/pipeline.test.ts",
+      "blob": "81a5056a37276e38bb4f68993378a82fb55036f5",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/plain-tlc.test.ts",
+      "target": "skills/statechart/scripts/test/plain-tlc.test.ts",
+      "blob": "434e25612db133034c5a9f7e04965906488ef01c",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/render.test.ts",
+      "target": "skills/statechart/scripts/test/render.test.ts",
+      "blob": "57ff41e926875b65a455e0694c743a5c3562c4d5",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/tlc-out.test.ts",
+      "target": "skills/statechart/scripts/test/tlc-out.test.ts",
+      "blob": "7f27d04ee195e05d0ccea6c9e024a7b2890fde45",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/test/tlc.ts",
+      "target": "skills/statechart/scripts/test/tlc.ts",
+      "blob": "f659423d24c489616168096695ecfde1714bf45d",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/tsconfig.json",
+      "target": "skills/statechart/scripts/tsconfig.json",
+      "blob": "9b16905d0a049715f942bdbe4bf3a3a80be02bad",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/statechart/scripts/worker.ts",
+      "target": "skills/statechart/scripts/worker.ts",
+      "blob": "9559314668f6573e17db7c278d05f5776b235ebc",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/swarm/SKILL.md",
+      "target": "skills/swarm/SKILL.md",
+      "blob": "cf1deb77e2c7b83f9bda0551430ea166bf062977",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp task batches and configured panel models instead of Cursor cloud subagents and role rules.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/tdd/SKILL.md",
+      "target": "skills/tdd/SKILL.md",
+      "blob": "ca6f24c963001d9d518db2936dfe3d12f29b4e94",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/teach/SKILL.md",
+      "target": "skills/teach/SKILL.md",
+      "blob": "6146b65c4543af52c2693e844fc0ac4e4c010fae",
+      "mode": "100644",
+      "rule": "local",
+      "reason": "Uses omp /skill: command references and host-native diagram guidance.",
+      "tests": [
+        "tests/skills.test.mjs"
+      ]
+    },
+    {
+      "source": "pstack/skills/technical-writing/SKILL.md",
+      "target": "skills/technical-writing/SKILL.md",
+      "blob": "6f53776d935064370738bebe79f9fc8f39987ade",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/typescript-best-practices/SKILL.md",
+      "target": "skills/typescript-best-practices/SKILL.md",
+      "blob": "e1e5aa7c97ed39c425d60d933a96424a3f14539e",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/typescript-best-practices/references/patterns.md",
+      "target": "skills/typescript-best-practices/references/patterns.md",
+      "blob": "f8dd99b63ecb469a090b8fa0a7e235d3239cb9ec",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/unslop/SKILL.md",
+      "target": "skills/unslop/SKILL.md",
+      "blob": "583fe48499c8f8f71bd2deef4228d1f0129c03c7",
+      "mode": "100644",
+      "rule": "verbatim"
+    },
+    {
+      "source": "pstack/skills/why/SKILL.md",
+      "target": "skills/why/SKILL.md",
+      "blob": "99397830ddc11c8d7118272a4a3b2e59c8803891",
+      "mode": "100644",
+      "rule": "verbatim"
+    }
+  ]
+}
