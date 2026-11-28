@@ -75,7 +75,8 @@ async function extractCatalog(destination, temporary) {
     await runCommand("git", ["-C", root, "archive", "--format=tar", "--output", archive, "HEAD"]),
     "git archive HEAD",
   );
-  assertSucceeded(await runCommand("tar", ["-xf", archive, "-C", destination]), "tar extract");
+  const archiveName = path.relative(destination, archive).split(path.sep).join("/");
+  assertSucceeded(await runCommand("tar", ["-xf", archiveName], { cwd: destination }), "tar extract");
   await rm(archive, { force: true });
   assert.ok(
     existsSync(path.join(destination, ".omp-plugin", "marketplace.json")),
