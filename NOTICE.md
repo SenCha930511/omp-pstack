@@ -29,13 +29,29 @@ changes are also released under the MIT License.
   `/skill:poteto-mode` remains omp's native one-shot and does not enable sticky.
 - Sticky mode injects the full skill as a hidden `custom_message`; `off`
   filters it.
-- Autonomy matches Cursor: PR creation and updates, CI triggers, and merges do
-  not need prompt-level confirmation. Host approvals are controlled by
-  `tools.approvalMode`.
+- Prompt-level autonomy follows the skill's Autonomy section: reversible work
+  and external actions proceed without asking, while force-pushes to shared
+  branches, deploys, data deletion, and customer messages pause for the
+  operator. Host approvals are controlled by `tools.approvalMode`.
 - `how` and `arena` use `scout`; `interrogate` uses `task`. `comment-sicko`
-  keeps explicit read-only tools (`read`, `grep`, `glob`).
+  keeps explicit tools (`read`, `grep`, `glob`, `edit`, `bash`).
 - Skills are registered; all but `setup-pstack` are hidden from the model catalog, and `/skill:<name>` and `skill://<name>` both resolve them.
 - The extension was reduced to omp-only code paths.
+
+## Guide and images
+
+`docs/guide/` is written for this fork. Its chapter structure and the six
+images in `docs/guide/images/` come from the pstack guide
+(`pstack/docs/guide/`) in Cursor's plugin repository at commit
+`9e278fe4d4ecd8bfe98b1b79bf4be662efb338cc`. The prose is rewritten for omp's
+actual behavior and is not a copy of that guide.
+
+The images are Copyright (c) 2026 Lauren Tan, MIT License, and are
+redistributed under the same license. They illustrate the workflow. They are
+not screenshots of omp-pstack.
+
+This repository publishes no adapter for another host. The guide documents omp
+only.
 
 ## Names
 
